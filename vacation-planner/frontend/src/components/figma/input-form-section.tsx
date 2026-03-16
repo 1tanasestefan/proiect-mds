@@ -78,8 +78,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
   return (
     <section className="min-h-screen pt-[120px] pb-24 px-8 relative overflow-hidden">
       {/* Background ambient lights */}
-      <div className="absolute top-1/4 left-10 h-96 w-96 rounded-full bg-[#00F0FF]/10 blur-[150px]" />
-      <div className="absolute bottom-1/4 right-10 h-96 w-96 rounded-full bg-[#8A2BE2]/10 blur-[150px]" />
+      <div className="absolute top-1/4 left-10 h-96 w-96 rounded-full bg-[#00F0FF]/5 dark:bg-[#00F0FF]/10 blur-[150px]" />
+      <div className="absolute bottom-1/4 right-10 h-96 w-96 rounded-full bg-[#8A2BE2]/5 dark:bg-[#8A2BE2]/10 blur-[150px]" />
 
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -90,12 +90,12 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           className="text-center mb-20"
         >
           <h2 
-            className="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent"
+            className="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-gray-900 dark:from-white to-gray-500 dark:to-white/60 bg-clip-text text-transparent"
             style={{ fontFamily: "'Archivo Black', sans-serif" }}
           >
             CRAFT YOUR JOURNEY
           </h2>
-          <p className="text-xl text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+          <p className="text-xl text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
             Answer a few questions and let our AI agents create your perfect itinerary
           </p>
         </motion.div>
@@ -120,7 +120,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
         {/* Form Container - Glassmorphism */}
         <motion.div
           layout
-          className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-[32px] p-12 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+          className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[32px] p-12 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
         >
           <motion.div
             key={currentStep}
@@ -130,7 +130,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
             transition={{ duration: 0.5 }}
           >
             <h3 
-              className="text-3xl font-bold text-white mb-8"
+              className="text-3xl font-bold text-gray-900 dark:text-white mb-8"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               {steps[currentStep].title}
@@ -147,17 +147,17 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     onClick={() => handleSelect("budget", option.id)}
                     className={`group relative p-8 rounded-[24px] border transition-all duration-300 ${
                       formData.budget === option.id
-                        ? "bg-white/10 border-white/30 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                        : "bg-white/5 border-white/10 hover:border-white/20"
+                        ? "bg-black/10 dark:bg-white/10 border-gray-400 dark:border-white/30 shadow-[0_0_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                        : "bg-black/5 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
                     }`}
                   >
                     <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center mb-6 shadow-lg`}>
                       <option.icon className="h-8 w-8 text-white" />
                     </div>
-                    <h4 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {option.label}
                     </h4>
-                    <p className="text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
                       {option.desc}
                     </p>
                   </motion.button>
@@ -176,17 +176,17 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     onClick={() => handleSelect("lifestyle", option.id)}
                     className={`group relative p-8 rounded-[24px] border transition-all duration-300 ${
                       formData.lifestyle === option.id
-                        ? "bg-white/10 border-white/30 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                        : "bg-white/5 border-white/10 hover:border-white/20"
+                        ? "bg-black/10 dark:bg-white/10 border-gray-400 dark:border-white/30 shadow-[0_0_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                        : "bg-black/5 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
                     }`}
                   >
                     <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center mb-6 shadow-lg`}>
                       <option.icon className="h-8 w-8 text-white" />
                     </div>
-                    <h4 className="text-2xl font-bold text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {option.label}
                     </h4>
-                    <p className="text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
                       {option.desc}
                     </p>
                   </motion.button>
@@ -250,7 +250,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                       }
                     }}
                     placeholder="Where do you want to go?"
-                    className="w-full bg-white/5 border border-white/10 rounded-[20px] pl-16 pr-6 py-6 text-white text-xl placeholder:text-white/40 focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_30px_rgba(0,240,255,0.2)] transition-all"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[20px] pl-16 pr-6 py-6 text-gray-900 dark:text-white text-xl placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_30px_rgba(0,240,255,0.2)] transition-all"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                     autoFocus
                   />
@@ -291,7 +291,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     }}
                     placeholder="Number of travelers"
                     min="1"
-                    className="w-full bg-white/5 border border-white/10 rounded-[20px] pl-16 pr-6 py-6 text-white text-xl placeholder:text-white/40 focus:outline-none focus:border-[#8A2BE2]/50 focus:shadow-[0_0_30px_rgba(138,43,226,0.2)] transition-all"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[20px] pl-16 pr-6 py-6 text-gray-900 dark:text-white text-xl placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#8A2BE2]/50 focus:shadow-[0_0_30px_rgba(138,43,226,0.2)] transition-all"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                     autoFocus
                   />
@@ -318,7 +318,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={() => setCurrentStep(currentStep - 1)}
-              className="mt-8 text-white/60 hover:text-white transition-colors flex items-center gap-2"
+              className="mt-8 text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-2"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               ← Back

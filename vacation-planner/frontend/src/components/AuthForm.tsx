@@ -39,8 +39,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
   };
 
   return (
-    <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg border border-gray-100">
-      <h2 className="text-3xl font-bold text-center text-gray-900">
+    <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-white/5 rounded-xl shadow-lg border border-gray-100 dark:border-white/10">
+      <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white">
         {mode === 'login' ? 'Welcome Back' : 'Create Account'}
       </h2>
       
@@ -53,38 +53,38 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === 'register' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700">Display Name</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Display Name</label>
             <input
               type="text"
               required
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full px-4 py-2 mt-1 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+              className="w-full px-4 py-2 mt-1 border border-gray-300 dark:border-white/20 rounded-md bg-white dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="How should we call you?"
             />
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Email format</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email format</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 mt-1 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+            className="w-full px-4 py-2 mt-1 border border-gray-300 dark:border-white/20 rounded-md bg-white dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="you@example.com"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Password</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 mt-1 border rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
+            className="w-full px-4 py-2 mt-1 border border-gray-300 dark:border-white/20 rounded-md bg-white dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="••••••••"
           />
         </div>
@@ -98,7 +98,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         </button>
       </form>
 
-      <p className="text-sm text-center text-gray-600">
+      <p className="text-sm text-center text-gray-600 dark:text-gray-400">
         {mode === 'login' ? (
           <>
             Don't have an account?{' '}

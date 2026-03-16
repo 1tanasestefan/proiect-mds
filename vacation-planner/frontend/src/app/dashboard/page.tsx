@@ -24,17 +24,17 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen pt-32 pb-24 px-8 relative z-10 text-white">
+      <div className="min-h-screen pt-32 pb-24 px-8 relative z-10 text-gray-900 dark:text-white">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
           >
-            <h1 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent" style={{ fontFamily: "'Archivo Black', sans-serif" }}>
+            <h1 className="text-4xl md:text-5xl font-black mb-4 bg-gradient-to-r from-gray-900 dark:from-white to-gray-500 dark:to-white/60 bg-clip-text text-transparent" style={{ fontFamily: "'Archivo Black', sans-serif" }}>
               Welcome back, {user?.displayName || "Explorer"}
             </h1>
-            <p className="text-lg text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <p className="text-lg text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
               Ready for your next adventure?
             </p>
           </motion.div>
@@ -79,24 +79,24 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* AI Preferences */}
-            <motion.div variants={item} className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-[32px] p-8 flex flex-col">
+            <motion.div variants={item} className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[32px] p-8 flex flex-col">
               <div className="flex items-center gap-3 mb-8">
                 <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#8A2BE2] to-[#00F0FF] flex items-center justify-center shadow-lg">
                   <Settings2 className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>AI Preferences</h3>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>AI Preferences</h3>
               </div>
 
               <div className="flex-1 space-y-6">
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                  <div className="text-white/50 text-sm mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Default Vibe</div>
-                  <div className="flex items-center gap-2 text-white font-medium">
+                <div className="bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4">
+                  <div className="text-gray-400 dark:text-white/50 text-sm mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Default Vibe</div>
+                  <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium">
                     <Heart className="h-4 w-4 text-[#8A2BE2]" /> Relaxed & Cultural
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                  <div className="text-white/50 text-sm mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Target Budget</div>
-                  <div className="flex items-center gap-2 text-white font-medium">
+                <div className="bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl p-4">
+                  <div className="text-gray-400 dark:text-white/50 text-sm mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>Target Budget</div>
+                  <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium">
                     <Wallet className="h-4 w-4 text-[#00F0FF]" /> Comfort Seeker
                   </div>
                 </div>
@@ -104,11 +104,11 @@ export default function DashboardPage() {
             </motion.div>
 
             {/* Saved Itineraries */}
-            <motion.div variants={item} className="md:col-span-3 backdrop-blur-xl bg-white/5 border border-white/10 rounded-[32px] p-8 mt-4">
+            <motion.div variants={item} className="md:col-span-3 backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[32px] p-8 mt-4">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <Compass className="h-8 w-8 text-[#00F0FF]" />
-                  <h3 className="text-2xl font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Saved Itineraries</h3>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Saved Itineraries</h3>
                 </div>
                 <button className="text-[#00F0FF] hover:text-white transition-colors text-sm font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
                   View All
@@ -124,7 +124,7 @@ export default function DashboardPage() {
                   <motion.div 
                     key={idx}
                     whileHover={{ y: -5 }}
-                    className="group cursor-pointer bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-white/30 transition-all duration-300"
+                    className="group cursor-pointer bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden hover:border-gray-400 dark:hover:border-white/30 transition-all duration-300"
                   >
                     <div className="relative h-48 w-full">
                       <Image src={trip.image} alt={trip.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />

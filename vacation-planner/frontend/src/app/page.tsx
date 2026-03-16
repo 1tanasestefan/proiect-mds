@@ -5,6 +5,10 @@ import { HeroSection } from '@/components/figma/hero-section';
 import { InputFormSection } from '@/components/figma/input-form-section';
 import { AIProcessing } from '@/components/figma/ai-processing';
 import { ItineraryOutput, ItineraryData } from '@/components/figma/itinerary-output';
+import { InspirationSection } from '@/components/landing/InspirationSection';
+import { DiscoverSection } from '@/components/landing/DiscoverSection';
+import { EmotionalSection } from '@/components/landing/EmotionalSection';
+import { LandingCTA } from '@/components/landing/LandingCTA';
 
 type ViewState = 'HERO' | 'INPUT' | 'PROCESSING' | 'RESULTS';
 
@@ -41,9 +45,15 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen text-white">
+    <div className="flex flex-col min-h-screen text-gray-900 dark:text-white">
       {viewState === 'HERO' && (
-        <HeroSection onStartPlanning={() => setViewState('INPUT')} />
+        <>
+          <HeroSection onStartPlanning={() => setViewState('INPUT')} />
+          <InspirationSection />
+          <DiscoverSection />
+          <EmotionalSection />
+          <LandingCTA onStartPlanning={() => setViewState('INPUT')} />
+        </>
       )}
       
       {viewState === 'INPUT' && (
