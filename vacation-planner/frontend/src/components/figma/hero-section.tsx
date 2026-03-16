@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export function HeroSection({ onStartPlanning }: { onStartPlanning: () => void }) {
   return (
-    <section className="relative h-screen w-full overflow-hidden bg-[#050505]">
+    <section className="relative h-screen w-full overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <Image
@@ -17,45 +17,9 @@ export function HeroSection({ onStartPlanning }: { onStartPlanning: () => void }
         />
         {/* Dark gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80" />
-        
-        {/* Ambient glow effects */}
-        <div className="absolute top-20 right-20 h-96 w-96 rounded-full bg-[#00F0FF]/20 blur-[120px]" />
-        <div className="absolute bottom-20 left-20 h-96 w-96 rounded-full bg-[#8A2BE2]/20 blur-[120px]" />
       </div>
 
-      {/* Glassmorphism Navigation Bar */}
-      <motion.nav
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="absolute top-8 inset-x-0 mx-auto z-50 w-[90%] max-w-7xl"
-      >
-        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-[24px] px-8 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-[#00F0FF]" />
-              <span className="text-2xl font-bold text-white" style={{ fontFamily: "'Archivo Black', sans-serif" }}>
-                VibeTrips
-              </span>
-            </div>
-            <div className="flex items-center gap-8">
-              <button 
-                onClick={onStartPlanning}
-                className="text-white/80 hover:text-white transition-colors" 
-                style={{ fontFamily: "'Inter', sans-serif" }}
-              >
-                Plan a Trip
-              </button>
-              <Link href="/dashboard" className="text-white/80 hover:text-white transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>
-                My Trips
-              </Link>
-              <Link href="/login" className="text-white/80 hover:text-white transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>
-                Login
-              </Link>
-            </div>
-          </div>
-        </div>
-      </motion.nav>
+
 
       {/* Hero Content */}
       <div className="relative z-10 h-full flex items-center justify-center">

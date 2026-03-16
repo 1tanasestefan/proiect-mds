@@ -76,7 +76,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
   };
 
   return (
-    <section className="min-h-screen bg-[#0A0A0A] py-24 px-8 relative overflow-hidden">
+    <section className="min-h-screen pt-[120px] pb-24 px-8 relative overflow-hidden">
       {/* Background ambient lights */}
       <div className="absolute top-1/4 left-10 h-96 w-96 rounded-full bg-[#00F0FF]/10 blur-[150px]" />
       <div className="absolute bottom-1/4 right-10 h-96 w-96 rounded-full bg-[#8A2BE2]/10 blur-[150px]" />
@@ -244,11 +244,34 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     type="text"
                     value={formData.destination}
                     onChange={(e) => handleInputChange("destination", e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && formData.destination.trim()) {
+                        setCurrentStep(4);
+                      }
+                    }}
                     placeholder="Where do you want to go?"
                     className="w-full bg-white/5 border border-white/10 rounded-[20px] pl-16 pr-6 py-6 text-white text-xl placeholder:text-white/40 focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_30px_rgba(0,240,255,0.2)] transition-all"
                     style={{ fontFamily: "'Inter', sans-serif" }}
+                    autoFocus
                   />
                 </div>
+
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-8 flex justify-end"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    disabled={!formData.destination.trim()}
+                    onClick={() => setCurrentStep(4)}
+                    className="px-8 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-medium flex items-center gap-2 hover:bg-[#00F0FF]/20 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Continue
+                    <ArrowRight className="h-5 w-5" />
+                  </motion.button>
+                </motion.div>
               </div>
             )}
 
@@ -261,10 +284,16 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     type="number"
                     value={formData.travelers}
                     onChange={(e) => handleInputChange("travelers", e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && formData.travelers) {
+                        handleSubmitForm();
+                      }
+                    }}
                     placeholder="Number of travelers"
                     min="1"
                     className="w-full bg-white/5 border border-white/10 rounded-[20px] pl-16 pr-6 py-6 text-white text-xl placeholder:text-white/40 focus:outline-none focus:border-[#8A2BE2]/50 focus:shadow-[0_0_30px_rgba(138,43,226,0.2)] transition-all"
                     style={{ fontFamily: "'Inter', sans-serif" }}
+                    autoFocus
                   />
                 </div>
 
@@ -284,12 +313,12 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           </motion.div>
 
           {/* Navigation */}
-          {currentStep > 0 && currentStep < 3 && (
+          {currentStep > 0 && currentStep <= 4 && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={() => setCurrentStep(currentStep - 1)}
-              className="mt-8 text-white/60 hover:text-white transition-colors"
+              className="mt-8 text-white/60 hover:text-white transition-colors flex items-center gap-2"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               ← Back

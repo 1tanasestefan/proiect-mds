@@ -2,64 +2,96 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { Compass, LogOut, User as UserIcon } from 'lucide-react';
+import { Sparkles, User as UserIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
 
-  if (pathname === '/') return null;
+  const links = isAuthenticated
+    ? [
+        { href: '/plan', label: 'Plan a Trip' },
+        { href: '/dashboard', label: 'My Trips' },
+      ]
+    : [
+        { href: '/plan', label: 'Plan a Trip' },
+        { href: '/dashboard', label: 'My Trips' },
+        { href: '/login', label: 'Login' },
+      ];
 
   return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-2 group">
-              <Compass className="h-8 w-8 text-indigo-600 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="font-bold text-xl text-gray-900 tracking-tight">VibeTrips</span>
-            </Link>
-          </div>
+    <motion.nav
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="fixed top-8 inset-x-0 mx-auto z-50 w-[90%] max-w-7xl"
+    >
+      <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-[24px] px-8 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <Sparkles className="h-6 w-6 text-[#00F0FF] group-hover:text-[#8A2BE2] transition-colors duration-500" />
+            <span className="text-2xl font-bold text-white tracking-tight" style={{ fontFamily: "'Archivo Black', sans-serif" }}>
+              VibeTrips
+            </span>
+          </Link>
 
-          <div className="flex items-center gap-4">
-            {isAuthenticated ? (
-              <>
-                <Link href="/plan" className="text-gray-600 hover:text-indigo-600 font-medium text-sm transition-colors">
-                  Plan a Trip
+          {/* Links */}
+          <div className="flex items-center gap-8">
+            {links.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="relative group px-3 py-1"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="navbar-active-bg"
+                      className="absolute inset-0 bg-white/10 rounded-full"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  <motion.span
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`relative z-10 transition-colors duration-300 font-medium ${
+                      isActive ? "text-white" : "text-white/70 group-hover:text-white"
+                    }`}
+                  >
+                    {link.label}
+                  </motion.span>
                 </Link>
-                <Link href="/dashboard" className="text-gray-600 hover:text-indigo-600 font-medium text-sm transition-colors">
-                  My Trips
-                </Link>
-                <div className="h-6 w-px bg-gray-200 mx-2"></div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <UserIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline-block font-medium">{user?.displayName}</span>
+              );
+            })}
+
+            {/* Auth Button / User Profile */}
+            {isAuthenticated && (
+              <div className="flex items-center gap-4 pl-4 border-l border-white/10">
+                <div className="flex items-center gap-2 text-sm text-white/90">
+                  <div className="bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] p-1 rounded-full">
+                    <UserIcon className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="hidden sm:inline-block font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    {user?.displayName}
+                  </span>
                 </div>
                 <button
                   onClick={logout}
-                  className="p-2 text-gray-400 hover:text-red-600 transition-colors ml-2"
-                  title="Logout"
+                  className="text-white/50 hover:text-[#ff4444] text-sm font-medium transition-colors"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
                 >
-                  <LogOut className="h-5 w-5" />
+                  Logout
                 </button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-gray-600 hover:text-indigo-600 font-medium text-sm transition-colors">
-                  Log in
-                </Link>
-                <Link
-                  href="/register"
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-full font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                  Sign up
-                </Link>
-              </>
+              </div>
             )}
           </div>
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 }

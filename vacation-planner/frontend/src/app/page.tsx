@@ -41,7 +41,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#050505] text-white">
+    <div className="flex flex-col min-h-screen text-white">
       {viewState === 'HERO' && (
         <HeroSection onStartPlanning={() => setViewState('INPUT')} />
       )}
