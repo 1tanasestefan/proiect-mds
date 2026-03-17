@@ -1,0 +1,12 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Maven build output
+target/
+
+# IDE
+.idea/
+*.iml
+.DS_Store

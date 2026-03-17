@@ -1,6 +1,8 @@
 import warnings
 import os
 import asyncio
+import json
+import re
 from dotenv import load_dotenv
 
 # Absolute first thing: silence the DDGS rename warning
@@ -8,7 +10,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*duckduckgo
 
 from pydantic_ai import Agent, RunContext
 from duckduckgo_search import DDGS
-from models import UserInput, AgentOneOutput, Activity, DailyItinerary
+from models import UserInput, AgentOneOutput
 from loguru import logger
 from fastapi import HTTPException
 
@@ -17,20 +19,21 @@ search_lock = asyncio.Lock()
 
 load_dotenv()
 
-# The Agent will automatically use the GROQ_API_KEY from environment 
+# output_type=str avoids registering a `final_result` tool which conflicts with
+# the `search_web` tool on Groq and triggers tool_use_failed errors.
+# We parse and validate the JSON manually after the run.
 experience_agent = Agent(
     'groq:llama-3.3-70b-versatile',
-    output_type=AgentOneOutput,
-    retries=3,         # Base retries for tool calls
-    output_retries=5,  # Max retries specifically for JSON validation
+    output_type=str,
+    retries=3,
     system_prompt=(
         "You are the 'Experience Guide', a premier Luxury Travel Concierge. "
         "Your mission is to provide an authentic, high-end itinerary for the specified destination. "
-        
+
         "CRITICAL RULES: "
         "1. NEVER use placeholder text. Find REAL venue names using the `search_web` tool. "
         "2. You MUST use the `search_web` tool for every request to find current restaurants, hotels, and spots. "
-        "3. Your ONLY output must be a single valid JSON block. No conversational filler or explanations. "
+        "3. Your ONLY output must be a single valid JSON block. No conversational filler, no markdown fences, no explanations. "
         "4. Every activity 'type' MUST be exactly 'experience'. "
         "5. The output MUST exactly match this structure: "
         "{"
@@ -55,6 +58,18 @@ experience_agent = Agent(
     ),
 )
 
+
+def _parse_itinerary_json(raw: str) -> AgentOneOutput:
+    """Extract and validate the JSON block from the agent's raw string output."""
+    # Strip markdown code fences if the model wrapped the output anyway
+    cleaned = re.sub(r"```(?:json)?", "", raw).strip()
+    # Find the outermost { ... } block
+    match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+    if not match:
+        raise ValueError("No JSON object found in agent output.")
+    data = json.loads(match.group())
+    return AgentOneOutput(**data)
+
 @experience_agent.tool
 async def search_web(ctx: RunContext[UserInput], query: str) -> str:
     """
@@ -70,8 +85,10 @@ async def search_web(ctx: RunContext[UserInput], query: str) -> str:
 
             # Individual search timeout
             try:
-                async with asyncio.timeout(15):
-                    results = await asyncio.to_thread(run_sync_search)
+                results = await asyncio.wait_for(
+                    asyncio.to_thread(run_sync_search),
+                    timeout=15
+                )
             except asyncio.TimeoutError:
                 logger.warning(f"Search timed out for query: {query}")
                 return "Search was taking too long. Use iconic landmarks iconic to that specific city instead."
@@ -97,31 +114,35 @@ async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput
     """
     try:
         logger.info(f"Starting itinerary generation for: {user_input.destination}")
-        
+
         # Total generation budget: 90 seconds
-        async with asyncio.timeout(90):
-            result = await experience_agent.run(
+        result = await asyncio.wait_for(
+            experience_agent.run(
                 f"Create a REAL 3-day itinerary for {user_input.destination}. "
                 f"Lifestyle: {user_input.lifestyle}, Budget: {user_input.budget}, Vibe: {user_input.vacationType}. "
                 f"Group size: {user_input.travelers}. Use `search_web` for REAL venues. "
-                "REMINDER: Your response MUST be valid JSON only.",
+                "REMINDER: Output ONLY a raw JSON object — no markdown, no explanation.",
                 deps=user_input
-            )
-        
+            ),
+            timeout=90
+        )
+
         logger.info(f"Successfully generated itinerary for {user_input.destination}")
-        return result.output
-        
+        return _parse_itinerary_json(result.output)
+
     except asyncio.TimeoutError:
         logger.error(f"Generation timed out for {user_input.destination}")
         raise HTTPException(
-            status_code=504, 
+            status_code=504,
             detail="The concierge is taking longer than usual. Please try again or choose a more major city."
         )
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.error(f"JSON parse/validation failed: {e}")
+        raise HTTPException(status_code=500, detail="The AI returned an unreadable itinerary. Please try again.")
     except Exception as e:
-        logger.error(f"itinerary generation failed: {e}")
+        logger.error(f"Itinerary generation failed: {e}")
         if isinstance(e, HTTPException):
             raise e
-        # Provide a more descriptive error for validation failures
         detail = str(e)
         if "retries" in detail.lower():
             detail = "The AI had trouble formatting your itinerary. Please try one more time."
