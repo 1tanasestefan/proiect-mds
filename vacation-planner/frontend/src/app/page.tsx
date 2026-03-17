@@ -82,6 +82,7 @@ export default function Home() {
       {viewState === 'RESULTS' && (
         <ItineraryOutput 
           data={itineraryData} 
+          formData={formData}
         />
       )}
     </div>

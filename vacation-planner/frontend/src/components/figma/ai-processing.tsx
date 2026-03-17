@@ -7,12 +7,15 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
   const [currentPhase, setCurrentPhase] = useState(0);
 
   const phases = [
-    { label: "Analyzing your preferences", agent: "both" },
-    { label: "Discovering perfect destinations", agent: "experience" },
-    { label: "Optimizing flights & routes", agent: "logistics" },
-    { label: "Curating unique experiences", agent: "experience" },
-    { label: "Calculating best prices", agent: "logistics" },
-    { label: "Finalizing your itinerary", agent: "both" },
+    { label: "Experience Guide: Initializing destination analysis...", agent: "experience" },
+    { label: "Logistics Agent: Checking flight availability and weather data...", agent: "logistics" },
+    { label: "Experience Guide: Searching for hidden gems and local favorites...", agent: "experience" },
+    { label: "Logistics Agent: Optimizing travel routes and transit times...", agent: "logistics" },
+    { label: "Experience Guide: Curating exclusive dining and cultural events...", agent: "experience" },
+    { label: "Multi-Agent: Synchronizing itinerary components...", agent: "both" },
+    { label: "Experience Guide: Finalizing your luxury vibe summary...", agent: "experience" },
+    { label: "Logistics Agent: Calculating estimated budget windows...", agent: "logistics" },
+    { label: "System: Generating your cinematic travel preview...", agent: "both" },
   ];
 
   useEffect(() => {
@@ -23,7 +26,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
         }
         return prev;
       });
-    }, 3000);
+    }, 4000); // 4 seconds per phase for better readability
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
