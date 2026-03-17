@@ -10,7 +10,7 @@ load_dotenv()
 
 # Initialize Gemini Model
 # PydanticAI will automatically pick up GEMINI_API_KEY from the environment
-model = GeminiModel('gemini-1.5-flash')
+model = GeminiModel('gemini-2.0-flash-exp')
 
 experience_agent = Agent(
     model,

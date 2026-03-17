@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import { Brain, MapPin, Plane, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export function AIProcessing({ onComplete }: { onComplete: () => void }) {
+export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
   const [progress, setProgress] = useState(0);
   const [currentPhase, setCurrentPhase] = useState(0);
 
@@ -23,17 +23,19 @@ export function AIProcessing({ onComplete }: { onComplete: () => void }) {
         }
         return prev;
       });
-    }, 2000);
+    }, 3000);
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 100) {
-          setTimeout(() => onComplete(), 500);
-          return 100;
+        if (prev >= 98) {
+          if (prev === 100 && onComplete) {
+            onComplete();
+          }
+          return prev >= 99 ? 99 : prev + 0.1; // Slow down near the end
         }
         return prev + 1;
       });
-    }, 120);
+    }, 150);
 
     return () => {
       clearInterval(phaseInterval);
@@ -255,7 +257,7 @@ export function AIProcessing({ onComplete }: { onComplete: () => void }) {
             className="text-center text-gray-600 dark:text-white/80 mt-6 text-xl"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
-            {progress}%
+            {Math.floor(progress)}%
           </motion.p>
 
           {/* Loading dots animation */}
