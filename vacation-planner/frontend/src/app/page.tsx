@@ -20,12 +20,17 @@ export default function Home() {
   
   const handleGenerateItinerary = async (data: any) => {
     setFormData(data);
+    setItineraryData(null); // Clear previous results
+    setError(null);         // Clear previous errors
     setViewState('PROCESSING');
-    setError(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 100000); // 100s timeout
 
     try {
-      const response = await fetch("http://localhost:8000/api/generate-itinerary", {
+      const response = await fetch("http://127.0.0.1:8000/api/generate-itinerary", {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
         },
@@ -35,8 +40,11 @@ export default function Home() {
         }),
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`Backend error: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Backend error: ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -83,6 +91,11 @@ export default function Home() {
         <ItineraryOutput 
           data={itineraryData} 
           formData={formData}
+          onReset={() => {
+            setViewState('INPUT');
+            setItineraryData(null);
+            setError(null);
+          }}
         />
       )}
     </div>

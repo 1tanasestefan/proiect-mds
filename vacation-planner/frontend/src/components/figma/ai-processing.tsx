@@ -31,10 +31,8 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 98) {
-          if (prev === 100 && onComplete) {
-            onComplete();
-          }
-          return prev >= 99 ? 99 : prev + 0.1; // Slow down near the end
+          // If we reach 99, stay there but allow it to finish if the parent switches view
+          return prev >= 99.5 ? 99.5 : prev + 0.05; 
         }
         return prev + 1;
       });
@@ -44,7 +42,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
       clearInterval(phaseInterval);
       clearInterval(progressInterval);
     };
-  }, [onComplete]);
+  }, []); // Removed onComplete dependency to avoid unnecessary resets
 
   return (
     <section className="min-h-screen bg-gray-50 dark:bg-[#050505] flex items-center justify-center px-8 relative overflow-hidden">
@@ -263,6 +261,18 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             {Math.floor(progress)}%
           </motion.p>
 
+          {/* Long running hint */}
+          {progress >= 99 && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-[#8A2BE2] mt-4 text-sm font-medium animate-pulse"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              Our agents are finding the best hidden gems... almost there!
+            </motion.p>
+          )}
+
           {/* Loading dots animation */}
           <div className="flex justify-center gap-2 mt-8">
             {[0, 1, 2].map((i) => (
@@ -286,3 +296,4 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
     </section>
   );
 }
+

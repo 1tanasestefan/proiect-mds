@@ -28,6 +28,9 @@ async def generate_itinerary(user_input: UserInput):
         logger.info(f"Received request for itinerary: {user_input}")
         itinerary = await generate_experience_itinerary(user_input)
         return itinerary
+    except HTTPException as e:
+        # Re-raise HTTPExceptions so FastAPI can handle them (e.g., 504 timeouts)
+        raise e
     except Exception as e:
         logger.error(f"Failed to generate itinerary: {e}")
         raise HTTPException(status_code=500, detail=str(e))

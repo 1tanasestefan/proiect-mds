@@ -39,7 +39,7 @@ export interface ItineraryData {
   budget?: string;
 }
 
-export function ItineraryOutput({ data, formData }: { data: ItineraryData, formData?: any }) {
+export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryData, formData?: any, onReset: () => void }) {
   const itineraryItems = data.itinerary || [];
   
   // Helper to enrich activities with agent tags and icons
@@ -73,8 +73,7 @@ export function ItineraryOutput({ data, formData }: { data: ItineraryData, formD
             {data.vibe_summary}
           </p>
 
-          {/* Agent indicators */}
-          <div className="flex items-center justify-center gap-8">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-4">
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#8A2BE2]/10 border border-[#8A2BE2]/30">
               <Sparkles className="h-4 w-4 text-[#8A2BE2]" />
               <span className="text-[#8A2BE2] text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -87,6 +86,15 @@ export function ItineraryOutput({ data, formData }: { data: ItineraryData, formD
                 Logistics Agent
               </span>
             </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onReset}
+              className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white transition-colors text-sm font-semibold"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              Plan Another Trip
+            </motion.button>
           </div>
         </motion.div>
 
