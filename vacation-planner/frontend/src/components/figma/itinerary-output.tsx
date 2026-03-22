@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "motion/react";
 import { 
   MapPin, 
@@ -11,8 +12,12 @@ import {
   ExternalLink,
   DollarSign,
   Bed,
+  Bookmark,
+  CheckCircle2,
 } from "lucide-react";
 import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 export interface Activity {
   type: "flight" | "hotel" | "experience";
@@ -72,15 +77,61 @@ type TripFormData = {
   budget?: string;
   lifestyle?: string;
   vacationType?: string;
+  origin?: string;
   destination?: string;
+  startDate?: string;
+  endDate?: string;
   travelers?: number | string;
 };
 
 export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPlan, formData?: TripFormData | null, onReset: () => void }) {
+  const { isAuthenticated } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  
   const experience = data.experience;
   const logistics = data.logistics;
   const itineraryItems = experience.itinerary || [];
   const destination = experience.destination || formData?.destination || "";
+
+  const handleSaveToMyTrips = async () => {
+    if (!isAuthenticated) return;
+    setIsSaving(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No active session");
+
+      const response = await fetch("http://127.0.0.1:8000/api/itineraries/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          title: experience.trip_title || `Trip to ${destination}`,
+          destination: destination,
+          start_date: formData?.startDate || null,
+          end_date: formData?.endDate || null,
+          is_public: false,
+          ai_data: data
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save itinerary");
+      }
+
+      setSaveSuccess(true);
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1500);
+    } catch (error) {
+      console.error("Save error:", error);
+      alert("Failed to save itinerary. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const fallbackImage = (query: string) =>
     `https://placehold.co/600x400/1a1a2e/8A2BE2?text=${encodeURIComponent(query.slice(0, 60))}&font=raleway`;
@@ -184,13 +235,51 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
               </div>
 
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-white/10">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>Estimated Budget</span>
                   <span className="text-3xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     ${logistics.total_estimated_budget_usd.toLocaleString()}
                   </span>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-2 italic text-center uppercase tracking-widest">Per person · calculated by Logistics Agent</p>
+                <p className="text-[10px] text-gray-400 italic text-center uppercase tracking-widest mb-6 border-b border-gray-100 dark:border-white/5 pb-6">
+                  Per person · calculated by Logistics Agent
+                </p>
+
+                {/* Save to My Trips Action */}
+                {isAuthenticated ? (
+                  <motion.button
+                    whileHover={{ scale: saveSuccess ? 1 : 1.02 }}
+                    whileTap={{ scale: saveSuccess ? 1 : 0.98 }}
+                    onClick={handleSaveToMyTrips}
+                    disabled={isSaving || saveSuccess}
+                    className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all shadow-lg ${
+                      saveSuccess 
+                        ? "bg-emerald-500 text-white shadow-emerald-500/20" 
+                        : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-gray-900/10 dark:shadow-white/10"
+                    }`}
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    {isSaving ? (
+                      <div className="h-5 w-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    ) : saveSuccess ? (
+                      <>
+                        <CheckCircle2 className="h-5 w-5" />
+                        Saved to My Trips
+                      </>
+                    ) : (
+                      <>
+                        <Bookmark className="h-5 w-5" />
+                        Save to My Trips
+                      </>
+                    )}
+                  </motion.button>
+                ) : (
+                  <div className="text-center p-4 rounded-xl bg-[#00F0FF]/5 border border-[#00F0FF]/20">
+                    <p className="text-sm text-[#00F0FF]" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      <a href="/login" className="font-bold underline hover:text-[#00F0FF]/80">Log in</a> to save this itinerary to your collections.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

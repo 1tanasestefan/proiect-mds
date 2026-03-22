@@ -33,7 +33,7 @@ _DDGS_COOLDOWN = 3.0
 # ---------- AGENT DEFINITION ----------
 experience_agent = Agent(
     'groq:llama-3.3-70b-versatile',
-    output_type=str,
+    output_type=AgentOneOutput, # Use Pydantic model for native structured output
     retries=3,
     system_prompt=(
         "You are the 'Experience Guide', a premier Travel Concierge. "
@@ -41,23 +41,11 @@ experience_agent = Agent(
         "The number of days will be specified in the user prompt. "
 
         "CRITICAL RULES: "
-        "1. You MUST use `search_web` to find REAL place names. "
-        "2. Set `image_url` to an empty string for every activity. Images are handled by the backend. "
-        "3. Output ONLY a single valid JSON block. NO text before or after. "
-        "4. Every activity `type` MUST be exactly `experience`. "
-        "5. Structure: "
-        "{"
-        "  \"trip_title\": \"...\", "
-        "  \"vibe_summary\": \"...\", "
-        "  \"itinerary\": ["
-        "    {"
-        "      \"day_number\": 1, "
-        "      \"activities\": ["
-        "        {\"title\": \"REAL Venue Name\", \"description\": \"...\", \"time\": \"...\", \"cost\": \"...\", \"location\": \"...\", \"image_url\": \"\", \"type\": \"experience\"}"
-        "      ]"
-        "    }"
-        "  ]"
-        "}"
+        "1. You MUST use any available tools (like `search_web`) to find REAL, existing place names, venues, and neighborhoods. "
+        "2. Do NOT hallucinate venue names; if search fails, use well-known landmarks. "
+        "3. Every activity `type` MUST be exactly `experience`. "
+        "4. Set all `image_url` fields to an empty string (they are enriched by the backend search). "
+        "5. Respond with a perfectly structured trip plan matching the required schema."
     ),
 )
 
@@ -133,32 +121,6 @@ async def fetch_image_for_activity(activity_name: str, destination: str, activit
             return STATIC_FALLBACK
 
 
-# ---------- JSON PARSER ----------
-def _parse_itinerary_json(raw: str) -> AgentOneOutput:
-    """Extract and validate the JSON block from agent output."""
-    logger.debug(f"Parsing raw agent output (length: {len(raw)})")
-
-    cleaned = re.sub(r"<function.*?>.*?</function>", '"RECOVERED_URL"', raw)
-    cleaned = re.sub(r"```(?:json)?", "", cleaned).strip()
-
-    decoder = json.JSONDecoder()
-    pos = 0
-
-    while True:
-        match_pos = cleaned.find('{', pos)
-        if match_pos == -1:
-            break
-        try:
-            data, index = decoder.raw_decode(cleaned[match_pos:])
-            if isinstance(data, dict) and "trip_title" in data and "itinerary" in data:
-                logger.info("Valid itinerary JSON found.")
-                return AgentOneOutput(**data)
-            pos = match_pos + index
-        except (json.JSONDecodeError, ValueError):
-            pos = match_pos + 1
-
-    logger.error(f"No valid itinerary JSON. Raw: {raw[:500]}")
-    raise ValueError("No valid itinerary JSON block found in agent output.")
 
 
 # ---------- MAIN ENTRY POINT ----------
@@ -173,14 +135,43 @@ async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput
                 f"Travel dates: {user_input.start_date} to {user_input.end_date}. "
                 f"Origin: {user_input.origin}. "
                 f"Lifestyle: {user_input.lifestyle}, Budget: {user_input.budget}, "
-                f"Vibe: {user_input.vacationType}. Output ONLY raw JSON.",
+                f"Vibe: {user_input.vacationType}.",
                 deps=user_input
             ),
-            timeout=120
+            timeout=180 # Increased timeout for tool-calling loops
         )
 
-        logger.debug(f"RAW AGENT OUTPUT:\n{result.output}")
-        parsed = _parse_itinerary_json(result.output)
+        # 1. Access the output. It might be a model (if pydantic-ai worked) or a string (older versions)
+        output_obj = getattr(result, 'output', result)
+        
+        if isinstance(output_obj, AgentOneOutput):
+            logger.info("Agent provided structured data directly as AgentOneOutput.")
+            parsed = output_obj
+        else:
+            raw_text = str(output_obj)
+            logger.debug(f"Raw Agent Output (length {len(raw_text)}): {raw_text[:200]}...")
+
+            # 2. Bulletproof JSON Extraction
+            def extract_json(text: str):
+                match = re.search(r"(\{.*\})", text, re.DOTALL)
+                if match:
+                    try:
+                        return json.loads(match.group(1))
+                    except json.JSONDecodeError:
+                        pass
+                cleaned = re.sub(r"```(json)?", "", text).strip()
+                cleaned = re.sub(r"<function.*?>.*?</function>", "", cleaned, flags=re.DOTALL).strip()
+                try:
+                    return json.loads(cleaned)
+                except json.JSONDecodeError:
+                    return None
+
+            data = extract_json(raw_text)
+            if not data:
+                logger.error(f"Failed to extract JSON from: {raw_text}")
+                raise ValueError("No valid JSON found in agent output.")
+                
+            parsed = AgentOneOutput(**data)
 
         # --- IMAGE ENRICHMENT (DDGS ONLY) ---
         logger.info("Starting image enrichment (DDGS only)...")

@@ -1,14 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (token: string, user: User) => void;
-  logout: () => void;
+  session: Session | null;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -17,35 +17,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Check localStorage on mount
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    // 1. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // 2. Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-    router.push('/dashboard');
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = async () => {
+    setIsLoading(true);
+    await supabase.auth.signOut();
     router.push('/login');
   };
 
@@ -53,10 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        token,
-        login,
+        session,
         logout,
-        isAuthenticated: !!token,
+        isAuthenticated: !!session,
         isLoading,
       }}
     >

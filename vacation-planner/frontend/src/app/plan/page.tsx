@@ -62,13 +62,19 @@ export default function PlanTripPage() {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        // FastAPI validation errors come as {detail: [{loc, msg, type}, ...]}
-        let errorMsg = `Backend error: ${response.statusText}`;
-        if (Array.isArray(errorData.detail)) {
-          errorMsg = errorData.detail.map((e: any) => e.msg).join("; ");
-        } else if (typeof errorData.detail === "string") {
-          errorMsg = errorData.detail;
+        const errorData = await response.json().catch(() => null);
+        let errorMsg = `Backend error: ${response.status}`;
+        
+        if (errorData) {
+          if (typeof errorData === 'string') {
+            errorMsg = errorData;
+          } else if (errorData.detail) {
+            errorMsg = typeof errorData.detail === 'string' 
+              ? errorData.detail 
+              : JSON.stringify(errorData.detail);
+          } else {
+            errorMsg = JSON.stringify(errorData);
+          }
         }
         throw new Error(errorMsg);
       }

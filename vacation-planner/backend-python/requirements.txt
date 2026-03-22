@@ -6,3 +6,5 @@ groq
 ddgs
 python-dotenv
 loguru
+supabase
+python-jose[cryptography]

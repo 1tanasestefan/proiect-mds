@@ -47,10 +47,9 @@ def build_airbnb_link(destination: str, start_date: str, end_date: str) -> str:
 
 
 # ── Agent 2: The Logistics & Booking Agent ───────────────────────
-
 logistics_agent = Agent(
     'groq:llama-3.3-70b-versatile',
-    output_type=str,
+    output_type=TripLogistics, # Use Pydantic model for native structured output
     retries=3,
     system_prompt=(
         "You are the 'Logistics Agent', an elite Travel Booking Advisor. "
@@ -67,50 +66,13 @@ logistics_agent = Agent(
         "7. For booking_link fields, use EXACTLY the placeholder strings: "
         "\"SKYSCANNER_LINK\" for flights and \"BOOKING_LINK\" or \"AIRBNB_LINK\" for accommodations. "
         "The backend will replace these with real date-aware URLs.\n"
-        "8. Output ONLY a single valid JSON block matching this structure:\n"
-        "{\n"
-        '  "flights": [\n'
-        '    {"airline_type": "Low Cost (Wizz Air tier)", "estimated_price_usd": 80, '
-        '"description": "...", "booking_link": "SKYSCANNER_LINK"}\n'
-        "  ],\n"
-        '  "accommodations": [\n'
-        '    {"type": "Budget Hostel", "neighborhood": "Old Town", '
-        '"estimated_price_per_night_usd": 25, "booking_link": "BOOKING_LINK"}\n'
-        "  ],\n"
-        '  "total_estimated_budget_usd": 450\n'
-        "}\n"
-        "9. Output ONLY the JSON. NO text before or after."
+        "8. Return a perfectly structured logistics plan matching the required schema."
     ),
 )
 
 
 # ── JSON Parser ──────────────────────────────────────────────────
 
-def _parse_logistics_json(raw: str) -> TripLogistics:
-    """Extract and validate logistics JSON from the agent output."""
-    logger.debug(f"Parsing logistics output (length: {len(raw)})")
-
-    cleaned = re.sub(r"<function.*?>.*?</function>", '""', raw)
-    cleaned = re.sub(r"```(?:json)?", "", cleaned).strip()
-
-    decoder = json.JSONDecoder()
-    pos = 0
-
-    while True:
-        match_pos = cleaned.find('{', pos)
-        if match_pos == -1:
-            break
-        try:
-            data, index = decoder.raw_decode(cleaned[match_pos:])
-            if isinstance(data, dict) and "flights" in data and "accommodations" in data:
-                logger.info("Valid logistics JSON found.")
-                return TripLogistics(**data)
-            pos = match_pos + index
-        except (json.JSONDecodeError, ValueError):
-            pos = match_pos + 1
-
-    logger.error(f"No valid logistics JSON. Raw: {raw[:500]}")
-    raise ValueError("No valid logistics JSON found in agent output.")
 
 
 # ── Deep-Link Injection (Date-Aware) ─────────────────────────────
@@ -121,7 +83,7 @@ def _inject_booking_links(
 ) -> TripLogistics:
     """Replace placeholder strings with real date-aware deep-link URLs."""
 
-    # Inject flight links
+    # 1. Inject flight links
     updated_flights = []
     for f in logistics.flights:
         link = f.booking_link
@@ -134,10 +96,13 @@ def _inject_booking_links(
             )
         updated_flights.append(f.model_copy(update={"booking_link": link}))
 
-    # Inject accommodation links
+    # 2. Inject accommodation links
     updated_accom = []
     for a in logistics.accommodations:
         link = a.booking_link
+        if not link:
+            link = "BOOKING_LINK" # Fallback to default
+            
         if "BOOKING" in link.upper():
             link = build_booking_link(
                 user_input.destination,
@@ -149,7 +114,7 @@ def _inject_booking_links(
                 user_input.destination,
                 user_input.start_date,
                 user_input.end_date,
-            )
+                )
         else:
             link = build_booking_link(
                 user_input.destination,
@@ -196,11 +161,41 @@ async def generate_logistics(
 
         result = await asyncio.wait_for(
             logistics_agent.run(prompt),
-            timeout=60
+            timeout=120 # Increased timeout
         )
 
-        logger.debug(f"RAW LOGISTICS OUTPUT:\n{result.output}")
-        parsed = _parse_logistics_json(result.output)
+        # 1. Access the output. It might be a model (if pydantic-ai worked) or a string (older versions)
+        output_obj = getattr(result, 'output', result)
+        
+        if isinstance(output_obj, TripLogistics):
+            logger.info("Logistics agent provided structured data directly as TripLogistics.")
+            parsed = output_obj
+        else:
+            raw_text = str(output_obj)
+            logger.debug(f"Raw Logistics Output (length {len(raw_text)}): {raw_text[:200]}...")
+
+            # 2. Bulletproof JSON Extraction
+            def extract_json(text: str):
+                match = re.search(r"(\{.*\})", text, re.DOTALL)
+                if match:
+                    try:
+                        return json.loads(match.group(1))
+                    except json.JSONDecodeError:
+                        pass
+                cleaned = re.sub(r"```(json)?", "", text).strip()
+                cleaned = re.sub(r"<function.*?>.*?</function>", "", cleaned, flags=re.DOTALL).strip()
+                try:
+                    return json.loads(cleaned)
+                except json.JSONDecodeError:
+                    return None
+
+            data = extract_json(raw_text)
+            if not data:
+                logger.error(f"Failed to extract JSON from logistics: {raw_text}")
+                raise ValueError("No valid JSON found in logistics agent output.")
+                
+            parsed = TripLogistics(**data)
+        
 
         # Inject real date-aware booking URLs
         enriched = _inject_booking_links(parsed, user_input)

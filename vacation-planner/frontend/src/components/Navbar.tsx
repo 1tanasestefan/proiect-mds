@@ -55,6 +55,7 @@ export default function Navbar() {
             </span>
           </Link>
 
+
           {/* Links */}
           <div className="flex items-center gap-2">
             {links.map((link) => {
@@ -143,7 +144,7 @@ export default function Navbar() {
                     className="hidden sm:block text-sm font-medium text-gray-800 dark:text-white/90 max-w-[100px] truncate"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
-                    {user?.displayName}
+                    {user?.user_metadata?.display_name || user?.email?.split('@')[0]}
                   </span>
                 </div>
 
