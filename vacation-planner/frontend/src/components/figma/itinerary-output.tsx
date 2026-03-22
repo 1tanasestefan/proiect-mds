@@ -52,8 +52,8 @@ export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryDa
   const itineraryItems = data.itinerary || [];
   const destination = data.destination || formData?.destination || "";
 
-  const unsplashSource = (query: string) =>
-    `https://source.unsplash.com/1600x900/?${encodeURIComponent(query)}`;
+  const fallbackImage = (query: string) =>
+    `https://placehold.co/600x400/1a1a2e/8A2BE2?text=${encodeURIComponent(query.slice(0, 60))}&font=raleway`;
 
   return (
     <section className="min-h-screen bg-gray-100 dark:bg-[#0A0A0A] py-24 px-8 relative overflow-hidden">
@@ -215,7 +215,7 @@ export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryDa
                                 <ImageWithFallback
                                   src={(activity.image_url || activity.image) as string}
                                   alt={activity.title}
-                                  fallbackSrc={unsplashSource(`${destination} ${activity.title}`.trim())}
+                                  fallbackSrc={fallbackImage(`${destination} ${activity.title}`.trim())}
                                   loading="lazy"
                                   referrerPolicy="no-referrer"
                                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
