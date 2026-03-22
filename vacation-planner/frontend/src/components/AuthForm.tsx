@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
+import type { AxiosError } from 'axios';
 import Link from 'next/link';
 
 interface AuthFormProps {
@@ -31,8 +32,12 @@ export default function AuthForm({ mode }: AuthFormProps) {
       const { data } = await api.post(endpoint, payload);
       login(data.token, { email: data.email, displayName: data.displayName });
       
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'An error occurred');
+    } catch (err: unknown) {
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      setError(
+        axiosErr.response?.data?.message ||
+          (err instanceof Error ? err.message : 'An error occurred')
+      );
     } finally {
       setLoading(false);
     }
@@ -85,7 +90,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-2 mt-1 border border-gray-300 dark:border-white/20 rounded-md bg-white dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/40 focus:ring-indigo-500 focus:border-indigo-500"
-            placeholder="••••••••"
+            placeholder="********"
           />
         </div>
 
@@ -101,7 +106,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <p className="text-sm text-center text-gray-600 dark:text-gray-400">
         {mode === 'login' ? (
           <>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
               Sign up
             </Link>

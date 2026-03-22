@@ -36,7 +36,7 @@ export function InspirationSection() {
             className="text-[clamp(3rem,8vw,6.5rem)] font-black leading-[0.9] mb-20 text-white"
             style={{ fontFamily: "'Archivo Black', sans-serif" }}
           >
-            Travel isn't just
+            Travel isn&apos;t just
             <br />
             about{" "}
             <span className="bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] bg-clip-text text-transparent">

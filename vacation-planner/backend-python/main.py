@@ -3,6 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from models import UserInput, AgentOneOutput
 from agent_experience import generate_experience_itinerary
 from loguru import logger
+import sys
+
+# Configure logger to show DEBUG messages
+logger.remove()
+logger.add(sys.stderr, level="DEBUG")
 
 app = FastAPI(title="AI Travel Planner Backend (Free Stack)")
 

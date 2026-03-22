@@ -125,7 +125,7 @@ export function DiscoverSection() {
               >
                 Discover places
                 <br />
-                you didn't know{" "}
+                you didn&apos;t know{" "}
                 <span className="bg-gradient-to-r from-[#8A2BE2] to-[#00F0FF] bg-clip-text text-transparent">
                   existed
                 </span>
@@ -155,7 +155,7 @@ export function DiscoverSection() {
               >
                 Your next favorite place might be somewhere
                 <br />
-                you've never even searched for.
+                you&apos;ve never even searched for.
               </p>
             </FadeUp>
           </div>

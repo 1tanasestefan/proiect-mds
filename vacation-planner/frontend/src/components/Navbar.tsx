@@ -29,11 +29,15 @@ export default function Navbar() {
       ];
 
   return (
-    <motion.nav
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
-      className="fixed top-6 inset-x-0 mx-auto z-50 w-[90%] max-w-7xl"
+    <nav
+      className="fixed top-6 inset-x-0 mx-auto z-50 w-[90%] max-w-7xl reveal-down"
+      style={
+        {
+          "--reveal-delay": "60ms",
+          "--reveal-duration": "900ms",
+          "--reveal-y": "-22px",
+        } as React.CSSProperties
+      }
     >
       <div className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200/60 dark:border-white/10 rounded-[24px] px-6 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.10)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         <div className="flex items-center justify-between">
@@ -160,6 +164,6 @@ export default function Navbar() {
 
         </div>
       </div>
-    </motion.nav>
+    </nav>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
-import { motion, useInView } from "motion/react";
-import { useRef, ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, ReactNode } from "react";
 
 interface FadeUpProps {
   children: ReactNode;
@@ -19,17 +18,44 @@ export function FadeUp({
   className = "",
 }: FadeUpProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.15 });
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting) {
+          setRevealed(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const style = useMemo(
+    () =>
+      ({
+        "--reveal-delay": `${Math.max(0, delay) * 1000}ms`,
+        "--reveal-duration": `${Math.max(0.1, duration) * 1000}ms`,
+        "--reveal-y": `${y}px`,
+      } as React.CSSProperties),
+    [delay, duration, y]
+  );
 
   return (
-    <motion.div
+    <div
       ref={ref}
-      initial={{ y, opacity: 0 }}
-      animate={inView ? { y: 0, opacity: 1 } : {}}
-      transition={{ duration, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={className}
+      className={`${className} ${revealed ? "reveal-up" : ""}`}
+      style={style}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

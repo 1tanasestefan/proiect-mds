@@ -1,35 +1,57 @@
 import { motion } from "motion/react";
-import { Brain, MapPin, Plane, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Brain, Plane, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+const PHASES = [
+  { label: "Experience Guide: Initializing destination analysis...", agent: "experience" },
+  { label: "Logistics Agent: Checking flight availability and weather data...", agent: "logistics" },
+  { label: "Experience Guide: Searching for hidden gems and local favorites...", agent: "experience" },
+  { label: "Logistics Agent: Optimizing travel routes and transit times...", agent: "logistics" },
+  { label: "Experience Guide: Curating exclusive dining and cultural events...", agent: "experience" },
+  { label: "Multi-Agent: Synchronizing itinerary components...", agent: "both" },
+  { label: "Experience Guide: Finalizing your luxury vibe summary...", agent: "experience" },
+  { label: "Logistics Agent: Calculating estimated budget windows...", agent: "logistics" },
+  { label: "System: Generating your cinematic travel preview...", agent: "both" },
+] as const;
 
 export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
   const [progress, setProgress] = useState(0);
   const [currentPhase, setCurrentPhase] = useState(0);
+  const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  const shouldAutoCompleteRef = useRef(Boolean(onComplete));
+  const currentPhaseRef = useRef(currentPhase);
+  const intervalIdsRef = useRef<{ phase?: ReturnType<typeof setInterval>; progress?: ReturnType<typeof setInterval> }>({});
 
-  const phases = [
-    { label: "Experience Guide: Initializing destination analysis...", agent: "experience" },
-    { label: "Logistics Agent: Checking flight availability and weather data...", agent: "logistics" },
-    { label: "Experience Guide: Searching for hidden gems and local favorites...", agent: "experience" },
-    { label: "Logistics Agent: Optimizing travel routes and transit times...", agent: "logistics" },
-    { label: "Experience Guide: Curating exclusive dining and cultural events...", agent: "experience" },
-    { label: "Multi-Agent: Synchronizing itinerary components...", agent: "both" },
-    { label: "Experience Guide: Finalizing your luxury vibe summary...", agent: "experience" },
-    { label: "Logistics Agent: Calculating estimated budget windows...", agent: "logistics" },
-    { label: "System: Generating your cinematic travel preview...", agent: "both" },
-  ];
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+    shouldAutoCompleteRef.current = Boolean(onComplete);
+  }, [onComplete]);
+
+  useEffect(() => {
+    currentPhaseRef.current = currentPhase;
+  }, [currentPhase]);
 
   useEffect(() => {
     const phaseInterval = setInterval(() => {
       setCurrentPhase((prev) => {
-        if (prev < phases.length - 1) {
+        if (prev < PHASES.length - 1) {
           return prev + 1;
         }
         return prev;
       });
     }, 4000); // 4 seconds per phase for better readability
+    intervalIdsRef.current.phase = phaseInterval;
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
+        const shouldAutoComplete = shouldAutoCompleteRef.current;
+        const isLastPhase = currentPhaseRef.current >= PHASES.length - 1;
+
+        if (shouldAutoComplete && isLastPhase) {
+          return prev >= 100 ? 100 : Math.min(100, prev + 1);
+        }
+
         if (prev >= 98) {
           // If we reach 99, stay there but allow it to finish if the parent switches view
           return prev >= 99.5 ? 99.5 : prev + 0.05; 
@@ -37,12 +59,28 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
         return prev + 1;
       });
     }, 150);
+    intervalIdsRef.current.progress = progressInterval;
 
     return () => {
       clearInterval(phaseInterval);
       clearInterval(progressInterval);
     };
   }, []); // Removed onComplete dependency to avoid unnecessary resets
+
+  useEffect(() => {
+    if (!shouldAutoCompleteRef.current) return;
+    if (completedRef.current) return;
+
+    const atEnd = currentPhase >= PHASES.length - 1 && progress >= 100;
+    if (!atEnd) return;
+
+    completedRef.current = true;
+    if (intervalIdsRef.current.phase) clearInterval(intervalIdsRef.current.phase);
+    if (intervalIdsRef.current.progress) clearInterval(intervalIdsRef.current.progress);
+
+    const id = setTimeout(() => onCompleteRef.current?.(), 400);
+    return () => clearTimeout(id);
+  }, [currentPhase, progress]);
 
   return (
     <section className="min-h-screen bg-gray-50 dark:bg-[#050505] flex items-center justify-center px-8 relative overflow-hidden">
@@ -219,22 +257,22 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
               className="text-4xl font-bold text-gray-900 dark:text-white mb-4"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
-              {phases[currentPhase].label}
+              {PHASES[currentPhase].label}
             </h3>
             <div className="flex items-center justify-center gap-2">
-              {phases[currentPhase].agent === "experience" && (
+              {PHASES[currentPhase].agent === "experience" && (
                 <span className="text-[#8A2BE2] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                   <Sparkles className="inline h-4 w-4 mr-1" />
                   Experience Agent
                 </span>
               )}
-              {phases[currentPhase].agent === "logistics" && (
+              {PHASES[currentPhase].agent === "logistics" && (
                 <span className="text-[#00F0FF] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                   <Plane className="inline h-4 w-4 mr-1" />
                   Logistics Agent
                 </span>
               )}
-              {phases[currentPhase].agent === "both" && (
+              {PHASES[currentPhase].agent === "both" && (
                 <span className="text-gray-500 dark:text-white/60 font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                   <Brain className="inline h-4 w-4 mr-1" />
                   Dual AI Processing

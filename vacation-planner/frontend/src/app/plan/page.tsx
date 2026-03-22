@@ -7,56 +7,93 @@ import { AIProcessing } from '@/components/figma/ai-processing';
 import { ItineraryOutput, ItineraryData } from '@/components/figma/itinerary-output';
 
 type ViewState = 'INPUT' | 'PROCESSING' | 'RESULTS';
+type TripFormData = {
+  budget: string;
+  lifestyle: string;
+  vacationType: string;
+  destination: string;
+  travelers: string;
+};
 
 export default function PlanTripPage() {
   const [viewState, setViewState] = useState<ViewState>('INPUT');
-  const [formData, setFormData] = useState<Record<string, any> | null>(null);
-  
-  // Dummy data for the Itinerary Output Reveal
-  const dummyItinerary: ItineraryData = {
-    destination: formData?.destination || "Tokyo, Japan",
-    travelers: formData?.travelers || "2",
-    budget: formData?.budget || "medium",
-    totalCost: 2450,
-    duration: 5,
-    days: [
-      {
-        day: 1,
-        title: "Arrival & Neon Dreams",
-        activities: [
-          { type: "flight", title: "Flight Arrival", time: "14:00", cost: "$850", description: "JL002 from JFK to HND", image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2674&auto=format&fit=crop", agent: "logistics" },
-          { type: "hotel", title: "Check-in at Shinjuku Granbell", time: "16:00", cost: "$200/night", description: "Premium City View Room", image: "https://images.unsplash.com/photo-1542314831-c6a4d2706864?q=80&w=3122&auto=format&fit=crop", agent: "logistics" },
-          { type: "experience", title: "Omoide Yokocho Dinner", time: "19:00", cost: "$45", description: "Yakitori and local vibes in the famous memory lane.", image: "https://images.unsplash.com/photo-1551641506-ee5bf4cb45f1?q=80&w=2684&auto=format&fit=crop", agent: "experience" },
-        ]
-      },
-      {
-        day: 2,
-        title: "Culture & Cybernetics",
-        activities: [
-          { type: "experience", title: "Meiji Shrine Morning Walk", time: "09:00", cost: "Free", description: "Serene walk through the sacred forest.", image: "https://images.unsplash.com/photo-1526481280693-3bfa7568e0f3?q=80&w=2671&auto=format&fit=crop", agent: "experience" },
-          { type: "experience", title: "Akihabara Tech Exploration", time: "14:00", cost: "$120", description: "Arcades, maid cafes, and electronics.", image: "https://images.unsplash.com/photo-1542051812871-7575116fc53e?q=80&w=2670&auto=format&fit=crop", agent: "experience" },
-        ]
+  const [formData, setFormData] = useState<TripFormData | null>(null);
+  const [itineraryData, setItineraryData] = useState<ItineraryData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const ITINERARY_API_URL =
+    process.env.NEXT_PUBLIC_ITINERARY_API_URL ||
+    "http://127.0.0.1:8000/api/generate-itinerary";
+
+  const handleGenerateItinerary = async (data: TripFormData) => {
+    setFormData(data);
+    setItineraryData(null);
+    setError(null);
+    setViewState('PROCESSING');
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 100000); // 100s timeout
+
+    try {
+      const response = await fetch(ITINERARY_API_URL, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...data,
+          travelers: parseInt(data.travelers, 10) || 1,
+        }),
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Backend error: ${response.statusText}`);
       }
-    ]
+
+      const result = (await response.json()) as ItineraryData;
+      setItineraryData(result);
+      setViewState('RESULTS');
+    } catch (err: unknown) {
+      console.error("Failed to generate itinerary:", err);
+      setError(err instanceof Error ? err.message : "Something went wrong while crafting your journey. Please try again.");
+      setViewState('INPUT');
+    }
   };
 
   return (
     <ProtectedRoute>
       <div className="flex flex-col min-h-screen text-white">
         {viewState === 'INPUT' && (
-          <InputFormSection onSubmit={(data: any) => {
-            setFormData(data);
-            setViewState('PROCESSING');
-          }} />
+          <div className="relative">
+            {error && (
+              <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-xl px-4">
+                <div className="backdrop-blur-xl bg-red-500/10 border border-red-500/20 text-red-200 px-6 py-4 rounded-2xl shadow-2xl flex items-center justify-between">
+                  <span>{error}</span>
+                  <button onClick={() => setError(null)} className="opacity-50 hover:opacity-100 italic transition-opacity">dismiss</button>
+                </div>
+              </div>
+            )}
+            <InputFormSection onSubmit={handleGenerateItinerary} />
+          </div>
         )}
 
         {viewState === 'PROCESSING' && (
-          <AIProcessing onComplete={() => setViewState('RESULTS')} />
+          <AIProcessing />
         )}
 
-        {viewState === 'RESULTS' && (
+        {viewState === 'RESULTS' && itineraryData && (
           <ItineraryOutput 
-            data={dummyItinerary} 
+            data={itineraryData}
+            formData={formData}
+            onReset={() => {
+              setViewState('INPUT');
+              setItineraryData(null);
+              setError(null);
+            }}
           />
         )}
       </div>

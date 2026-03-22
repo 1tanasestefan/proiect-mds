@@ -3,6 +3,7 @@ import os
 import asyncio
 import json
 import re
+from urllib.parse import quote_plus, urlparse
 from dotenv import load_dotenv
 
 # Absolute first thing: silence the DDGS rename warning
@@ -19,38 +20,52 @@ search_lock = asyncio.Lock()
 
 load_dotenv()
 
-# output_type=str avoids registering a `final_result` tool which conflicts with
-# the `search_web` tool on Groq and triggers tool_use_failed errors.
-# We parse and validate the JSON manually after the run.
+def _unsplash_source_url(query: str) -> str:
+    # Reliable, hotlink-friendly image source that works well in the browser.
+    return f"https://source.unsplash.com/1600x900/?{quote_plus(query)}"
+
+def _normalize_image_url(url: str | None, *, query: str) -> str:
+    """Return a browser-loadable https image URL (falls back to Unsplash source)."""
+    if not url or not isinstance(url, str):
+        return _unsplash_source_url(query)
+
+    cleaned = url.strip().strip('"').strip("'")
+    if not cleaned or cleaned == "RECOVERED_URL" or "example.com" in cleaned:
+        return _unsplash_source_url(query)
+
+    parsed = urlparse(cleaned)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return _unsplash_source_url(query)
+
+    # Try to upgrade http to https where possible.
+    if parsed.scheme == "http":
+        cleaned = "https://" + cleaned[len("http://") :]
+
+    return cleaned
+
+# We use output_type=str for compatibility and handle parsing manually to recover from hallucinations.
 experience_agent = Agent(
     'groq:llama-3.3-70b-versatile',
     output_type=str,
     retries=3,
     system_prompt=(
-        "You are the 'Experience Guide', a premier Luxury Travel Concierge. "
-        "Your mission is to provide an authentic, high-end itinerary for the specified destination. "
+        "You are the 'Experience Guide', a premier Travel Concierge. "
+        "Your mission is to provide an authentic, high-end 3-day itinerary for the specified destination. "
 
         "CRITICAL RULES: "
-        "1. NEVER use placeholder text. Find REAL venue names using the `search_web` tool. "
-        "2. You MUST use the `search_web` tool for every request to find current restaurants, hotels, and spots. "
-        "3. Your ONLY output must be a single valid JSON block. No conversational filler, no markdown fences, no explanations. "
-        "4. Every activity 'type' MUST be exactly 'experience'. "
-        "5. The output MUST exactly match this structure: "
+        "1. MISSION: Discover REAL venues and REAL images. "
+        "2. FLOW: You MUST use `search_web` for venues and `search_images` for EVERY venue. "
+        "3. OUTPUT: Output ONLY a single valid JSON block. NO conversational filler, NO meta-tags like <function>. "
+        "4. NO HALLUCINATIONS: Do NOT write things like '<function=search_images>...' in the output. Perform the search and put the REAL URL in the `image_url` field. "
+        "5. Structure: "
         "{"
-        "  \"trip_title\": \"Catchy Title\", "
-        "  \"vibe_summary\": \"Overall summary of the trip matched to user\", "
+        "  \"trip_title\": \"...\", "
+        "  \"vibe_summary\": \"...\", "
         "  \"itinerary\": ["
         "    {"
         "      \"day_number\": 1, "
         "      \"activities\": ["
-        "        {"
-        "          \"title\": \"Venue Name\", "
-        "          \"description\": \"Specific description based on REAL venue details\", "
-        "          \"time\": \"Morning/Afternoon/Evening\", "
-        "          \"cost\": \"Estimated cost in local currency or relative range\", "
-        "          \"location\": \"Specific neighborhood or address\", "
-        "          \"type\": \"experience\""
-        "        }"
+        "        {\"title\": \"...\", \"description\": \"...\", \"time\": \"...\", \"cost\": \"...\", \"location\": \"...\", \"image_url\": \"...\", \"type\": \"experience\"}"
         "      ]"
         "    }"
         "  ]"
@@ -58,92 +73,97 @@ experience_agent = Agent(
     ),
 )
 
-
 def _parse_itinerary_json(raw: str) -> AgentOneOutput:
-    """Extract and validate the JSON block from the agent's raw string output."""
-    # Strip markdown code fences if the model wrapped the output anyway
-    cleaned = re.sub(r"```(?:json)?", "", raw).strip()
-    # Find the outermost { ... } block
-    match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-    if not match:
-        raise ValueError("No JSON object found in agent output.")
-    data = json.loads(match.group())
-    return AgentOneOutput(**data)
+    """Extract and validate the JSON block, recovering from tool hallucinations."""
+    logger.debug(f"Parsing raw agent output (length: {len(raw)})")
+    
+    # Hallucination Recovery: Strip any <function>... fragments the AI might have shard into the output
+    # Example: "image_url": <function=search_images>{"query": "..."}</function> -> "image_url": "PLACEHOLDER"
+    # We first try to clean up these to make it valid JSON
+    cleaned = re.sub(r"<function.*?>.*?</function>", '"RECOVERED_URL"', raw)
+    # Also strip markdown code fences
+    cleaned = re.sub(r"```(?:json)?", "", cleaned).strip()
+    
+    decoder = json.JSONDecoder()
+    pos = 0
+    found_any = False
+    
+    while True:
+        match_pos = cleaned.find('{', pos)
+        if match_pos == -1:
+            break
+        
+        try:
+            data, index = decoder.raw_decode(cleaned[match_pos:])
+            found_any = True
+            
+            # Specifically check for our expected root keys
+            if isinstance(data, dict) and "trip_title" in data and "itinerary" in data:
+                logger.info("VALID ITINERARY JSON FOUND AFTER RECOVERY.")
+                return AgentOneOutput(**data)
+            
+            pos = match_pos + index
+        except (json.JSONDecodeError, ValueError):
+            pos = match_pos + 1
+            
+    if not found_any:
+        logger.error(f"NO JSON OBJECTS FOUND. Raw: {raw[:500]}...")
+    else:
+        logger.error(f"Found JSON blocks but none were valid itineraries. Raw sample: {cleaned[:500]}...")
+        
+    raise ValueError("No valid itinerary JSON block found in agent output.")
 
 @experience_agent.tool
 async def search_web(ctx: RunContext[UserInput], query: str) -> str:
-    """
-    Search the web using DDGS in a thread-safe serialized way using asyncio.to_thread.
-    """
+    """Search the web using DDGS in a thread-safe serialized way."""
     async with search_lock:
         try:
             logger.info(f"Initiating search: {query}")
-            
             def run_sync_search():
                 with DDGS() as ddgs:
                     return list(ddgs.text(query, max_results=5))
-
-            # Individual search timeout
-            try:
-                results = await asyncio.wait_for(
-                    asyncio.to_thread(run_sync_search),
-                    timeout=15
-                )
-            except asyncio.TimeoutError:
-                logger.warning(f"Search timed out for query: {query}")
-                return "Search was taking too long. Use iconic landmarks iconic to that specific city instead."
-
-            if not results:
-                logger.warning(f"No results found for query: {query}")
-                return "No search results found. Proceed with iconic local landmark names for this destination."
-                
-            context_str = ""
-            for r in results:
-                context_str += f"Title: {r.get('title')}\nSnippet: {r.get('body')}\nURL: {r.get('href')}\n\n"
-            
-            logger.info(f"Search completed successfully for: {query}")
-            return context_str
-            
+            results = await asyncio.wait_for(asyncio.to_thread(run_sync_search), timeout=15)
+            if not results: return "No results found."
+            return "\n\n".join([f"Title: {r['title']}\nSnippet: {r['body']}" for r in results])
         except Exception as e:
-            logger.error(f"Search tool encountered an error: {e}")
-            return "Search tool is temporarily unavailable. Use well-known highlights for this destination."
+            logger.error(f"Search tool error: {e}")
+            return "Search tool unavailable."
+
+@experience_agent.tool
+async def search_images(ctx: RunContext[UserInput], query: str) -> str:
+    """Return a reliable image URL for the browser (Unsplash source)."""
+    # Many arbitrary image hosts block hotlinking; this keeps the UI reliable.
+    return _unsplash_source_url(query)
 
 async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput:
-    """
-    Main entry point for itinerary generation with a global time safety boundary.
-    """
+    """Entry point for itinerary generation."""
     try:
         logger.info(f"Starting itinerary generation for: {user_input.destination}")
-
-        # Total generation budget: 90 seconds
         result = await asyncio.wait_for(
             experience_agent.run(
-                f"Create a REAL 3-day itinerary for {user_input.destination}. "
+                f"Create a 3-day itinerary for {user_input.destination}. "
                 f"Lifestyle: {user_input.lifestyle}, Budget: {user_input.budget}, Vibe: {user_input.vacationType}. "
-                f"Group size: {user_input.travelers}. Use `search_web` for REAL venues. "
-                "REMINDER: Output ONLY a raw JSON object — no markdown, no explanation.",
+                "Output ONLY raw JSON.",
                 deps=user_input
             ),
-            timeout=90
+            timeout=120
         )
+        logger.debug(f"RAW AGENT OUTPUT:\n{result.output}")
+        parsed = _parse_itinerary_json(result.output)
 
-        logger.info(f"Successfully generated itinerary for {user_input.destination}")
-        return _parse_itinerary_json(result.output)
+        # Ensure every activity has a loadable image URL to prevent broken UI cards.
+        normalized_days = []
+        for day in parsed.itinerary:
+            normalized_acts = []
+            for act in day.activities:
+                q = f"{user_input.destination} {act.title}"
+                normalized_acts.append(
+                    act.model_copy(update={"image_url": _normalize_image_url(act.image_url, query=q)})
+                )
+            normalized_days.append(day.model_copy(update={"activities": normalized_acts}))
 
-    except asyncio.TimeoutError:
-        logger.error(f"Generation timed out for {user_input.destination}")
-        raise HTTPException(
-            status_code=504,
-            detail="The concierge is taking longer than usual. Please try again or choose a more major city."
-        )
-    except (json.JSONDecodeError, ValueError) as e:
-        logger.error(f"JSON parse/validation failed: {e}")
-        raise HTTPException(status_code=500, detail="The AI returned an unreadable itinerary. Please try again.")
+        return parsed.model_copy(update={"itinerary": normalized_days})
     except Exception as e:
         logger.error(f"Itinerary generation failed: {e}")
-        if isinstance(e, HTTPException):
-            raise e
-        detail = str(e)
-        if "retries" in detail.lower():
-            detail = "The AI had trouble formatting your itinerary. Please try one more time."
-        raise HTTPException(status_code=500, detail=detail)
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status_code=500, detail=str(e))

@@ -9,7 +9,7 @@ import {
   Sparkles,
   ArrowRight
 } from "lucide-react";
-import Image from "next/image";
+import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 
 export interface Activity {
   type: "flight" | "hotel" | "experience";
@@ -20,6 +20,7 @@ export interface Activity {
   location?: string;
   agent?: "logistics" | "experience";
   image?: string;
+  image_url?: string;
   airline?: string;
   flightNumber?: string;
   nights?: number;
@@ -39,16 +40,20 @@ export interface ItineraryData {
   budget?: string;
 }
 
-export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryData, formData?: any, onReset: () => void }) {
+type TripFormData = {
+  budget?: string;
+  lifestyle?: string;
+  vacationType?: string;
+  destination?: string;
+  travelers?: number | string;
+};
+
+export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryData, formData?: TripFormData | null, onReset: () => void }) {
   const itineraryItems = data.itinerary || [];
-  
-  // Helper to enrich activities with agent tags and icons
-  const processActivities = (activities: Activity[]) => {
-    return activities.map(act => ({
-      ...act,
-      agent: act.type === 'experience' ? 'experience' : 'logistics' as const
-    }));
-  };
+  const destination = data.destination || formData?.destination || "";
+
+  const unsplashSource = (query: string) =>
+    `https://source.unsplash.com/1600x900/?${encodeURIComponent(query)}`;
 
   return (
     <section className="min-h-screen bg-gray-100 dark:bg-[#0A0A0A] py-24 px-8 relative overflow-hidden">
@@ -99,7 +104,7 @@ export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryDa
         </motion.div>
 
         {/* Split Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-8">
           {/* Left Sticky Sidebar - Summary */}
           <motion.div
             initial={{ x: -50, opacity: 0 }}
@@ -158,27 +163,10 @@ export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryDa
                 <p className="text-[10px] text-gray-400 mt-2 italic text-center uppercase tracking-widest">Pricing locked by Logistics Agent</p>
               </div>
             </div>
-
-            {/* Map Placeholder */}
-            <div className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[24px] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] aspect-square relative overflow-hidden">
-              <Image 
-                src="https://images.unsplash.com/photo-1679766826593-738e9b6338c6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxleG90aWMlMjB0cm9waWNhbCUyMGJlYWNoJTIwcGFyYWRpc2UlMjBjaW5lbWF0aWN8ZW58MXx8fHwxNzczNjcyODQ5fDA&ixlib=rb-4.1.0&q=80&w=1080"
-                alt="Destination"
-                fill
-                sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-cover rounded-[16px]"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent rounded-[16px]" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <p className="text-white text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                  {data.destination}
-                </p>
-              </div>
-            </div>
           </motion.div>
 
           {/* Right Scrollable Content - Bento Grid */}
-          <div className="lg:col-span-2 space-y-12">
+          <div className="space-y-12">
             {itineraryItems.map((dayItem, dayIndex) => (
               <motion.div
                 key={dayItem.day_number}
@@ -204,57 +192,81 @@ export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryDa
                   {dayItem.activities.map((activity, actIndex) => (
                     <motion.div
                       key={actIndex}
-                      whileHover={{ scale: 1.02, y: -4 }}
-                      className={`backdrop-blur-xl bg-white/80 dark:bg-white/5 border rounded-[24px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] ${
+                      whileHover={{ y: -4 }}
+                      className={`group backdrop-blur-xl bg-white/80 dark:bg-white/5 border rounded-[24px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 ${
                         activity.agent === "logistics" 
                           ? "border-[#00F0FF]/20" 
                           : "border-[#8A2BE2]/20"
                       } ${
-                        activity.type === "experience" && activity.image
-                          ? "md:col-span-2 h-80"
+                        activity.type === "experience" && (activity.image_url || activity.image)
+                          ? "md:col-span-2 min-h-[320px]"
                           : "h-64"
                       }`}
                     >
                       {activity.type === "experience" ? (
-                        // Experience Card with Image
-                        <div className="relative h-full">
-                          {activity.image ? (
-                            <Image 
-                              src={activity.image} 
-                              alt={activity.title}
-                              fill
-                              sizes="(max-width: 768px) 100vw, 50vw"
-                              className="object-cover"
-                            />
-                          ) : (
-                             // Fallback colorful background if no image
-                             <div className="absolute inset-0 bg-gradient-to-br from-[#8A2BE2]/20 to-[#FF1493]/20" />
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                          <div className="relative h-full flex flex-col justify-end p-8">
+                        // Experience Card Redesign
+                        <div className="flex flex-col md:flex-row h-full">
+                          {/* Image Section */}
+                          <div className={`relative overflow-hidden ${
+                            (activity.image_url || activity.image) ? "md:w-2/5 min-h-[200px] md:min-h-full" : "w-0"
+                          }`}>
+                            {(activity.image_url || activity.image) ? (
+                              <>
+                                <ImageWithFallback
+                                  src={(activity.image_url || activity.image) as string}
+                                  alt={activity.title}
+                                  fallbackSrc={unsplashSource(`${destination} ${activity.title}`.trim())}
+                                  loading="lazy"
+                                  referrerPolicy="no-referrer"
+                                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/10 dark:to-[#0A0A0A]/20" />
+                              </>
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-br from-[#00F0FF]/20 to-[#8A2BE2]/20 flex items-center justify-center">
+                                <Sparkles className="h-12 w-12 text-white/20 animate-pulse" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Content Section */}
+                          <div className={`flex flex-col p-8 ${(activity.image_url || activity.image) ? "md:w-3/5" : "w-full"}`}>
                             <div className="flex items-center gap-2 mb-3">
-                              <div className="px-3 py-1 rounded-full bg-[#8A2BE2]/20 backdrop-blur-sm border border-[#8A2BE2]/30">
+                              <div className="px-3 py-1 rounded-full bg-[#8A2BE2]/10 dark:bg-[#8A2BE2]/20 backdrop-blur-sm border border-[#8A2BE2]/30">
                                 <Sparkles className="h-3 w-3 text-[#8A2BE2] inline mr-1" />
                                 <span className="text-[#8A2BE2] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                  Experience Agent
+                                  Experience
                                 </span>
                               </div>
                             </div>
-                            <h4 className="text-3xl font-bold text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            
+                            <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-[#8A2BE2] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                               {activity.title}
                             </h4>
-                            <p className="text-white/80 mb-3 line-clamp-2" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            
+                            <p className="text-gray-500 dark:text-white/70 mb-6 line-clamp-3 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
                               {activity.description}
                             </p>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 text-white/80">
-                                <Clock className="h-4 w-4" />
-                                <span className="text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>{activity.time}</span>
+                            
+                            <div className="mt-auto flex items-center justify-between">
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2 text-gray-400 dark:text-white/40">
+                                  <Clock className="h-3.5 w-3.5" />
+                                  <span className="text-xs uppercase tracking-wider font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{activity.time}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-gray-400 dark:text-white/40">
+                                  <MapPin className="h-3.5 w-3.5" />
+                                  <span className="text-xs truncate max-w-[150px]" style={{ fontFamily: "'Inter', sans-serif" }}>{activity.location}</span>
+                                </div>
                               </div>
+                              
                               {activity.cost && (
-                                <span className="text-xl font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                                  {activity.cost}
-                                </span>
+                                <div className="text-right text-gray-900 dark:text-white">
+                                  <p className="text-[10px] uppercase tracking-tighter text-gray-400">Est. Cost</p>
+                                  <span className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                                    {activity.cost}
+                                  </span>
+                                </div>
                               )}
                             </div>
                           </div>

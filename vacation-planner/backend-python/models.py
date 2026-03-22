@@ -14,6 +14,7 @@ class Activity(BaseModel):
     time: str = Field(..., description="Suggested time of day or duration")
     cost: str = Field(..., description="Estimated cost or 'Free'")
     location: str = Field(..., description="Name of the place or neighborhood")
+    image_url: Optional[str] = Field(default=None, description="URL of the location image")
     type: Literal['experience'] = Field('experience', description="Type of the activity")
 
 class DailyItinerary(BaseModel):

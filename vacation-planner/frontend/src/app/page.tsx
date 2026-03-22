@@ -11,14 +11,25 @@ import { EmotionalSection } from '@/components/landing/EmotionalSection';
 import { LandingCTA } from '@/components/landing/LandingCTA';
 
 type ViewState = 'HERO' | 'INPUT' | 'PROCESSING' | 'RESULTS';
+type TripFormData = {
+  budget: string;
+  lifestyle: string;
+  vacationType: string;
+  destination: string;
+  travelers: string;
+};
 
 export default function Home() {
   const [viewState, setViewState] = useState<ViewState>('HERO');
-  const [formData, setFormData] = useState<Record<string, any> | null>(null);
-  const [itineraryData, setItineraryData] = useState<any>(null);
+  const [formData, setFormData] = useState<TripFormData | null>(null);
+  const [itineraryData, setItineraryData] = useState<ItineraryData | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const ITINERARY_API_URL =
+    process.env.NEXT_PUBLIC_ITINERARY_API_URL ||
+    "http://127.0.0.1:8000/api/generate-itinerary";
   
-  const handleGenerateItinerary = async (data: any) => {
+  const handleGenerateItinerary = async (data: TripFormData) => {
     setFormData(data);
     setItineraryData(null); // Clear previous results
     setError(null);         // Clear previous errors
@@ -28,7 +39,7 @@ export default function Home() {
     const timeoutId = setTimeout(() => controller.abort(), 100000); // 100s timeout
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/generate-itinerary", {
+      const response = await fetch(ITINERARY_API_URL, {
         method: "POST",
         signal: controller.signal,
         headers: {
@@ -47,12 +58,12 @@ export default function Home() {
         throw new Error(errorData.detail || `Backend error: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as ItineraryData;
       setItineraryData(result);
       setViewState('RESULTS');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to generate itinerary:", err);
-      setError(err.message || "Something went wrong while crafting your journey. Please try again.");
+      setError(err instanceof Error ? err.message : "Something went wrong while crafting your journey. Please try again.");
       setViewState('INPUT');
     }
   };
@@ -87,7 +98,7 @@ export default function Home() {
         <AIProcessing />
       )}
 
-      {viewState === 'RESULTS' && (
+      {viewState === 'RESULTS' && itineraryData && (
         <ItineraryOutput 
           data={itineraryData} 
           formData={formData}

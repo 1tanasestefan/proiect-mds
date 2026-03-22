@@ -1,6 +1,7 @@
-import { motion } from "motion/react";
-import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useDebounce } from "@/hooks/useDebounce";
 import { 
   Wallet, 
   Heart, 
@@ -31,6 +32,63 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
     destination: "",
     travelers: "",
   });
+
+  // --- Phase 1: Autocomplete State ---
+  const [inputValue, setInputValue] = useState("");
+  const [suggestions, setSuggestions] = useState<{ place_id: number; display_name: string }[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState("");
+  
+  // --- Phase 4: Keyboard Navigation State ---
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  const debouncedSearchTerm = useDebounce(inputValue, 500);
+
+  // --- Phase 2: OpenStreetMap Nominatim Fetch ---
+  useEffect(() => {
+    // Only search if we have a term and it is NOT the one we just selected
+    if (debouncedSearchTerm && debouncedSearchTerm !== selectedLocation) {
+      const fetchLocations = async () => {
+        setIsLoading(true);
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(debouncedSearchTerm)}&featuretype=city,settlement&limit=5`;
+          
+          const response = await fetch(url, {
+            headers: {
+              'Accept-Language': 'en-US,en;q=0.9',
+              'User-Agent': 'VacationPlannerApp/1.0' // OpenStreetMap requires a valid User-Agent
+            }
+          });
+
+          if (!response.ok) throw new Error('Geocoding failed');
+          
+          const data = await response.json();
+          const parsed = data.map((item: any) => {
+            // Format "Paris, Ile-de-France, France" -> "Paris, France"
+            const parts = item.display_name.split(',').map((p: string) => p.trim());
+            const formatted = parts.length >= 3 
+              ? `${parts[0]}, ${parts[parts.length - 1]}`
+              : item.display_name;
+
+            return { place_id: item.place_id, display_name: formatted };
+          });
+          
+          setSuggestions(parsed);
+          setHighlightedIndex(-1); // Reset highlight when new suggestions arrive
+        } catch (error) {
+          console.error("Geocoding error", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchLocations();
+    } else {
+      setSuggestions([]); // Clear suggestions if input is empty or finalized
+      setHighlightedIndex(-1);
+    }
+  }, [debouncedSearchTerm, selectedLocation]);
+
 
   const steps = [
     { id: "budget", title: "Budget Tier" },
@@ -242,18 +300,83 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-[#00F0FF]" />
                   <input
                     type="text"
-                    value={formData.destination}
-                    onChange={(e) => handleInputChange("destination", e.target.value)}
+                    value={inputValue}
+                    onChange={(e) => {
+                      setInputValue(e.target.value);
+                      if (selectedLocation) setSelectedLocation(""); // Reset valid state if user edits
+                      handleInputChange("destination", e.target.value);
+                    }}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && formData.destination.trim()) {
-                        setCurrentStep(4);
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (suggestions.length > 0) {
+                          setHighlightedIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
+                        }
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (suggestions.length > 0) {
+                          setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+                        }
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (suggestions.length > 0 && highlightedIndex >= 0) {
+                          const selected = suggestions[highlightedIndex];
+                          setInputValue(selected.display_name);
+                          setSelectedLocation(selected.display_name);
+                          handleInputChange("destination", selected.display_name);
+                          setSuggestions([]);
+                          setHighlightedIndex(-1);
+                        } else if (formData.destination.trim() && selectedLocation) {
+                          setCurrentStep(4);
+                        }
                       }
                     }}
                     placeholder="Where do you want to go?"
-                    className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[20px] pl-16 pr-6 py-6 text-gray-900 dark:text-white text-xl placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_30px_rgba(0,240,255,0.2)] transition-all"
+                    className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[20px] pl-16 pr-14 py-6 text-gray-900 dark:text-white text-xl placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_30px_rgba(0,240,255,0.2)] transition-all"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                     autoFocus
                   />
+
+                  {/* LOADING SPINNER */}
+                  {isLoading && (
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2">
+                      <div className="h-6 w-6 rounded-full border-2 border-[#00F0FF]/20 border-t-[#00F0FF] animate-spin" />
+                    </div>
+                  )}
+
+                  {/* DROPDOWN */}
+                  <AnimatePresence>
+                    {suggestions.length > 0 && !selectedLocation && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute top-full left-0 right-0 mt-4 z-50 backdrop-blur-xl bg-white/80 dark:bg-[#1a1a2e]/80 border border-gray-200 dark:border-white/20 rounded-[20px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+                      >
+                        <ul className="py-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                          {suggestions.map((suggestion, index) => (
+                            <li
+                              key={suggestion.place_id}
+                              onMouseEnter={() => setHighlightedIndex(index)}
+                              onClick={() => {
+                                setInputValue(suggestion.display_name);
+                                setSelectedLocation(suggestion.display_name);
+                                handleInputChange("destination", suggestion.display_name);
+                                setSuggestions([]);
+                                setHighlightedIndex(-1);
+                              }}
+                              className={`px-6 py-4 text-gray-800 dark:text-white/90 text-lg cursor-pointer transition-colors border-b border-gray-100 dark:border-white/5 last:border-0 ${
+                                index === highlightedIndex ? 'bg-[#00F0FF]/10 dark:bg-[#00F0FF]/20' : ''
+                              }`}
+                              style={{ fontFamily: "'Inter', sans-serif" }}
+                            >
+                              {suggestion.display_name}
+                            </li>
+                          ))}
+                        </ul>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <motion.div 
@@ -264,7 +387,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    disabled={!formData.destination.trim()}
+                    disabled={!formData.destination.trim() || !selectedLocation}
                     onClick={() => setCurrentStep(4)}
                     className="px-8 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-medium flex items-center gap-2 hover:bg-[#00F0FF]/20 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
