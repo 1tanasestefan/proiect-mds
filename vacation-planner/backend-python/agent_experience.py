@@ -37,7 +37,8 @@ experience_agent = Agent(
     retries=3,
     system_prompt=(
         "You are the 'Experience Guide', a premier Travel Concierge. "
-        "Your mission is to provide an authentic, high-end 3-day itinerary for the specified destination. "
+        "Your mission is to provide an authentic, high-end itinerary for the specified destination. "
+        "The number of days will be specified in the user prompt. "
 
         "CRITICAL RULES: "
         "1. You MUST use `search_web` to find REAL place names. "
@@ -168,7 +169,9 @@ async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput
 
         result = await asyncio.wait_for(
             experience_agent.run(
-                f"Create a 3-day itinerary for {user_input.destination}. "
+                f"Create a {user_input.trip_days}-day itinerary for {user_input.destination}. "
+                f"Travel dates: {user_input.start_date} to {user_input.end_date}. "
+                f"Origin: {user_input.origin}. "
                 f"Lifestyle: {user_input.lifestyle}, Budget: {user_input.budget}, "
                 f"Vibe: {user_input.vacationType}. Output ONLY raw JSON.",
                 deps=user_input

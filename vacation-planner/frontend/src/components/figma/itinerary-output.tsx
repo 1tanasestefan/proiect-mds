@@ -7,7 +7,10 @@ import {
   Hotel,
   Clock,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  ExternalLink,
+  DollarSign,
+  Bed,
 } from "lucide-react";
 import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 
@@ -31,6 +34,26 @@ export interface ItineraryDay {
   activities: Activity[];
 }
 
+export interface FlightOption {
+  airline_type: string;
+  estimated_price_usd: number;
+  description: string;
+  booking_link: string;
+}
+
+export interface AccommodationOption {
+  type: string;
+  neighborhood: string;
+  estimated_price_per_night_usd: number;
+  booking_link: string;
+}
+
+export interface TripLogistics {
+  flights: FlightOption[];
+  accommodations: AccommodationOption[];
+  total_estimated_budget_usd: number;
+}
+
 export interface ItineraryData {
   trip_title: string;
   vibe_summary: string;
@@ -38,6 +61,11 @@ export interface ItineraryData {
   destination?: string;
   travelers?: number | string;
   budget?: string;
+}
+
+export interface FinalTripPlan {
+  experience: ItineraryData;
+  logistics: TripLogistics;
 }
 
 type TripFormData = {
@@ -48,9 +76,11 @@ type TripFormData = {
   travelers?: number | string;
 };
 
-export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryData, formData?: TripFormData | null, onReset: () => void }) {
-  const itineraryItems = data.itinerary || [];
-  const destination = data.destination || formData?.destination || "";
+export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPlan, formData?: TripFormData | null, onReset: () => void }) {
+  const experience = data.experience;
+  const logistics = data.logistics;
+  const itineraryItems = experience.itinerary || [];
+  const destination = experience.destination || formData?.destination || "";
 
   const fallbackImage = (query: string) =>
     `https://placehold.co/600x400/1a1a2e/8A2BE2?text=${encodeURIComponent(query.slice(0, 60))}&font=raleway`;
@@ -72,10 +102,10 @@ export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryDa
             className="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-gray-900 dark:from-white to-gray-500 dark:to-white/60 bg-clip-text text-transparent"
             style={{ fontFamily: "'Archivo Black', sans-serif" }}
           >
-            {data.trip_title.toUpperCase()}
+            {experience.trip_title.toUpperCase()}
           </h2>
           <p className="text-xl text-gray-500 dark:text-white/60 mb-8 max-w-2xl mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
-            {data.vibe_summary}
+            {experience.vibe_summary}
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
@@ -128,7 +158,7 @@ export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryDa
                   </div>
                   <div>
                     <p className="text-gray-400 dark:text-white/60 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Destination</p>
-                    <p className="text-gray-900 dark:text-white font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{data.destination || formData?.destination}</p>
+                    <p className="text-gray-900 dark:text-white font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{experience.destination || formData?.destination}</p>
                   </div>
                 </div>
 
@@ -148,19 +178,19 @@ export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryDa
                   </div>
                   <div>
                     <p className="text-gray-400 dark:text-white/60 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Travelers</p>
-                    <p className="text-gray-900 dark:text-white font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{data.travelers || formData?.travelers} People</p>
+                    <p className="text-gray-900 dark:text-white font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{experience.travelers || formData?.travelers} People</p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-6 pt-6 border-t border-gray-200 dark:border-white/10">
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>Estimated Cost</span>
+                  <span className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>Estimated Budget</span>
                   <span className="text-3xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                    TBD
+                    ${logistics.total_estimated_budget_usd.toLocaleString()}
                   </span>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-2 italic text-center uppercase tracking-widest">Pricing locked by Logistics Agent</p>
+                <p className="text-[10px] text-gray-400 mt-2 italic text-center uppercase tracking-widest">Per person · calculated by Logistics Agent</p>
               </div>
             </div>
           </motion.div>
@@ -282,11 +312,71 @@ export function ItineraryOutput({ data, formData, onReset }: { data: ItineraryDa
                     </motion.div>
                   ))}
 
-                  {/* Automatic Logistics Skeletons (One per day to hold space) */}
-                  <div className="backdrop-blur-xl bg-white/5 border border-[#00F0FF]/10 rounded-[24px] p-6 h-64 flex flex-col items-center justify-center opacity-30">
-                     <Hotel className="h-10 w-10 text-[#00F0FF] mb-4" />
-                     <p className="text-[#00F0FF] font-bold text-[10px] uppercase tracking-widest text-center">Logistics: Stay & Transit<br/>Calculating best routes...</p>
-                  </div>
+                  {/* Logistics Cards (Flights & Hotels) */}
+                  {dayIndex === 0 && logistics.flights.length > 0 && (
+                    <motion.div
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-[#00F0FF]/20 rounded-[24px] p-6 h-fit"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="px-3 py-1 rounded-full bg-[#00F0FF]/10 dark:bg-[#00F0FF]/20 border border-[#00F0FF]/30">
+                          <Plane className="h-3 w-3 text-[#00F0FF] inline mr-1" />
+                          <span className="text-[#00F0FF] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>Flights</span>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {logistics.flights.map((flight, fi) => (
+                          <div key={fi} className="flex items-center justify-between p-3 rounded-xl bg-black/5 dark:bg-white/5">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{flight.airline_type}</p>
+                              <p className="text-xs text-gray-400 dark:text-white/40">{flight.description}</p>
+                            </div>
+                            <div className="text-right flex items-center gap-3">
+                              <span className="text-lg font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${flight.estimated_price_usd}</span>
+                              <a href={flight.booking_link} target="_blank" rel="noopener noreferrer" className="text-[#00F0FF] hover:text-[#00F0FF]/80 transition-colors">
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {dayIndex === 0 && logistics.accommodations.length > 0 && (
+                    <motion.div
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-[#00F0FF]/20 rounded-[24px] p-6 h-fit"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="px-3 py-1 rounded-full bg-[#00F0FF]/10 dark:bg-[#00F0FF]/20 border border-[#00F0FF]/30">
+                          <Bed className="h-3 w-3 text-[#00F0FF] inline mr-1" />
+                          <span className="text-[#00F0FF] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>Accommodations</span>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {logistics.accommodations.map((accom, ai) => (
+                          <div key={ai} className="flex items-center justify-between p-3 rounded-xl bg-black/5 dark:bg-white/5">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{accom.type}</p>
+                              <p className="text-xs text-gray-400 dark:text-white/40">{accom.neighborhood}</p>
+                            </div>
+                            <div className="text-right flex items-center gap-3">
+                              <div>
+                                <span className="text-lg font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${accom.estimated_price_per_night_usd}</span>
+                                <span className="text-[10px] text-gray-400 dark:text-white/40 block">/night</span>
+                              </div>
+                              <a href={accom.booking_link} target="_blank" rel="noopener noreferrer" className="text-[#00F0FF] hover:text-[#00F0FF]/80 transition-colors">
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               </motion.div>
             ))}

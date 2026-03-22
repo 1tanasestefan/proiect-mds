@@ -4,21 +4,24 @@ import { useState } from 'react';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { InputFormSection } from '@/components/figma/input-form-section';
 import { AIProcessing } from '@/components/figma/ai-processing';
-import { ItineraryOutput, ItineraryData } from '@/components/figma/itinerary-output';
+import { ItineraryOutput, FinalTripPlan } from '@/components/figma/itinerary-output';
 
 type ViewState = 'INPUT' | 'PROCESSING' | 'RESULTS';
 type TripFormData = {
   budget: string;
   lifestyle: string;
   vacationType: string;
+  origin: string;
   destination: string;
+  startDate: string;
+  endDate: string;
   travelers: string;
 };
 
 export default function PlanTripPage() {
   const [viewState, setViewState] = useState<ViewState>('INPUT');
   const [formData, setFormData] = useState<TripFormData | null>(null);
-  const [itineraryData, setItineraryData] = useState<ItineraryData | null>(null);
+  const [itineraryData, setItineraryData] = useState<FinalTripPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const ITINERARY_API_URL =
@@ -35,26 +38,42 @@ export default function PlanTripPage() {
     const timeoutId = setTimeout(() => controller.abort(), 100000); // 100s timeout
 
     try {
+      const payload = {
+        budget: data.budget,
+        lifestyle: data.lifestyle,
+        vacationType: data.vacationType,
+        origin: data.origin,
+        destination: data.destination,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        travelers: parseInt(data.travelers, 10) || 1,
+      };
+      console.log("[DEBUG] Sending payload:", JSON.stringify(payload, null, 2));
+
       const response = await fetch(ITINERARY_API_URL, {
         method: "POST",
         signal: controller.signal,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...data,
-          travelers: parseInt(data.travelers, 10) || 1,
-        }),
+        body: JSON.stringify(payload),
       });
 
       clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Backend error: ${response.statusText}`);
+        // FastAPI validation errors come as {detail: [{loc, msg, type}, ...]}
+        let errorMsg = `Backend error: ${response.statusText}`;
+        if (Array.isArray(errorData.detail)) {
+          errorMsg = errorData.detail.map((e: any) => e.msg).join("; ");
+        } else if (typeof errorData.detail === "string") {
+          errorMsg = errorData.detail;
+        }
+        throw new Error(errorMsg);
       }
 
-      const result = (await response.json()) as ItineraryData;
+      const result = (await response.json()) as FinalTripPlan;
       setItineraryData(result);
       setViewState('RESULTS');
     } catch (err: unknown) {

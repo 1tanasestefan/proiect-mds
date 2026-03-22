@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useDebounce } from "@/hooks/useDebounce";
 import { 
@@ -12,14 +12,20 @@ import {
   UtensilsCrossed,
   MapPin,
   Users,
-  ArrowRight
+  ArrowRight,
+  Plane,
+  CalendarDays,
+  AlertTriangle,
 } from "lucide-react";
 
 interface FormData {
   budget: string;
   lifestyle: string;
   vacationType: string;
+  origin: string;
   destination: string;
+  startDate: string;
+  endDate: string;
   travelers: string;
 }
 
@@ -29,72 +35,109 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
     budget: "",
     lifestyle: "",
     vacationType: "",
+    origin: "",
     destination: "",
+    startDate: "",
+    endDate: "",
     travelers: "",
   });
 
-  // --- Phase 1: Autocomplete State ---
-  const [inputValue, setInputValue] = useState("");
-  const [suggestions, setSuggestions] = useState<{ place_id: number; display_name: string }[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState("");
-  
-  // --- Phase 4: Keyboard Navigation State ---
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  // --- Nominatim Autocomplete State (shared for Origin + Destination) ---
+  const [originInput, setOriginInput] = useState("");
+  const [originSuggestions, setOriginSuggestions] = useState<{ place_id: number; display_name: string }[]>([]);
+  const [originLoading, setOriginLoading] = useState(false);
+  const [selectedOrigin, setSelectedOrigin] = useState("");
+  const [originHighlight, setOriginHighlight] = useState(-1);
 
-  const debouncedSearchTerm = useDebounce(inputValue, 500);
+  const [destInput, setDestInput] = useState("");
+  const [destSuggestions, setDestSuggestions] = useState<{ place_id: number; display_name: string }[]>([]);
+  const [destLoading, setDestLoading] = useState(false);
+  const [selectedDest, setSelectedDest] = useState("");
+  const [destHighlight, setDestHighlight] = useState(-1);
 
-  // --- Phase 2: OpenStreetMap Nominatim Fetch ---
-  useEffect(() => {
-    // Only search if we have a term and it is NOT the one we just selected
-    if (debouncedSearchTerm && debouncedSearchTerm !== selectedLocation) {
-      const fetchLocations = async () => {
-        setIsLoading(true);
-        try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(debouncedSearchTerm)}&featuretype=city,settlement&limit=5`;
-          
-          const response = await fetch(url, {
-            headers: {
-              'Accept-Language': 'en-US,en;q=0.9',
-              'User-Agent': 'VacationPlannerApp/1.0' // OpenStreetMap requires a valid User-Agent
-            }
-          });
+  const debouncedOrigin = useDebounce(originInput, 500);
+  const debouncedDest = useDebounce(destInput, 500);
 
-          if (!response.ok) throw new Error('Geocoding failed');
-          
-          const data = await response.json();
-          const parsed = data.map((item: any) => {
-            // Format "Paris, Ile-de-France, France" -> "Paris, France"
-            const parts = item.display_name.split(',').map((p: string) => p.trim());
-            const formatted = parts.length >= 3 
-              ? `${parts[0]}, ${parts[parts.length - 1]}`
-              : item.display_name;
-
-            return { place_id: item.place_id, display_name: formatted };
-          });
-          
-          setSuggestions(parsed);
-          setHighlightedIndex(-1); // Reset highlight when new suggestions arrive
-        } catch (error) {
-          console.error("Geocoding error", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchLocations();
+  // --- Nominatim Fetch (reusable) ---
+  const fetchNominatim = async (
+    term: string,
+    selected: string,
+    setSuggestions: (s: { place_id: number; display_name: string }[]) => void,
+    setLoading: (b: boolean) => void,
+    setHighlight: (n: number) => void,
+  ) => {
+    if (term && term !== selected) {
+      setLoading(true);
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&featuretype=city,settlement&limit=5`;
+        const response = await fetch(url, {
+          headers: {
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'VacationPlannerApp/1.0'
+          }
+        });
+        if (!response.ok) throw new Error('Geocoding failed');
+        const data = await response.json();
+        const parsed = data.map((item: any) => {
+          const parts = item.display_name.split(',').map((p: string) => p.trim());
+          const formatted = parts.length >= 3 
+            ? `${parts[0]}, ${parts[parts.length - 1]}`
+            : item.display_name;
+          return { place_id: item.place_id, display_name: formatted };
+        });
+        setSuggestions(parsed);
+        setHighlight(-1);
+      } catch (error) {
+        console.error("Geocoding error", error);
+      } finally {
+        setLoading(false);
+      }
     } else {
-      setSuggestions([]); // Clear suggestions if input is empty or finalized
-      setHighlightedIndex(-1);
+      setSuggestions([]);
+      setHighlight(-1);
     }
-  }, [debouncedSearchTerm, selectedLocation]);
+  };
+
+  useEffect(() => {
+    fetchNominatim(debouncedOrigin, selectedOrigin, setOriginSuggestions, setOriginLoading, setOriginHighlight);
+  }, [debouncedOrigin, selectedOrigin]);
+
+  useEffect(() => {
+    fetchNominatim(debouncedDest, selectedDest, setDestSuggestions, setDestLoading, setDestHighlight);
+  }, [debouncedDest, selectedDest]);
+
+
+  // --- Date Validation ---
+  const today = useMemo(() => {
+    const d = new Date();
+    return d.toISOString().split("T")[0];
+  }, []);
+
+  const tripDays = useMemo(() => {
+    if (!formData.startDate || !formData.endDate) return 0;
+    const start = new Date(formData.startDate);
+    const end = new Date(formData.endDate);
+    const diff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    return diff;
+  }, [formData.startDate, formData.endDate]);
+
+  const dateError = useMemo(() => {
+    if (!formData.startDate || !formData.endDate) return null;
+    if (tripDays <= 0) return "Check-out must be after check-in.";
+    if (tripDays > 5) return "Trips are currently limited to a maximum of 5 days.";
+    return null;
+  }, [formData.startDate, formData.endDate, tripDays]);
+
+  const datesValid = formData.startDate && formData.endDate && !dateError && tripDays > 0;
 
 
   const steps = [
     { id: "budget", title: "Budget Tier" },
     { id: "lifestyle", title: "Your Lifestyle" },
     { id: "vacationType", title: "Vacation Type" },
-    { id: "destination", title: "Destination" },
+    { id: "origin", title: "Where are you flying from?" },
+    { id: "destination", title: "Where are you going?" },
+    { id: "dates", title: "Travel Dates" },
     { id: "travelers", title: "Travelers" },
   ];
 
@@ -128,10 +171,133 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
   };
 
   const handleSubmitForm = () => {
-    if (formData.destination && formData.travelers) {
+    if (formData.destination && formData.travelers && formData.origin && datesValid) {
       onSubmit(formData);
     }
   };
+
+  // --- Reusable Nominatim Autocomplete Renderer ---
+  const renderLocationStep = (config: {
+    field: "origin" | "destination";
+    inputValue: string;
+    setInputValue: (v: string) => void;
+    suggestions: { place_id: number; display_name: string }[];
+    setSuggestions: (s: any[]) => void;
+    isLoading: boolean;
+    selectedLocation: string;
+    setSelectedLocation: (v: string) => void;
+    highlightedIndex: number;
+    setHighlightedIndex: (n: number) => void;
+    placeholder: string;
+    icon: typeof MapPin;
+    iconColor: string;
+    focusColor: string;
+    nextStep: number;
+  }) => {
+    const Icon = config.icon;
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="relative">
+          <Icon className={`absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-[${config.iconColor}]`} />
+          <input
+            type="text"
+            value={config.inputValue}
+            onChange={(e) => {
+              config.setInputValue(e.target.value);
+              if (config.selectedLocation) config.setSelectedLocation("");
+              handleInputChange(config.field, e.target.value);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (config.suggestions.length > 0) {
+                  config.setHighlightedIndex(Math.min(config.highlightedIndex + 1, config.suggestions.length - 1));
+                }
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (config.suggestions.length > 0) {
+                  config.setHighlightedIndex(Math.max(config.highlightedIndex - 1, 0));
+                }
+              } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (config.suggestions.length > 0 && config.highlightedIndex >= 0) {
+                  const selected = config.suggestions[config.highlightedIndex];
+                  config.setInputValue(selected.display_name);
+                  config.setSelectedLocation(selected.display_name);
+                  handleInputChange(config.field, selected.display_name);
+                  config.setSuggestions([]);
+                  config.setHighlightedIndex(-1);
+                } else if (formData[config.field].trim() && config.selectedLocation) {
+                  setCurrentStep(config.nextStep);
+                }
+              }
+            }}
+            placeholder={config.placeholder}
+            className={`w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[20px] pl-16 pr-14 py-6 text-gray-900 dark:text-white text-xl placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[${config.focusColor}]/50 focus:shadow-[0_0_30px_rgba(0,240,255,0.2)] transition-all`}
+            style={{ fontFamily: "'Inter', sans-serif" }}
+            autoFocus
+          />
+
+          {config.isLoading && (
+            <div className="absolute right-6 top-1/2 -translate-y-1/2">
+              <div className="h-6 w-6 rounded-full border-2 border-[#00F0FF]/20 border-t-[#00F0FF] animate-spin" />
+            </div>
+          )}
+
+          <AnimatePresence>
+            {config.suggestions.length > 0 && !config.selectedLocation && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute top-full left-0 right-0 mt-4 z-50 backdrop-blur-xl bg-white/80 dark:bg-[#1a1a2e]/80 border border-gray-200 dark:border-white/20 rounded-[20px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+              >
+                <ul className="py-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                  {config.suggestions.map((suggestion, index) => (
+                    <li
+                      key={suggestion.place_id}
+                      onMouseEnter={() => config.setHighlightedIndex(index)}
+                      onClick={() => {
+                        config.setInputValue(suggestion.display_name);
+                        config.setSelectedLocation(suggestion.display_name);
+                        handleInputChange(config.field, suggestion.display_name);
+                        config.setSuggestions([]);
+                        config.setHighlightedIndex(-1);
+                      }}
+                      className={`px-6 py-4 text-gray-800 dark:text-white/90 text-lg cursor-pointer transition-colors border-b border-gray-100 dark:border-white/5 last:border-0 ${
+                        index === config.highlightedIndex ? 'bg-[#00F0FF]/10 dark:bg-[#00F0FF]/20' : ''
+                      }`}
+                      style={{ fontFamily: "'Inter', sans-serif" }}
+                    >
+                      {suggestion.display_name}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-8 flex justify-end"
+        >
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={!formData[config.field].trim() || !config.selectedLocation}
+            onClick={() => setCurrentStep(config.nextStep)}
+            className="px-8 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-medium flex items-center gap-2 hover:bg-[#00F0FF]/20 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Continue
+            <ArrowRight className="h-5 w-5" />
+          </motion.button>
+        </motion.div>
+      </div>
+    );
+  };
+
 
   return (
     <section className="min-h-screen pt-[120px] pb-24 px-8 relative overflow-hidden">
@@ -168,8 +334,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               transition={{ delay: index * 0.1 }}
               className={`h-2 rounded-full transition-all duration-500 ${
                 index <= currentStep 
-                  ? "w-16 bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2]" 
-                  : "w-8 bg-white/10"
+                  ? "w-12 bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2]" 
+                  : "w-6 bg-white/10"
               }`}
             />
           ))}
@@ -194,7 +360,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               {steps[currentStep].title}
             </h3>
 
-            {/* Budget Selection */}
+            {/* Step 0: Budget Selection */}
             {currentStep === 0 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {budgetOptions.map((option) => (
@@ -223,7 +389,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               </div>
             )}
 
-            {/* Lifestyle Selection */}
+            {/* Step 1: Lifestyle Selection */}
             {currentStep === 1 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {lifestyleOptions.map((option) => (
@@ -252,7 +418,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               </div>
             )}
 
-            {/* Vacation Type Selection */}
+            {/* Step 2: Vacation Type Selection */}
             {currentStep === 2 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {vacationTypeOptions.map((option) => (
@@ -293,102 +459,130 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               </div>
             )}
 
-            {/* Destination Input */}
-            {currentStep === 3 && (
-              <div className="max-w-2xl mx-auto">
-                <div className="relative">
-                  <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-[#00F0FF]" />
-                  <input
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => {
-                      setInputValue(e.target.value);
-                      if (selectedLocation) setSelectedLocation(""); // Reset valid state if user edits
-                      handleInputChange("destination", e.target.value);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        if (suggestions.length > 0) {
-                          setHighlightedIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
-                        }
-                      } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        if (suggestions.length > 0) {
-                          setHighlightedIndex((prev) => Math.max(prev - 1, 0));
-                        }
-                      } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (suggestions.length > 0 && highlightedIndex >= 0) {
-                          const selected = suggestions[highlightedIndex];
-                          setInputValue(selected.display_name);
-                          setSelectedLocation(selected.display_name);
-                          handleInputChange("destination", selected.display_name);
-                          setSuggestions([]);
-                          setHighlightedIndex(-1);
-                        } else if (formData.destination.trim() && selectedLocation) {
-                          setCurrentStep(4);
-                        }
-                      }
-                    }}
-                    placeholder="Where do you want to go?"
-                    className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[20px] pl-16 pr-14 py-6 text-gray-900 dark:text-white text-xl placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_30px_rgba(0,240,255,0.2)] transition-all"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
-                    autoFocus
-                  />
+            {/* Step 3: Origin Input (Nominatim Autocomplete) */}
+            {currentStep === 3 && renderLocationStep({
+              field: "origin",
+              inputValue: originInput,
+              setInputValue: setOriginInput,
+              suggestions: originSuggestions,
+              setSuggestions: setOriginSuggestions,
+              isLoading: originLoading,
+              selectedLocation: selectedOrigin,
+              setSelectedLocation: setSelectedOrigin,
+              highlightedIndex: originHighlight,
+              setHighlightedIndex: setOriginHighlight,
+              placeholder: "Your departure city (e.g., Bucharest)",
+              icon: Plane,
+              iconColor: "#8A2BE2",
+              focusColor: "#8A2BE2",
+              nextStep: 4,
+            })}
 
-                  {/* LOADING SPINNER */}
-                  {isLoading && (
-                    <div className="absolute right-6 top-1/2 -translate-y-1/2">
-                      <div className="h-6 w-6 rounded-full border-2 border-[#00F0FF]/20 border-t-[#00F0FF] animate-spin" />
+            {/* Step 4: Destination Input (Nominatim Autocomplete) */}
+            {currentStep === 4 && renderLocationStep({
+              field: "destination",
+              inputValue: destInput,
+              setInputValue: setDestInput,
+              suggestions: destSuggestions,
+              setSuggestions: setDestSuggestions,
+              isLoading: destLoading,
+              selectedLocation: selectedDest,
+              setSelectedLocation: setSelectedDest,
+              highlightedIndex: destHighlight,
+              setHighlightedIndex: setDestHighlight,
+              placeholder: "Where do you want to go?",
+              icon: MapPin,
+              iconColor: "#00F0FF",
+              focusColor: "#00F0FF",
+              nextStep: 5,
+            })}
+
+            {/* Step 5: Travel Dates */}
+            {currentStep === 5 && (
+              <div className="max-w-2xl mx-auto space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Check-in */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-white/40 mb-3 uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      Check-in
+                    </label>
+                    <div className="relative">
+                      <CalendarDays className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00F0FF] pointer-events-none" />
+                      <input
+                        type="date"
+                        value={formData.startDate}
+                        min={today}
+                        onChange={(e) => {
+                          handleInputChange("startDate", e.target.value);
+                          // Auto-clear end date if it becomes invalid
+                          if (formData.endDate && e.target.value >= formData.endDate) {
+                            handleInputChange("endDate", "");
+                          }
+                        }}
+                        className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] pl-14 pr-6 py-5 text-gray-900 dark:text-white text-lg focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_20px_rgba(0,240,255,0.15)] transition-all appearance-none [color-scheme:dark]"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                        autoFocus
+                      />
                     </div>
-                  )}
+                  </div>
 
-                  {/* DROPDOWN */}
-                  <AnimatePresence>
-                    {suggestions.length > 0 && !selectedLocation && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 right-0 mt-4 z-50 backdrop-blur-xl bg-white/80 dark:bg-[#1a1a2e]/80 border border-gray-200 dark:border-white/20 rounded-[20px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
-                      >
-                        <ul className="py-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                          {suggestions.map((suggestion, index) => (
-                            <li
-                              key={suggestion.place_id}
-                              onMouseEnter={() => setHighlightedIndex(index)}
-                              onClick={() => {
-                                setInputValue(suggestion.display_name);
-                                setSelectedLocation(suggestion.display_name);
-                                handleInputChange("destination", suggestion.display_name);
-                                setSuggestions([]);
-                                setHighlightedIndex(-1);
-                              }}
-                              className={`px-6 py-4 text-gray-800 dark:text-white/90 text-lg cursor-pointer transition-colors border-b border-gray-100 dark:border-white/5 last:border-0 ${
-                                index === highlightedIndex ? 'bg-[#00F0FF]/10 dark:bg-[#00F0FF]/20' : ''
-                              }`}
-                              style={{ fontFamily: "'Inter', sans-serif" }}
-                            >
-                              {suggestion.display_name}
-                            </li>
-                          ))}
-                        </ul>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {/* Check-out */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 dark:text-white/40 mb-3 uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      Check-out
+                    </label>
+                    <div className="relative">
+                      <CalendarDays className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#8A2BE2] pointer-events-none" />
+                      <input
+                        type="date"
+                        value={formData.endDate}
+                        min={formData.startDate || today}
+                        onChange={(e) => handleInputChange("endDate", e.target.value)}
+                        disabled={!formData.startDate}
+                        className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] pl-14 pr-6 py-5 text-gray-900 dark:text-white text-lg focus:outline-none focus:border-[#8A2BE2]/50 focus:shadow-[0_0_20px_rgba(138,43,226,0.15)] transition-all appearance-none [color-scheme:dark] disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{ fontFamily: "'Inter', sans-serif" }}
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                {/* Trip duration badge */}
+                {tripDays > 0 && !dateError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center"
+                  >
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00F0FF]/10 border border-[#00F0FF]/20 text-[#00F0FF] text-sm font-medium">
+                      <CalendarDays className="h-4 w-4" />
+                      {tripDays} {tripDays === 1 ? "day" : "days"} trip
+                    </span>
+                  </motion.div>
+                )}
+
+                {/* Error message */}
+                {dateError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3"
+                    style={{ fontFamily: "'Inter', sans-serif" }}
+                  >
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                    {dateError}
+                  </motion.div>
+                )}
 
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-8 flex justify-end"
+                  className="mt-4 flex justify-end"
                 >
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    disabled={!formData.destination.trim() || !selectedLocation}
-                    onClick={() => setCurrentStep(4)}
+                    disabled={!datesValid}
+                    onClick={() => setCurrentStep(6)}
                     className="px-8 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-medium flex items-center gap-2 hover:bg-[#00F0FF]/20 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue
@@ -398,8 +592,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               </div>
             )}
 
-            {/* Travelers Input */}
-            {currentStep === 4 && (
+            {/* Step 6: Travelers Input */}
+            {currentStep === 6 && (
               <div className="max-w-2xl mx-auto space-y-8">
                 <div className="relative">
                   <Users className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-[#8A2BE2]" />
@@ -424,7 +618,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSubmitForm}
-                  disabled={!formData.destination || !formData.travelers}
+                  disabled={!formData.destination || !formData.travelers || !formData.origin || !datesValid}
                   className="w-full py-6 rounded-[20px] bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] text-white text-xl font-bold flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(0,240,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                 >
@@ -436,7 +630,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           </motion.div>
 
           {/* Navigation */}
-          {currentStep > 0 && currentStep <= 4 && (
+          {currentStep > 0 && currentStep <= 6 && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
