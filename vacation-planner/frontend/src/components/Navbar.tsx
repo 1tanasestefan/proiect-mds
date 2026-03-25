@@ -7,6 +7,13 @@ import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+const MARKETING_LINKS = [
+  { label: 'Features',     href: '#features' },
+  { label: 'Destinations', href: '#destinations' },
+  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Pricing',      href: '#pricing' },
+];
+
 const NAV_ICONS: Record<string, React.ElementType> = {
   '/plan': Map,
   '/dashboard': LayoutDashboard,
@@ -16,6 +23,7 @@ const NAV_ICONS: Record<string, React.ElementType> = {
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
+  const isHomepage = pathname === '/';
 
   const links = isAuthenticated
     ? [
@@ -27,6 +35,79 @@ export default function Navbar() {
         { href: '/dashboard', label: 'My Trips' },
         { href: '/login', label: 'Login' },
       ];
+
+  // ── Marketing nav (homepage, unauthenticated) ──────────────────────────────
+  if (isHomepage && !isAuthenticated) {
+    return (
+      <nav
+        className="fixed top-6 inset-x-0 mx-auto z-50 w-[90%] max-w-7xl reveal-down"
+        style={
+          {
+            "--reveal-delay": "60ms",
+            "--reveal-duration": "900ms",
+            "--reveal-y": "-22px",
+          } as React.CSSProperties
+        }
+      >
+        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-[24px] px-6 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+          <div className="flex items-center justify-between">
+
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2 group">
+              <motion.div whileHover={{ rotate: 20 }} transition={{ type: "spring", stiffness: 300 }}>
+                <Sparkles className="h-5 w-5 text-[#00F0FF] group-hover:text-[#8A2BE2] transition-colors duration-500" />
+              </motion.div>
+              <span
+                className="text-xl font-bold tracking-tight text-white"
+                style={{ fontFamily: "'Archivo Black', sans-serif" }}
+              >
+                VibeTrips
+              </span>
+            </Link>
+
+            {/* Center: Anchor links (desktop) */}
+            <div className="hidden md:flex items-center gap-1">
+              {MARKETING_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="px-4 py-2 rounded-[14px] text-sm font-medium text-white/55 hover:text-white hover:bg-white/[0.06] transition-all duration-200"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+
+            {/* Right: Auth CTAs */}
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <Link
+                href="/login"
+                className="hidden sm:flex items-center px-5 py-2 rounded-full text-sm font-medium text-white/55 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/[0.05] transition-all duration-200"
+                style={{ fontFamily: "'Inter', sans-serif" }}
+              >
+                Sign In
+              </Link>
+              <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+                <Link
+                  href="/plan"
+                  className="flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] text-white text-sm font-semibold shadow-[0_0_20px_rgba(0,240,255,0.25)] hover:shadow-[0_0_30px_rgba(0,240,255,0.45)] transition-shadow duration-300"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
+                >
+                  Start Planning
+                  <Sparkles className="h-3.5 w-3.5" />
+                </Link>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
+  // ── App nav (all other pages / authenticated) ─────────────────────────────
+
 
   return (
     <nav

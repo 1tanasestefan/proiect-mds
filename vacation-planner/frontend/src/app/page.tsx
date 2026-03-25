@@ -1,28 +1,35 @@
 "use client";
 
 import { useState } from 'react';
-import { HeroSection } from '@/components/figma/hero-section';
 import { InputFormSection } from '@/components/figma/input-form-section';
 import { AIProcessing } from '@/components/figma/ai-processing';
-import { ItineraryOutput, ItineraryData } from '@/components/figma/itinerary-output';
-import { InspirationSection } from '@/components/landing/InspirationSection';
-import { DiscoverSection } from '@/components/landing/DiscoverSection';
-import { EmotionalSection } from '@/components/landing/EmotionalSection';
-import { LandingCTA } from '@/components/landing/LandingCTA';
+import { ItineraryOutput, FinalTripPlan } from '@/components/figma/itinerary-output';
+import { MarketingHero } from '@/components/marketing/MarketingHero';
+import { SocialProof } from '@/components/marketing/SocialProof';
+import { FeatureGrid } from '@/components/marketing/FeatureGrid';
+import { ProductPreview } from '@/components/marketing/ProductPreview';
+import { DestinationGrid } from '@/components/marketing/DestinationGrid';
+import { HowItWorks } from '@/components/marketing/HowItWorks';
+import { CollaborationSection } from '@/components/marketing/CollaborationSection';
+import { MarketingCTA } from '@/components/marketing/MarketingCTA';
+import { MarketingFooter } from '@/components/marketing/MarketingFooter';
 
 type ViewState = 'HERO' | 'INPUT' | 'PROCESSING' | 'RESULTS';
 type TripFormData = {
   budget: string;
   lifestyle: string;
   vacationType: string;
+  origin: string;
   destination: string;
+  startDate: string;
+  endDate: string;
   travelers: string;
 };
 
 export default function Home() {
   const [viewState, setViewState] = useState<ViewState>('HERO');
   const [formData, setFormData] = useState<TripFormData | null>(null);
-  const [itineraryData, setItineraryData] = useState<ItineraryData | null>(null);
+  const [itineraryData, setItineraryData] = useState<FinalTripPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const ITINERARY_API_URL =
@@ -46,8 +53,14 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...data,
-          travelers: parseInt(data.travelers, 10) || 1
+          budget: data.budget,
+          lifestyle: data.lifestyle,
+          vacationType: data.vacationType,
+          origin: data.origin,
+          destination: data.destination,
+          start_date: data.startDate,
+          end_date: data.endDate,
+          travelers: parseInt(data.travelers, 10) || 1,
         }),
       });
 
@@ -58,7 +71,7 @@ export default function Home() {
         throw new Error(errorData.detail || `Backend error: ${response.statusText}`);
       }
 
-      const result = (await response.json()) as ItineraryData;
+      const result = (await response.json()) as FinalTripPlan;
       setItineraryData(result);
       setViewState('RESULTS');
     } catch (err: unknown) {
@@ -71,13 +84,17 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen text-gray-900 dark:text-white">
       {viewState === 'HERO' && (
-        <>
-          <HeroSection onStartPlanning={() => setViewState('INPUT')} />
-          <InspirationSection />
-          <DiscoverSection />
-          <EmotionalSection />
-          <LandingCTA onStartPlanning={() => setViewState('INPUT')} />
-        </>
+        <div className="bg-[#020204]">
+          <MarketingHero onStartPlanning={() => setViewState('INPUT')} />
+          <SocialProof />
+          <FeatureGrid />
+          <ProductPreview />
+          <DestinationGrid />
+          <HowItWorks />
+          <CollaborationSection />
+          <MarketingCTA onStartPlanning={() => setViewState('INPUT')} />
+          <MarketingFooter />
+        </div>
       )}
       
       {viewState === 'INPUT' && (

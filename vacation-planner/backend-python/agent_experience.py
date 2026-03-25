@@ -33,19 +33,23 @@ _DDGS_COOLDOWN = 3.0
 # ---------- AGENT DEFINITION ----------
 experience_agent = Agent(
     'groq:llama-3.3-70b-versatile',
-    output_type=AgentOneOutput, # Use Pydantic model for native structured output
+    output_type=str,  # str avoids pydantic-ai injecting a second `final_result` tool which Groq rejects
     retries=3,
     system_prompt=(
         "You are the 'Experience Guide', a premier Travel Concierge. "
         "Your mission is to provide an authentic, high-end itinerary for the specified destination. "
         "The number of days will be specified in the user prompt. "
 
-        "CRITICAL RULES: "
-        "1. You MUST use any available tools (like `search_web`) to find REAL, existing place names, venues, and neighborhoods. "
-        "2. Do NOT hallucinate venue names; if search fails, use well-known landmarks. "
-        "3. Every activity `type` MUST be exactly `experience`. "
-        "4. Set all `image_url` fields to an empty string (they are enriched by the backend search). "
-        "5. Respond with a perfectly structured trip plan matching the required schema."
+        "CRITICAL OUTPUT RULES: "
+        "1. Your ENTIRE response must be a single valid JSON object — no markdown fences, no prose. "
+        "2. The root JSON object MUST have exactly these three top-level keys: "
+        "   'trip_title' (string), 'vibe_summary' (string), 'itinerary' (array of day objects). "
+        "   Do NOT wrap them inside a 'trip', 'data', 'result', or any other key. "
+        "3. Each day object: { 'day_number': int, 'activities': [ ... ] }. "
+        "4. Each activity: { 'title', 'description', 'time', 'cost', 'location', 'image_url': '', 'type': 'experience' }. "
+        "5. You MAY use `search_web` at most ONCE to look up a venue. Do NOT call it more than once. "
+        "6. After any tool use, respond IMMEDIATELY with the full JSON — no further tool calls. "
+        "7. Do NOT include any text before or after the JSON object."
     ),
 )
 
@@ -170,7 +174,14 @@ async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput
             if not data:
                 logger.error(f"Failed to extract JSON from: {raw_text}")
                 raise ValueError("No valid JSON found in agent output.")
-                
+
+            # Unwrap any single-key envelope (e.g. {"trip": {...}}, {"result": {...}})
+            if data and "trip_title" not in data and len(data) == 1:
+                inner = next(iter(data.values()))
+                if isinstance(inner, dict) and "trip_title" in inner:
+                    logger.info(f"Unwrapping envelope key: '{next(iter(data.keys()))}'")
+                    data = inner
+
             parsed = AgentOneOutput(**data)
 
         # --- IMAGE ENRICHMENT (DDGS ONLY) ---
