@@ -3,16 +3,9 @@ import os
 import asyncio
 import json
 import re
-import random
-import time
-from urllib.parse import quote_plus, urlparse
+import httpx
 from dotenv import load_dotenv
-
-# Silence the DDGS rename warning
-warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*duckduckgo_search.*renamed to ddgs.*")
-
 from pydantic_ai import Agent, RunContext
-from duckduckgo_search import DDGS
 from models import UserInput, AgentOneOutput
 from loguru import logger
 from fastapi import HTTPException
@@ -96,67 +89,50 @@ def _is_valid_image(url: str) -> bool:
     return any(ext in low for ext in VALID_EXTENSIONS)
 
 
-async def fetch_image_for_activity(activity_name: str, destination: str, activity_type: str) -> str:
+async def fetch_image_for_activity(activity_name: str, destination: str) -> str:
     """
-    Sniper-architecture image fetcher.
-    1. Anti-rate-limit jitter delay at entry.
-    2. 3-tier query cascade (Hyper-Specific → Broad → City Aesthetic).
-    3. URL quality validator rejects blocklisted/non-image URLs.
-    4. Returns the FIRST valid URL found — Unsplash fallback only if all tiers fail.
+    Fetches high-quality, relevant images instantly using the free Pexels API.
+    Replaces rate-limited DuckDuckGo logic.
     """
-    global _last_ddgs_time
+    pexels_key = os.getenv("PEXELS_API_KEY")
+    if not pexels_key:
+        logger.warning("[img] PEXELS_API_KEY not found in .env, returning fallback.")
+        return STATIC_FALLBACK
 
-    # --- Anti-Rate-Limit: randomised entry delay ---
-    jitter = random.uniform(1.0, 2.5)
-    logger.debug(f"[img] Jitter delay {jitter:.2f}s before fetching '{activity_name}'")
-    await asyncio.sleep(jitter)
+    url = "https://api.pexels.com/v1/search"
+    headers = {"Authorization": pexels_key}
+    
+    # Primary strict query
+    query = f"{activity_name} {destination}"
+    params = {"query": query, "per_page": 1, "orientation": "landscape"}
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, headers=headers, params=params)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("photos"):
+                    img_url = data["photos"][0]["src"]["large"]
+                    logger.info(f"[img] ✅ Found via Pexels (Primary): '{query}' -> {img_url[:60]}")
+                    return img_url
+            
+            # Fallback query
+            logger.debug(f"[img] No results for '{query}', trying fallback query: '{destination}'")
+            params_fallback = {"query": destination, "per_page": 1, "orientation": "landscape"}
+            response_fallback = await client.get(url, headers=headers, params=params_fallback)
+            
+            if response_fallback.status_code == 200:
+                data_fw = response_fallback.json()
+                if data_fw.get("photos"):
+                    img_url = data_fw["photos"][0]["src"]["large"]
+                    logger.info(f"[img] ✅ Found via Pexels (Fallback): '{destination}' -> {img_url[:60]}")
+                    return img_url
 
-    # --- 3-Tier query cascade ---
-    tiers = [
-        ("Tier-1 (Hyper-Specific)", f"{activity_name} {destination} photo high quality"),
-        ("Tier-2 (Broad/Contextual)", f"{activity_name} {destination}"),
-        ("Tier-3 (City Aesthetic)",   f"{destination} beautiful travel photography"),
-    ]
+    except Exception as e:
+        logger.error(f"[img] Pexels API request failed: {e}")
 
-    async with search_lock:
-        # Honour the global cooldown on top of jitter
-        now = time.monotonic()
-        elapsed = now - _last_ddgs_time
-        if elapsed < _DDGS_COOLDOWN:
-            wait = _DDGS_COOLDOWN - elapsed
-            logger.debug(f"[img] Cooldown: waiting an additional {wait:.2f}s")
-            await asyncio.sleep(wait)
-
-        for tier_name, query in tiers:
-            logger.debug(f"[img] {tier_name} — query: '{query}'")
-            try:
-                def _run(q=query):
-                    with DDGS() as ddgs:
-                        return list(ddgs.images(keywords=q, max_results=3, safesearch="moderate"))
-
-                results = await asyncio.wait_for(asyncio.to_thread(_run), timeout=15)
-                _last_ddgs_time = time.monotonic()
-
-                if not results:
-                    logger.debug(f"[img] {tier_name} returned 0 results — trying next tier.")
-                    continue
-
-                for r in results:
-                    img_url = r.get("image", "")
-                    if _is_valid_image(img_url):
-                        logger.info(f"[img] ✅ '{activity_name}' [{tier_name}] -> {img_url[:80]}")
-                        return img_url
-                    else:
-                        logger.debug(f"[img] Rejected by validator: {img_url[:60]}")
-
-                logger.debug(f"[img] {tier_name} — no URLs passed the validator, trying next tier.")
-
-            except Exception as e:
-                _last_ddgs_time = time.monotonic()
-                logger.warning(f"[img] {tier_name} threw exception: {e} — trying next tier.")
-
-    # --- Ultimate Failsafe ---
-    logger.warning(f"[img] All 3 tiers failed for '{activity_name}'. Returning Unsplash fallback.")
+    logger.warning(f"[img] All Pexels attempts failed for '{activity_name}'. Returning fallback.")
     return STATIC_FALLBACK
 
 
@@ -227,8 +203,7 @@ async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput
             for act in day.activities:
                 img_url = await fetch_image_for_activity(
                     activity_name=act.title,
-                    destination=user_input.destination,
-                    activity_type=act.type or "experience"
+                    destination=user_input.destination
                 )
                 normalized_acts.append(
                     act.model_copy(update={"image_url": img_url})

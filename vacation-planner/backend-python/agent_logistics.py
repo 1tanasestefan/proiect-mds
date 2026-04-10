@@ -11,6 +11,7 @@ from pydantic_ai import Agent
 from models import UserInput, AgentOneOutput, TripLogistics
 from loguru import logger
 from fastapi import HTTPException
+from maps_service import get_multimodal_options
 
 load_dotenv()
 
@@ -64,9 +65,11 @@ logistics_agent = Agent(
         "5. Do NOT invent fictional airlines. Use real airline categories (e.g., 'Wizz Air / Ryanair tier', 'Lufthansa / KLM tier').\n"
         "6. The total_estimated_budget_usd should include: mid-tier flight + mid-tier hotel for ALL nights + sum of activity costs.\n"
         "7. For booking_link fields, use EXACTLY the placeholder strings: "
-        "\"SKYSCANNER_LINK\" for flights and \"BOOKING_LINK\" or \"AIRBNB_LINK\" for accommodations. "
-        "The backend will replace these with real date-aware URLs.\n"
-        "8. Return a perfectly structured logistics plan matching the required schema."
+        "\"SKYSCANNER_LINK\" for flights and \"BOOKING_LINK\" or \"AIRBNB_LINK\" for accommodations.\n"
+        "8. You are 'Map-Aware'. You will receive exact transit options (distances, times, GeoJSON, Uber math) from our OSRM tool in the prompt. "
+        "You MUST include the 'transit_options' dictionary in your output, enhancing the 'name' and 'mode' with your local knowledge (e.g. suggesting the 'Gatwick Express' instead of just 'Regional Train'). "
+        "Prefer 'Elegant Transfers' (direct trains over multiple buses) and justify the Uber option if they arrive late at night. "
+        "Return the full structured logistics plan."
     ),
 )
 
@@ -129,35 +132,49 @@ def _inject_booking_links(
     })
 
 
+
+
 # ── Main Entry Point ─────────────────────────────────────────────
 
 async def generate_logistics(
     user_input: UserInput,
-    itinerary: AgentOneOutput,
+    logistics_context: str,
 ) -> TripLogistics:
     """
     Run Agent 2 to generate logistics & booking recommendations.
-    Takes Agent 1's output as additional context.
+    Uses a hyper-minimal context string to save tokens.
     """
     try:
-        itinerary_summary = json.dumps(itinerary.model_dump(), indent=2, default=str)
+        logger.info(f"Starting logistics generation: {user_input.origin} → {user_input.destination} ({user_input.start_date} to {user_input.end_date})")
+
+        # Pre-fetch open-source OSRM map data
+        try:
+            # We estimate $300 for the base flight; the AI will adjust Total Prices naturally in its output
+            raw_transit_data = await get_multimodal_options(user_input.origin, user_input.destination, 300.0)
+            
+            # STRIP the massive GeoJSON polylines to prevent Groq 400 Context Limit / TPM crash
+            pruned_transit_data = {}
+            for k, v in raw_transit_data.items():
+                v_copy = v.model_dump()
+                for leg in v_copy.get("legs", []):
+                    leg["polyline"] = None  # Removes thousands of coordinates from the Context window
+                pruned_transit_data[k] = v_copy
+                
+            transit_injection = json.dumps(pruned_transit_data, indent=2)
+        except Exception as e:
+            logger.warning(f"Could not fetch OSRM data: {e}")
+            raw_transit_data = {}
+            transit_injection = "No map data available. Please generate standard options."
 
         prompt = (
-            f"User constraints:\n"
-            f"  Origin City: {user_input.origin}\n"
-            f"  Destination: {user_input.destination}\n"
-            f"  Travel Dates: {user_input.start_date} to {user_input.end_date} ({user_input.trip_days} nights)\n"
-            f"  Budget: {user_input.budget}\n"
-            f"  Lifestyle: {user_input.lifestyle}\n"
-            f"  Vacation Type: {user_input.vacationType}\n"
-            f"  Travelers: {user_input.travelers}\n\n"
-            f"Proposed Itinerary (from Experience Agent):\n{itinerary_summary}\n\n"
-            f"Based on the above, generate logistics JSON with flights (from {user_input.origin} to {user_input.destination}), "
-            f"accommodations (for {user_input.trip_days} nights), "
-            f"and total budget estimation. Output ONLY raw JSON."
+            f"User constraints & Context:\n"
+            f"{logistics_context}\n\n"
+            f"--- OSRM MULTIMODAL ROUTING DATA ---\n"
+            f"Here are the exact route calculations from Airport to City Center (keys: 'budget', 'balanced', 'premium'):\n{transit_injection}\n"
+            f"--------------------------------------\n\n"
+            f"Based on all the above, generate logistics JSON with flights, accommodations, overall budget, "
+            f"AND map the 'transit_options' dictionary exactly to the JSON schema, improving the names of the transit legs based on local city knowledge. Output ONLY raw JSON."
         )
-
-        logger.info(f"Starting logistics generation: {user_input.origin} → {user_input.destination} ({user_input.start_date} to {user_input.end_date})")
 
         result = await asyncio.wait_for(
             logistics_agent.run(prompt),
@@ -196,6 +213,14 @@ async def generate_logistics(
                 
             parsed = TripLogistics(**data)
         
+        # 3. RE-INJECT POLYLINES
+        # We stripped the GeoJSON from the prompt to save 20k+ tokens. We must bolt them back on here.
+        if parsed.transit_options and raw_transit_data:
+            for k, stored_v in raw_transit_data.items():
+                if k in parsed.transit_options:
+                    for i, leg in enumerate(parsed.transit_options[k].legs):
+                        if i < len(stored_v.legs):
+                            leg.polyline = stored_v.legs[i].polyline
 
         # Inject real date-aware booking URLs
         enriched = _inject_booking_links(parsed, user_input)

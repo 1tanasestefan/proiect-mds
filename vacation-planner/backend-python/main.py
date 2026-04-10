@@ -45,7 +45,8 @@ async def generate_itinerary(user_input: UserInput):
         experience_result = await generate_experience_itinerary(user_input)
 
         logger.info(f"[Orchestrator] Step 2: Logistics Agent for {user_input.destination}")
-        logistics_result = await generate_logistics(user_input, experience_result)
+        logistics_context = f"Origin: {user_input.origin}, Destination: {user_input.destination}, Check-in: {user_input.start_date}, Check-out: {user_input.end_date}. Provide flight and hotel estimates."
+        logistics_result = await generate_logistics(user_input, logistics_context)
 
         final_plan = FinalTripPlan(
             experience=experience_result,

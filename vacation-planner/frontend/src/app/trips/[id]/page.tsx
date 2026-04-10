@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useAuth } from "@/context/AuthContext";
+import { TransportDashboard } from "@/components/TransportDashboard";
 import {
   ArrowLeft, MapPin, Calendar, Loader2,
   Plane, Hotel, Star, Clock, DollarSign,
@@ -54,6 +55,7 @@ interface TripLogistics {
   flights: FlightOption[];
   accommodations: AccommodationOption[];
   total_estimated_budget_usd: number;
+  transit_options?: Record<string, any>;
 }
 
 interface FinalTripPlan {
@@ -302,7 +304,7 @@ export default function TripDetailPage() {
 
             {/* Accommodations */}
             {logistics.accommodations?.length > 0 && (
-              <div>
+              <div className="mb-6">
                 <p className="text-white/40 text-xs flex items-center gap-1.5 mb-3">
                   <Hotel className="h-3.5 w-3.5" /> Accommodations
                 </p>
@@ -327,6 +329,14 @@ export default function TripDetailPage() {
                 </div>
               </div>
             )}
+
+            {/* Multimodal Transport Dashboard */}
+            {logistics.transit_options && Object.keys(logistics.transit_options).length > 0 && (
+              <div>
+                <TransportDashboard options={logistics.transit_options} />
+              </div>
+            )}
+
           </motion.section>
         )}
       </div>

@@ -57,6 +57,27 @@ class AgentOneOutput(BaseModel):
 
 
 # ── Agent 2 (Logistics & Booking) Contracts ──────────────────────
+from typing import Dict, Any
+
+class Coordinate(BaseModel):
+    lat: float = Field(..., description="Latitude")
+    lng: float = Field(..., description="Longitude")
+
+class TransportLeg(BaseModel):
+    mode: Literal['flight', 'train', 'bus', 'uber'] = Field(..., description="Transport mode")
+    name: str = Field(..., description="Name of the service (e.g., 'British Airways', 'Eurostar', 'UberX')")
+    origin_coords: Coordinate = Field(..., description="Starting coordinates for this leg")
+    destination_coords: Coordinate = Field(..., description="Ending coordinates for this leg")
+    price: float = Field(..., description="Estimated cost of this leg")
+    duration_minutes: int = Field(..., description="Duration in minutes")
+    polyline: Optional[str] = Field(default=None, description="Encoded path or GeoJSON for map rendering")
+
+class ConsolidatedLogistics(BaseModel):
+    total_price: float = Field(..., description="Total cost of all legs combined")
+    currency: str = Field(default="USD", description="Currency for the prices")
+    legs: List[TransportLeg] = Field(..., description="Ordered list of transportation segments")
+    map_center: Coordinate = Field(..., description="Recommended focal center for the map view")
+
 
 class FlightOption(BaseModel):
     airline_type: str = Field(..., description="Category of airline (e.g., 'Low Cost', 'Premium', 'Charter')")
@@ -74,6 +95,7 @@ class TripLogistics(BaseModel):
     flights: List[FlightOption] = Field(..., description="2-3 flight options at different price tiers")
     accommodations: List[AccommodationOption] = Field(..., description="2-3 accommodation options")
     total_estimated_budget_usd: float = Field(..., description="Total estimated trip budget per person in USD")
+    transit_options: Optional[Dict[str, ConsolidatedLogistics]] = Field(default=None, description="Multimodal transit choices (budget, premium, etc)")
 
 class FinalTripPlan(BaseModel):
     experience: AgentOneOutput = Field(..., description="The curated itinerary from Agent 1")
