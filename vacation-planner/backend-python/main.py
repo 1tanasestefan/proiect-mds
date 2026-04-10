@@ -127,6 +127,41 @@ async def get_my_itineraries(user_id: str = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=f"Failed to fetch itineraries: {str(e)}")
 
 
+# ── PROTECTED: Get Single Itinerary ──────────────────────────────
+
+@app.get("/api/itineraries/{itinerary_id}")
+async def get_itinerary(
+    itinerary_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Fetch a single itinerary by ID (only if owned by the requesting user)."""
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    try:
+        result = (
+            supabase
+            .table("itineraries")
+            .select("id, title, destination, start_date, end_date, is_public, created_at, ai_data")
+            .eq("id", itinerary_id)
+            .eq("user_id", user_id)
+            .single()
+            .execute()
+        )
+
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Itinerary not found.")
+
+        logger.info(f"[DB] Fetched itinerary {itinerary_id} for user {user_id}")
+        return result.data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[DB] Fetch single failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch itinerary: {str(e)}")
+
+
 # ── PROTECTED: Delete Itinerary ──────────────────────────────────
 
 @app.delete("/api/itineraries/{itinerary_id}")

@@ -2,12 +2,172 @@
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
-import { motion } from 'framer-motion';
-import { Calendar, MapPin, Settings2, Compass, ArrowRight, Heart, Wallet, Loader2, Plane } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { Calendar, MapPin, Compass, ArrowRight, Heart, Wallet, Loader2, Plane, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { FinalTripPlan } from '@/components/figma/itinerary-output';
+
+// ── Spotlight slideshow data ────────────────────────────────────────
+const SPOTLIGHT = [
+  {
+    label: 'Neon Tokyo',
+    location: 'Tokyo, Japan',
+    vibe: 'Energetic Nightlife',
+    image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1400&q=85&auto=format&fit=crop',
+    accent: '#00F0FF',
+    query: 'Tokyo Japan',
+  },
+  {
+    label: 'Tuscany Villas',
+    location: 'Tuscany, Italy',
+    vibe: 'Luxury Countryside',
+    image: 'https://images.unsplash.com/photo-1499678329028-101435549a4e?w=1400&q=85&auto=format&fit=crop',
+    accent: '#FFB347',
+    query: 'Tuscany Italy',
+  },
+  {
+    label: 'Maldives Overwater',
+    location: 'Maldives',
+    vibe: 'Private Island Escape',
+    image: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=1400&q=85&auto=format&fit=crop',
+    accent: '#00D4AA',
+    query: 'Maldives',
+  },
+  {
+    label: 'Paris, City of Light',
+    location: 'Paris, France',
+    vibe: 'Art & Gastronomy',
+    image: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1400&q=85&auto=format&fit=crop',
+    accent: '#8A2BE2',
+    query: 'Paris France',
+  },
+];
+
+const SLIDE_VARIANTS = {
+  enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
+};
+
+function SpotlightSlideshow({ onPlan }: { onPlan: (query: string) => void }) {
+  const [index, setIndex] = useState(0);
+  const [dir, setDir] = useState(1);
+
+  const go = useCallback((delta: number) => {
+    setDir(delta);
+    setIndex(prev => (prev + delta + SPOTLIGHT.length) % SPOTLIGHT.length);
+  }, []);
+
+  // Auto-advance every 5 s
+  useEffect(() => {
+    const t = setInterval(() => go(1), 5000);
+    return () => clearInterval(t);
+  }, [go]);
+
+  const slide = SPOTLIGHT[index];
+
+  return (
+    <div className="relative overflow-hidden rounded-[32px] min-h-[400px] border border-gray-200 dark:border-white/10 shadow-lg">
+      {/* Slide images */}
+      <AnimatePresence custom={dir} mode="popLayout">
+        <motion.div
+          key={index}
+          custom={dir}
+          variants={SLIDE_VARIANTS}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+          className="absolute inset-0"
+        >
+          <Image
+            src={slide.image}
+            alt={slide.label}
+            fill
+            sizes="(max-width: 768px) 100vw, 66vw"
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/10" />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Overlay content */}
+      <div className="absolute inset-0 p-8 flex flex-col justify-between z-10">
+        {/* Top row */}
+        <div className="flex justify-between items-start">
+          <div className="backdrop-blur-xl bg-white/10 border border-white/20 px-4 py-2 rounded-full inline-flex items-center gap-2 text-sm font-medium text-white shadow-lg">
+            <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: slide.accent }} />
+            Spotlight Destination
+          </div>
+
+          {/* Arrow controls */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => go(-1)}
+              className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="h-5 w-5 text-white" />
+            </button>
+            <button
+              onClick={() => go(1)}
+              className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight className="h-5 w-5 text-white" />
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom: label + tags + dots */}
+        <div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              <h2 className="text-5xl font-bold text-white mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                {slide.label}
+              </h2>
+              <div className="flex flex-wrap gap-3 text-white/90 font-medium mb-5" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 backdrop-blur-md border border-white/10">
+                  <MapPin className="h-4 w-4" style={{ color: slide.accent }} />
+                  {slide.location}
+                </span>
+                <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 backdrop-blur-md border border-white/10">
+                  <Heart className="h-4 w-4 text-[#8A2BE2]" />
+                  {slide.vibe}
+                </span>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Dot indicators */}
+          <div className="flex gap-2">
+            {SPOTLIGHT.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => { setDir(i > index ? 1 : -1); setIndex(i); }}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: i === index ? 24 : 8,
+                  height: 8,
+                  background: i === index ? slide.accent : 'rgba(255,255,255,0.3)',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 const container = {
   hidden: { opacity: 0 },
@@ -34,6 +194,7 @@ interface SavedItinerary {
 
 export default function DashboardPage() {
   const { user, session } = useAuth();
+  const router = useRouter();
   const [itineraries, setItineraries] = useState<SavedItinerary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -86,37 +247,9 @@ export default function DashboardPage() {
             animate="show"
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            {/* Upcoming Trip - Span 2 columns */}
-            <motion.div variants={item} className="md:col-span-2 relative overflow-hidden rounded-[32px] group min-h-[400px] border border-gray-200 dark:border-white/10 shadow-lg">
-              <Image
-                src="https://images.unsplash.com/photo-1542051812871-7575116fc53e?q=80&w=2670&auto=format&fit=crop"
-                alt="Tokyo"
-                fill
-                className="object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
-              
-              <div className="absolute inset-0 p-8 flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <div className="backdrop-blur-xl bg-white/10 border border-white/20 px-4 py-2 rounded-full inline-flex items-center gap-2 text-sm font-medium text-white shadow-lg">
-                    <span className="w-2 h-2 rounded-full bg-[#00F0FF] animate-pulse" />
-                    Spotlight Destination
-                  </div>
-                  <button className="h-12 w-12 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors shadow-lg">
-                    <ArrowRight className="h-5 w-5 text-white" />
-                  </button>
-                </div>
-
-                <div>
-                  <h2 className="text-5xl font-bold text-white mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                    Neon Tokyo
-                  </h2>
-                  <div className="flex flex-wrap gap-4 text-white/90 font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 backdrop-blur-md border border-white/10"><MapPin className="h-4 w-4 text-[#00F0FF]" /> Tokyo, Japan</span>
-                    <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 backdrop-blur-md border border-white/10"><Heart className="h-4 w-4 text-[#8A2BE2]" /> Energetic Nightlife</span>
-                  </div>
-                </div>
-              </div>
+            {/* Spotlight Slideshow - Span 2 columns */}
+            <motion.div variants={item} className="md:col-span-2">
+              <SpotlightSlideshow onPlan={(q) => router.push(`/plan?destination=${encodeURIComponent(q)}`)} />
             </motion.div>
 
             {/* Empty space filler for col 3 */}
@@ -192,7 +325,10 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <button className="w-full py-3 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium hover:bg-[#00F0FF]/10 hover:text-[#00F0FF] transition-colors border border-transparent hover:border-[#00F0FF]/30 flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => router.push(`/trips/${trip.id}`)}
+                          className="w-full py-3 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white font-medium hover:bg-[#00F0FF]/10 hover:text-[#00F0FF] transition-colors border border-transparent hover:border-[#00F0FF]/30 flex items-center justify-center gap-2"
+                        >
                           View details
                           <ArrowRight className="h-4 w-4" />
                         </button>

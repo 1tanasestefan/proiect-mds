@@ -1,32 +1,41 @@
 """
-FastAPI auth dependency.
-Extracts and verifies the Supabase JWT from the Authorization header.
+FastAPI auth dependency — Supabase JWT verification.
+
+Supabase signs tokens with ES256 (ECDSA P-256) by default.
+We verify using the project's ECDSA public JWK via jose.jwk.construct().
+HS256 is supported as an optional fallback.
 """
 
 import os
-from typing import Optional
 from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt, JWTError
+from jose import jwt, JWTError, ExpiredSignatureError, jwk
 from loguru import logger
 
 load_dotenv()
 
-SUPABASE_JWT_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
-
-# User-provided JWK for ES256 verification (Supabase ECDSA)
-SUPABASE_JWK = {
-    "x": "vBsf5nvXRkgs1CuYyPju4Q8Z9bihRgbbtwSKjYhI2LM",
-    "y": "GwN11KT-uP_kJ31EmkvQD0ZRnzmramWP3CmsTdNYNuQ",
-    "alg": "ES256",
+# ── Supabase ECDSA public key (ES256) ────────────────────────────
+# This is the PUBLIC half of Supabase's signing key — safe to embed.
+# Source: Supabase Dashboard → Settings → API → JWT Settings
+_SUPABASE_JWK = {
+    "kty": "EC",
     "crv": "P-256",
+    "alg": "ES256",
     "kid": "3e69f652-3dcd-4159-ac91-6a6ac23d0b65",
-    "kty": "EC"
+    "x":   "vBsf5nvXRkgs1CuYyPju4Q8Z9bihRgbbtwSKjYhI2LM",
+    "y":   "GwN11KT-uP_kJ31EmkvQD0ZRnzmramWP3CmsTdNYNuQ",
 }
 
-if not SUPABASE_JWT_SECRET:
-    logger.warning("SUPABASE_JWT_SECRET not set — auth will reject all requests.")
+try:
+    _EC_VERIFY_KEY = jwk.construct(_SUPABASE_JWK)
+    logger.info("[AUTH] ES256 public key loaded at startup.")
+except Exception as _e:
+    _EC_VERIFY_KEY = None
+    logger.error(f"[AUTH] Could not load ES256 key: {_e}")
+
+# HS256 fallback (only used if the token's alg is HS256)
+_HMAC_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
 
 security = HTTPBearer()
 
@@ -35,85 +44,54 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:
     """
-    FastAPI dependency that:
-    1. Extracts the Bearer token from the Authorization header
-    2. Decodes & verifies it using Supabase's JWT secret
-    3. Returns the user's UUID (sub claim)
-
-    Raises 401 on any failure.
+    Validates a Supabase JWT and returns the authenticated user UUID (sub).
+    Supports ES256 (Supabase default) and HS256 (legacy fallback).
+    Raises HTTP 401 on any failure.
     """
     token = credentials.credentials
 
-    if not SUPABASE_JWT_SECRET:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server auth not configured (missing JWT secret).",
-        )
-
+    # Peek at the header without validating yet
     try:
-        from jose import jwt as jose_jwt
-        
-        # 1. Log the header to be 100% sure about the 'alg'
-        unverified_header = jose_jwt.get_unverified_header(token)
-        logger.debug(f"[AUTH] JWT Header: {unverified_header}")
-        
-        # 2. Log the unverified claims (replacement for get_payload in older python-jose)
-        try:
-            unverified_claims = jose_jwt.get_unverified_claims(token)
-            logger.debug(f"[AUTH] Unverified Claims: {unverified_claims}")
-        except Exception:
-            logger.debug("[AUTH] Could not extract unverified claims.")
+        header = jwt.get_unverified_header(token)
+    except JWTError as e:
+        raise HTTPException(status_code=401, detail=f"Malformed token header: {e}")
 
-        # 3. Choose the correct key and algorithm based on the header
-        alg = unverified_header.get("alg", "HS256")
-        kid = unverified_header.get("kid")
-        
-        verify_key = SUPABASE_JWT_SECRET
-        if alg == "ES256" and kid == SUPABASE_JWK["kid"]:
-            from jose import jwk
-            verify_key = jwk.construct(SUPABASE_JWK)
-            logger.debug("[AUTH] Using ES256 public key for verification.")
-        else:
-            logger.debug(f"[AUTH] Using HMAC secret for {alg} verification.")
+    alg = header.get("alg", "")
+    logger.debug(f"[AUTH] Incoming token: alg={alg}, kid={header.get('kid', 'n/a')[:16]}")
 
+    # Select the correct verification key
+    if alg == "ES256":
+        if _EC_VERIFY_KEY is None:
+            raise HTTPException(status_code=500, detail="ES256 key not configured on server.")
+        verify_key = _EC_VERIFY_KEY
+        algorithms = ["ES256"]
+    elif alg in ("HS256", "HS384", "HS512"):
+        if not _HMAC_SECRET:
+            raise HTTPException(status_code=500, detail="SUPABASE_JWT_SECRET not set for HS256.")
+        verify_key = _HMAC_SECRET
+        algorithms = ["HS256", "HS384", "HS512"]
+    else:
+        logger.error(f"[AUTH] Unsupported algorithm: {alg}")
+        raise HTTPException(status_code=401, detail=f"Unsupported token algorithm: {alg}")
+
+    # Decode + verify
+    try:
         payload = jwt.decode(
             token,
             verify_key,
-            algorithms=["HS256", "HS384", "HS512", "ES256"],
-            audience=["authenticated", "anon", "service_role"],
-            options={
-                "verify_aud": True,
-                "verify_exp": True,
-                "verify_iat": True,
-                "verify_signature": True
-            }
+            algorithms=algorithms,
+            options={"verify_aud": False},
         )
-        
-        user_id: Optional[str] = payload.get("sub")
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token: no user ID.",
-            )
-        
-        logger.success(f"[AUTH] User {user_id} verified successfully.")
-        return user_id
+    except ExpiredSignatureError:
+        logger.warning("[AUTH] Token expired.")
+        raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
+    except JWTError as e:
+        logger.error(f"[AUTH] JWT verification failed: {e}")
+        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
 
-    except jose_jwt.ExpiredSignatureError:
-        logger.warning("[AUTH] Token has expired.")
-        raise HTTPException(status_code=401, detail="Session expired. Please login again.")
-    except (JWTError, jose_jwt.JWKError) as e:
-        err_msg = str(e)
-        if "algorithm" in err_msg.lower() or "pem" in err_msg.lower():
-            logger.error(f"[AUTH] ALGORITHM MISMATCH: Your token uses {unverified_header.get('alg')}, but your SUPABASE_JWT_SECRET is a simple string.")
-            logger.error("[AUTH] ACTION REQUIRED: Go to Supabase Dashboard -> Settings -> API -> JWT Settings and set 'JWT Algorithm' to 'HS256'.")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"JWT Algorithm Mismatch: Expected HS256, got {unverified_header.get('alg')}. Please check Supabase settings.",
-            )
-        
-        logger.error(f"[AUTH] JWT verification failed. Error: {err_msg}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Verification failed: {err_msg}",
-        )
+    user_id: str | None = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token: missing user ID.")
+
+    logger.debug(f"[AUTH] ✅ User {user_id} authenticated via {alg}")
+    return user_id

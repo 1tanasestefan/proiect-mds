@@ -1,0 +1,87 @@
+--- a/frontend/src/app/page.tsx
++++ b/frontend/src/app/page.tsx
+@@ -35,38 +35,59 @@
+   const handleGenerateItinerary = async (data: TripFormData) => {
+     setFormData(data);
+     setItineraryData(null); // Clear previous results
+     setError(null);         // Clear previous errors
+     setViewState('PROCESSING');
+ 
+     const controller = new AbortController();
+     const timeoutId = setTimeout(() => controller.abort(), 100000); // 100s timeout
+ 
+     try {
++      const payload = {
++        budget: data.budget,
++        lifestyle: data.lifestyle,
++        vacationType: data.vacationType,
++        origin: data.origin,
++        destination: data.destination,
++        start_date: data.startDate,
++        end_date: data.endDate,
++        travelers: parseInt(data.travelers, 10) || 1,
++      };
++
+       const response = await fetch(ITINERARY_API_URL, {
+         method: "POST",
+         signal: controller.signal,
+         headers: {
+           "Content-Type": "application/json",
+         },
+-        body: JSON.stringify({
+-          ...data,
+-          travelers: parseInt(data.travelers, 10) || 1
+-        }),
++        body: JSON.stringify(payload),
+       });
+ 
+       clearTimeout(timeoutId);
+ 
+       if (!response.ok) {
+-        const errorData = await response.json().catch(() => ({}));
+-        throw new Error(errorData.detail || \Backend error: \\);
++        let errorMsg = \Backend error: \\;
++        try {
++          const errorData = await response.json();
++          if (errorData?.detail) {
++            if (typeof errorData.detail === 'string') {
++              errorMsg = errorData.detail;
++            } else if (Array.isArray(errorData.detail)) {
++              errorMsg = errorData.detail
++                .map((e: Record<string, unknown>) => {
++                  if (typeof e === 'string') return e;
++                  const field = Array.isArray(e.loc) ? String(e.loc[e.loc.length - 1]) : '';
++                  const msg = typeof e.msg === 'string' ? e.msg : JSON.stringify(e);
++                  return field ? \\: \\ : msg;
++                })
++                .join('; ');
++            } else {
++              errorMsg = JSON.stringify(errorData.detail);
++            }
++          } else if (typeof errorData === 'string') {
++            errorMsg = errorData;
++          } else {
++            errorMsg = JSON.stringify(errorData);
++          }
++        } catch {
++          // Keep default status message
++        }
++        throw new Error(errorMsg);
+       }
+ 
+-      const result = (await response.json()) as ItineraryData;
++      const result = (await response.json()) as FinalTripPlan;
+       setItineraryData(result);
+       setViewState('RESULTS');
+     } catch (err: unknown) {
+       console.error("Failed to generate itinerary:", err);
+-      setError(err instanceof Error ? err.message : "Something went wrong while crafting your journey. Please try again.");
++      const message = err instanceof Error 
++        ? err.message 
++        : typeof err === 'string' 
++          ? err 
++          : "Something went wrong while crafting your journey. Please try again.";
++      setError(message);
+       setViewState('INPUT');
+     }
+   };

@@ -73,56 +73,91 @@ async def search_web(ctx: RunContext[UserInput], query: str) -> str:
             return "Search tool unavailable."
 
 
-# ---------- IMAGE FETCHER (DDGS ONLY — NO WIKIPEDIA) ----------
+# ---------- IMAGE FETCHER — "SNIPER" ARCHITECTURE ----------
+
+def _is_valid_image(url: str) -> bool:
+    """
+    Returns True only if the URL points to an actual hotlink-safe image file.
+    Rejects sites known to block hotlinking and non-image extensions.
+    """
+    if not url:
+        return False
+    low = url.lower()
+
+    # Blocklist: sites that do not allow hotlinking or won't resolve to a raw image
+    BLOCKED_DOMAINS = ("wikipedia", "wikimedia", "foursquare", "tripadvisor")
+    BLOCKED_PATTERNS = ("svg", "icon", "logo")
+    for blocked in BLOCKED_DOMAINS + BLOCKED_PATTERNS:
+        if blocked in low:
+            return False
+
+    # Allowlist: must contain a valid image extension
+    VALID_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
+    return any(ext in low for ext in VALID_EXTENSIONS)
+
+
 async def fetch_image_for_activity(activity_name: str, destination: str, activity_type: str) -> str:
     """
-    Fetch an image URL using DDGS().images() ONLY.
-    - Single attempt, no retries, no secondary strategies.
-    - Filters out wikipedia/wikimedia/svg results.
-    - Returns static Unsplash fallback on ANY failure.
+    Sniper-architecture image fetcher.
+    1. Anti-rate-limit jitter delay at entry.
+    2. 3-tier query cascade (Hyper-Specific → Broad → City Aesthetic).
+    3. URL quality validator rejects blocklisted/non-image URLs.
+    4. Returns the FIRST valid URL found — Unsplash fallback only if all tiers fail.
     """
     global _last_ddgs_time
 
-    query = f"{activity_name} {destination} {activity_type} interior venue high quality"
-    logger.debug(f"[img] DDGS query: '{query}'")
+    # --- Anti-Rate-Limit: randomised entry delay ---
+    jitter = random.uniform(1.0, 2.5)
+    logger.debug(f"[img] Jitter delay {jitter:.2f}s before fetching '{activity_name}'")
+    await asyncio.sleep(jitter)
+
+    # --- 3-Tier query cascade ---
+    tiers = [
+        ("Tier-1 (Hyper-Specific)", f"{activity_name} {destination} photo high quality"),
+        ("Tier-2 (Broad/Contextual)", f"{activity_name} {destination}"),
+        ("Tier-3 (City Aesthetic)",   f"{destination} beautiful travel photography"),
+    ]
 
     async with search_lock:
-        # Enforce cooldown
+        # Honour the global cooldown on top of jitter
         now = time.monotonic()
         elapsed = now - _last_ddgs_time
         if elapsed < _DDGS_COOLDOWN:
-            await asyncio.sleep(_DDGS_COOLDOWN - elapsed)
+            wait = _DDGS_COOLDOWN - elapsed
+            logger.debug(f"[img] Cooldown: waiting an additional {wait:.2f}s")
+            await asyncio.sleep(wait)
 
-        try:
-            def _run():
-                with DDGS() as ddgs:
-                    return list(ddgs.images(keywords=query, max_results=5, safesearch="moderate"))
+        for tier_name, query in tiers:
+            logger.debug(f"[img] {tier_name} — query: '{query}'")
+            try:
+                def _run(q=query):
+                    with DDGS() as ddgs:
+                        return list(ddgs.images(keywords=q, max_results=3, safesearch="moderate"))
 
-            results = await asyncio.wait_for(asyncio.to_thread(_run), timeout=15)
-            _last_ddgs_time = time.monotonic()
+                results = await asyncio.wait_for(asyncio.to_thread(_run), timeout=15)
+                _last_ddgs_time = time.monotonic()
 
-            if results:
+                if not results:
+                    logger.debug(f"[img] {tier_name} returned 0 results — trying next tier.")
+                    continue
+
                 for r in results:
                     img_url = r.get("image", "")
-                    if not img_url:
-                        continue
-                    low = img_url.lower()
-                    # Quality gate: reject junk
-                    if "wikipedia" in low or "wikimedia" in low or low.endswith(".svg"):
-                        logger.debug(f"[img] Rejected (blocked domain/svg): {img_url[:60]}")
-                        continue
-                    # Valid image found
-                    logger.info(f"[img] ✅ '{activity_name}' -> {img_url[:80]}")
-                    return img_url
+                    if _is_valid_image(img_url):
+                        logger.info(f"[img] ✅ '{activity_name}' [{tier_name}] -> {img_url[:80]}")
+                        return img_url
+                    else:
+                        logger.debug(f"[img] Rejected by validator: {img_url[:60]}")
 
-            # No valid results after filtering
-            logger.warning(f"[img] No valid DDGS results for '{activity_name}', using static fallback.")
-            return STATIC_FALLBACK
+                logger.debug(f"[img] {tier_name} — no URLs passed the validator, trying next tier.")
 
-        except Exception as e:
-            _last_ddgs_time = time.monotonic()
-            logger.warning(f"[img] DDGS failed for '{activity_name}': {e}")
-            return STATIC_FALLBACK
+            except Exception as e:
+                _last_ddgs_time = time.monotonic()
+                logger.warning(f"[img] {tier_name} threw exception: {e} — trying next tier.")
+
+    # --- Ultimate Failsafe ---
+    logger.warning(f"[img] All 3 tiers failed for '{activity_name}'. Returning Unsplash fallback.")
+    return STATIC_FALLBACK
 
 
 

@@ -35,8 +35,8 @@ spring:
 # ── JWT Configuration ──
 app:
   jwt:
-    secret: c2VjdXJlLWtleS13aGljaC1pcy1hdC1sZWFzdC0zMi1ieXRlcy1sb25n
-    expiration-ms: 86400000  # 24 hours
+    secret: ${JWT_SECRET:c2VjdXJlLWtleS13aGljaC1pcy1hdC1sZWFzdC0zMi1ieXRlcy1sb25n}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}  # 24 hours
 
 # ── Server ──
 server:
