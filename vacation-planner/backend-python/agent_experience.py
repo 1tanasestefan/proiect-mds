@@ -5,7 +5,7 @@ import json
 import re
 import httpx
 from dotenv import load_dotenv
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent
 from models import UserInput, AgentOneOutput
 from loguru import logger
 from fastapi import HTTPException
@@ -34,36 +34,16 @@ experience_agent = Agent(
         "The number of days will be specified in the user prompt. "
 
         "CRITICAL OUTPUT RULES: "
-        "1. Your ENTIRE response must be a single valid JSON object — no markdown fences, no prose. "
+        "1. Your ENTIRE response must be a single valid JSON object — no markdown fences, no prose, no commentary. "
         "2. The root JSON object MUST have exactly these three top-level keys: "
         "   'trip_title' (string), 'vibe_summary' (string), 'itinerary' (array of day objects). "
         "   Do NOT wrap them inside a 'trip', 'data', 'result', or any other key. "
         "3. Each day object: { 'day_number': int, 'activities': [ ... ] }. "
         "4. Each activity: { 'title', 'description', 'time', 'cost', 'location', 'image_url': '', 'type': 'experience' }. "
-        "5. You MAY use `search_web` at most ONCE to look up a venue. Do NOT call it more than once. "
-        "6. After any tool use, respond IMMEDIATELY with the full JSON — no further tool calls. "
-        "7. Do NOT include any text before or after the JSON object."
+        "5. You have NO tools available. Do NOT output function calls, XML tags, or <function=...> syntax. "
+        "6. Use your own extensive knowledge of the destination. Begin your response with '{' immediately."
     ),
 )
-
-
-# ---------- WEB SEARCH TOOL ----------
-@experience_agent.tool
-async def search_web(ctx: RunContext[UserInput], query: str) -> str:
-    """Search the web for real venues and places."""
-    async with search_lock:
-        try:
-            logger.info(f"[search_web] {query}")
-            def run_sync():
-                with DDGS() as ddgs:
-                    return list(ddgs.text(query, max_results=5))
-            results = await asyncio.wait_for(asyncio.to_thread(run_sync), timeout=15)
-            if not results:
-                return "No results found."
-            return "\n\n".join([f"Title: {r['title']}\nSnippet: {r['body']}" for r in results])
-        except Exception as e:
-            logger.error(f"[search_web] error: {e}")
-            return "Search tool unavailable."
 
 
 # ---------- IMAGE FETCHER — "SNIPER" ARCHITECTURE ----------

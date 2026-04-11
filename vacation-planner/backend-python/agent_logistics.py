@@ -166,14 +166,28 @@ async def generate_logistics(
             raw_transit_data = {}
             transit_injection = "No map data available. Please generate standard options."
 
+        # Decide if we should ask for transit_options at all
+        has_transit_data = isinstance(transit_injection, str) and transit_injection.startswith("{")
+        
+        if has_transit_data:
+            transit_instructions = (
+                f"--- OSRM MULTIMODAL ROUTING DATA ---\n"
+                f"Here are the exact route calculations from Airport to City Center (keys: 'budget', 'balanced', 'premium'):\n{transit_injection}\n"
+                f"--------------------------------------\n\n"
+                f"You MUST include the 'transit_options' dictionary in your JSON output, copying and enhancing the tier names "
+                f"with local knowledge (e.g., 'Ngurah Rai Airport Taxi' instead of 'Virtual Uber')."
+            )
+        else:
+            transit_instructions = (
+                "No local ground transport data is available (likely an island or intercontinental destination). "
+                "Do NOT include a 'transit_options' key in your JSON output. Omit it entirely."
+            )
+
         prompt = (
             f"User constraints & Context:\n"
             f"{logistics_context}\n\n"
-            f"--- OSRM MULTIMODAL ROUTING DATA ---\n"
-            f"Here are the exact route calculations from Airport to City Center (keys: 'budget', 'balanced', 'premium'):\n{transit_injection}\n"
-            f"--------------------------------------\n\n"
-            f"Based on all the above, generate logistics JSON with flights, accommodations, overall budget, "
-            f"AND map the 'transit_options' dictionary exactly to the JSON schema, improving the names of the transit legs based on local city knowledge. Output ONLY raw JSON."
+            f"{transit_instructions}\n\n"
+            f"Generate logistics JSON with flights, accommodations, and overall budget. Output ONLY raw JSON."
         )
 
         result = await asyncio.wait_for(

@@ -43,7 +43,9 @@ async def fetch_osrm_route(origin: Coordinate, destination: Coordinate):
 async def get_multimodal_options(origin_name: str, destination_name: str, flight_price_est: float) -> dict:
     # 1. Clean the destination name to maximize geocoding success (e.g. "Paris, France" -> "Paris")
     city_only = destination_name.split(",")[0].strip()
-    airport_query = f"{city_only} Airport"
+    # Include the full destination_name (with country) to disambiguate (e.g. "Bali Airport Indonesia" not "Bali Airport Nigeria")
+    country_part = destination_name.split(",")[-1].strip() if "," in destination_name else ""
+    airport_query = f"{city_only} Airport {country_part}".strip()
     
     # 2. Geocode Airport and Destination Hotel/Center
     try:
@@ -75,7 +77,17 @@ async def get_multimodal_options(origin_name: str, destination_name: str, flight
     
     options = {}
     
-    # 3. OSRM Route for Ground Transport
+    # 3. Early-exit: detect intercontinental/island routes where OSRM driving will always fail
+    # If origin and destination are separated by more than 30 degrees of longitude they are on different
+    # landmasses or separated by an ocean. OSRM is a *driving* router and will return 400 in these cases.
+    origin_city_coord = Coordinate(lat=0.0, lng=0.0)  # We use 0,0 placeholder for origin (flight only)
+    lng_diff = abs(airport_coord.lng - origin_city_coord.lng)
+    lat_diff = abs(airport_coord.lat - origin_city_coord.lat)
+    
+    # A practical heuristic: if the destination is an island/archipelago like Bali/Maldives/etc,
+    # detect it by checking if OSRM would be given ocean coordinates.
+    # We always attempt OSRM; the broad except below already handles 400s gracefully.
+    
     try:
         route_data = await fetch_osrm_route(airport_coord, dest_coord)
         dist_km = route_data['distance_m'] / 1000.0
