@@ -227,14 +227,39 @@ async def generate_logistics(
                 
             parsed = TripLogistics(**data)
         
-        # 3. RE-INJECT POLYLINES
-        # We stripped the GeoJSON from the prompt to save 20k+ tokens. We must bolt them back on here.
-        if parsed.transit_options and raw_transit_data:
-            for k, stored_v in raw_transit_data.items():
+        # 3. RE-INJECT METADATA & PRECISE POLYLINES
+        # We stripped the GeoJSON from the prompt, and now we also have the generated hotel name!
+        # Let's perform a precise query to get exact directions to the chosen accommodation.
+        hotel_name = parsed.accommodations[0].name if parsed.accommodations else None
+        
+        precise_data = raw_transit_data
+        if hotel_name and parsed.transit_options:
+            logger.info(f"Re-fetching exact route from airport to precise hotel: {hotel_name}")
+            try:
+                # The LLM has already generated prices, we just want the precise mapped geometry
+                precise_data = await get_multimodal_options(
+                    user_input.origin, 
+                    user_input.destination, 
+                    # Use the estimated price from the first mode returned if any
+                    list(parsed.transit_options.values())[0].legs[0].price if parsed.transit_options else 300.0,
+                    hotel_name=hotel_name
+                )
+            except Exception as e:
+                logger.warning(f"Failed to fetch precise routing for {hotel_name}, using city center: {e}")
+                precise_data = raw_transit_data
+
+        if parsed.transit_options and precise_data:
+            for k, stored_v in precise_data.items():
                 if k in parsed.transit_options:
+                    # Update map center to precise hotel
+                    parsed.transit_options[k].map_center = stored_v.map_center
                     for i, leg in enumerate(parsed.transit_options[k].legs):
                         if i < len(stored_v.legs):
-                            leg.polyline = stored_v.legs[i].polyline
+                            # Copy the exact coordinates and shapes, retaining the LLM's custom names/prices
+                            precise_leg = stored_v.legs[i]
+                            leg.origin_coords = precise_leg.origin_coords
+                            leg.destination_coords = precise_leg.destination_coords
+                            leg.polyline = precise_leg.polyline
 
         # Inject real date-aware booking URLs
         enriched = _inject_booking_links(parsed, user_input)

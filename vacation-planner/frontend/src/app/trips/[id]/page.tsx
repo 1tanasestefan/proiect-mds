@@ -7,8 +7,9 @@ import { useAuth } from "@/context/AuthContext";
 import { TransportDashboard } from "@/components/TransportDashboard";
 import {
   ArrowLeft, MapPin, Calendar, Loader2,
-  Plane, Hotel, Star, Clock, DollarSign,
+  Plane, Hotel, Star, Clock, DollarSign, Users
 } from "lucide-react";
+import { useMultiplayer } from "@/hooks/useMultiplayer";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_ITINERARY_API_URL?.replace("/api/generate-itinerary", "") ||
@@ -74,14 +75,28 @@ interface SavedTrip {
 }
 
 // ── Activity Card ─────────────────────────────────────────────────
-function ActivityCard({ act, i }: { act: Activity; i: number }) {
+function ActivityCard({ act, i, isHighlighted, onClick }: { act: Activity; i: number; isHighlighted?: boolean; onClick?: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -16 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: i * 0.06, duration: 0.4 }}
-      className="flex gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/15 transition-all"
+      onClick={onClick}
+      className={`flex gap-4 p-4 rounded-2xl bg-white/[0.03] transition-all cursor-pointer relative overflow-hidden ${
+        isHighlighted 
+          ? "border-[#00F0FF] shadow-[0_0_15px_rgba(0,240,255,0.4)] bg-[#00F0FF]/10 scale-[1.02]" 
+          : "border-white/8 hover:border-white/20"
+      }`}
     >
+      {isHighlighted && (
+        <div className="absolute top-2 right-3 flex items-center gap-1.5 opacity-80">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00F0FF] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0FF]"></span>
+          </span>
+          <span className="text-[10px] text-[#00F0FF] font-medium tracking-wide">Someone is viewing</span>
+        </div>
+      )}
       {act.image_url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -132,6 +147,19 @@ export default function TripDetailPage() {
   const [trip, setTrip] = useState<SavedTrip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Multiplayer Hook
+  const { onlineUsers, highlightedActivityId, broadcastActivityHighlight } = useMultiplayer(
+    id,
+    session?.user ? { id: session.user.id, email: session.user.email || "user" } : null,
+    (newData) => {
+      // Postgres sync: gracefully merge incoming AI updates
+      setTrip((prev) => {
+        if (!prev) return prev;
+        return { ...prev, ...newData };
+      });
+    }
+  );
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.push("/login");
@@ -189,15 +217,54 @@ export default function TripDetailPage() {
 
       <div className="relative z-10 max-w-4xl mx-auto px-6">
 
-        {/* ── Back button ─────────────────────────────────────────── */}
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          onClick={() => router.push("/dashboard")}
-          className="flex items-center gap-2 pt-28 pb-8 text-white/40 hover:text-white/80 text-sm transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to My Trips
-        </motion.button>
+        {/* ── Back button & Multiplayer Header ────────────────────── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-28 pb-8 gap-4">
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center gap-2 text-white/40 hover:text-white/80 text-sm transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to My Trips
+          </motion.button>
+
+          {/* Multiplayer Online Users */}
+          {onlineUsers.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-4 py-2"
+            >
+              <div className="flex items-center gap-2 text-xs text-white/70">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]"></span>
+                </span>
+                Live Room
+              </div>
+              <div className="flex items-center -space-x-2">
+                {onlineUsers.slice(0, 4).map((ou, idx) => (
+                  <div
+                    key={ou.id}
+                    className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold text-white border border-black z-10"
+                    style={{
+                      background: `hsl(${(ou.avatarId || idx) * 36}, 80%, 60%)`,
+                      boxShadow: "0 0 10px rgba(255,255,255,0.1)"
+                    }}
+                    title={ou.name}
+                  >
+                    {ou.name.charAt(0).toUpperCase()}
+                  </div>
+                ))}
+                {onlineUsers.length > 4 && (
+                  <div className="h-7 w-7 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white border border-black z-0">
+                    +{onlineUsers.length - 4}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </div>
 
         {/* ── Hero card ────────────────────────────────────────────── */}
         <motion.div
@@ -254,9 +321,18 @@ export default function TripDetailPage() {
               </h2>
             </div>
             <div className="flex flex-col gap-3 pl-11">
-              {day.activities?.map((act, ai) => (
-                <ActivityCard key={ai} act={act} i={ai} />
-              ))}
+              {day.activities?.map((act, ai) => {
+                const globalActivityId = `${day.day_number}-${ai}`;
+                return (
+                  <ActivityCard 
+                    key={ai} 
+                    act={act} 
+                    i={ai} 
+                    isHighlighted={highlightedActivityId === globalActivityId}
+                    onClick={() => broadcastActivityHighlight(globalActivityId)}
+                  />
+                );
+              })}
             </div>
           </motion.section>
         ))}

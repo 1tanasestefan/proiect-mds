@@ -86,6 +86,7 @@ class FlightOption(BaseModel):
     booking_link: str = Field(..., description="Deep-link URL to Skyscanner or Google Flights search")
 
 class AccommodationOption(BaseModel):
+    name: str = Field(..., description="Specific name of the hotel or accommodation")
     type: str = Field(..., description="Type of stay (e.g., 'Boutique Hotel', 'Budget Hostel', 'Airbnb Apartment')")
     neighborhood: str = Field(..., description="Recommended neighborhood derived from the itinerary")
     estimated_price_per_night_usd: float = Field(..., description="Estimated price per night in USD")

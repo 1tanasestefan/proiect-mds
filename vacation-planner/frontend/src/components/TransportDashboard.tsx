@@ -41,15 +41,16 @@ const TransportMapSSR = dynamic<{ currentOption: ConsolidatedLogistics }>(
 export function TransportDashboard({ options }: Props) {
   const [activeTier, setActiveTier] = useState<string>("budget");
 
+  // Default to balanced → budget → first available tier
+  // MUST be before any early returns (React rules of hooks)
+  useEffect(() => {
+    if (options["balanced"]) setActiveTier("balanced");
+    else if (options["budget"]) setActiveTier("budget");
+    else setActiveTier(Object.keys(options)[0] ?? "budget");
+  }, [options]);
+
   // Fallback if no valid options provided
   if (!options || Object.keys(options).length === 0) return null;
-  
-  // Try to default to balanced, else budget, else whatever is first
-  useEffect(() => {
-     if (options["balanced"]) setActiveTier("balanced");
-     else if (options["budget"]) setActiveTier("budget");
-     else setActiveTier(Object.keys(options)[0]);
-  }, [options]);
 
   const currentOption = options[activeTier];
   if (!currentOption) return null;
