@@ -101,3 +101,11 @@ class TripLogistics(BaseModel):
 class FinalTripPlan(BaseModel):
     experience: AgentOneOutput = Field(..., description="The curated itinerary from Agent 1")
     logistics: TripLogistics = Field(..., description="Logistics & booking data from Agent 2")
+
+class ItineraryUpdate(BaseModel):
+    title: Optional[str] = None
+    destination: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    ai_data: Optional[Dict[str, Any]] = None
+

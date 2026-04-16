@@ -98,7 +98,7 @@ export function useMultiplayer(itineraryId: string, currentUser: { id: string; e
       room.unsubscribe();
       supabase?.removeChannel(room);
     };
-  }, [itineraryId, currentUser]);
+  }, [itineraryId, currentUser?.id, currentUser?.email]);
 
   const broadcastActivityHighlight = (activityId: string) => {
     if (channel && currentUser) {

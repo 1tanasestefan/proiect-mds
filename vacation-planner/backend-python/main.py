@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-from models import UserInput, FinalTripPlan
+from models import UserInput, FinalTripPlan, ItineraryUpdate
 from agent_experience import generate_experience_itinerary
 from agent_logistics import generate_logistics
 from auth_middleware import get_current_user
@@ -135,26 +135,25 @@ async def get_itinerary(
     itinerary_id: str,
     user_id: str = Depends(get_current_user),
 ):
-    """Fetch a single itinerary by ID (only if owned by the requesting user)."""
+    """Fetch a single itinerary by ID (allows multiplayer viewing if link is shared)."""
     if not supabase:
         raise HTTPException(status_code=503, detail="Database not configured.")
 
     try:
+        # We don't filter by user_id here so friends can view the trip
         result = (
             supabase
             .table("itineraries")
-            .select("id, title, destination, start_date, end_date, is_public, created_at, ai_data")
+            .select("id, user_id, title, destination, start_date, end_date, is_public, created_at, ai_data")
             .eq("id", itinerary_id)
-            .eq("user_id", user_id)
-            .single()
             .execute()
         )
 
-        if not result.data:
+        if not result.data or len(result.data) == 0:
             raise HTTPException(status_code=404, detail="Itinerary not found.")
 
         logger.info(f"[DB] Fetched itinerary {itinerary_id} for user {user_id}")
-        return result.data
+        return result.data[0]
 
     except HTTPException:
         raise
@@ -162,6 +161,45 @@ async def get_itinerary(
         logger.error(f"[DB] Fetch single failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch itinerary: {str(e)}")
 
+
+# ── PROTECTED: Update Itinerary ──────────────────────────────────
+
+@app.patch("/api/itineraries/{itinerary_id}")
+async def update_itinerary(
+    itinerary_id: str,
+    update_data: ItineraryUpdate,
+    user_id: str = Depends(get_current_user),
+):
+    """Update a specific itinerary (only if owned by the user)."""
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    try:
+        # Build payload dynamically based on non-null fields
+        payload = {k: v for k, v in update_data.model_dump().items() if v is not None}
+        if not payload:
+            return {"status": "no_changes"}
+
+        result = (
+            supabase
+            .table("itineraries")
+            .update(payload)
+            .eq("id", itinerary_id)
+            .eq("user_id", user_id)  # Strict! Only host can edit!
+            .execute()
+        )
+
+        if not result.data or len(result.data) == 0:
+            raise HTTPException(status_code=404, detail="Itinerary not found or you don't have permission.")
+
+        logger.info(f"[DB] Updated itinerary {itinerary_id} for user {user_id}")
+        return result.data[0]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[DB] Update failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update itinerary: {str(e)}")
 
 # ── PROTECTED: Delete Itinerary ──────────────────────────────────
 

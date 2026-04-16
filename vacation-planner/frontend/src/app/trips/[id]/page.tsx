@@ -7,7 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 import { TransportDashboard } from "@/components/TransportDashboard";
 import {
   ArrowLeft, MapPin, Calendar, Loader2,
-  Plane, Hotel, Star, Clock, DollarSign, Users
+  Plane, Hotel, Star, Clock, DollarSign, Users,
+  Edit2, Save
 } from "lucide-react";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 
@@ -66,6 +67,7 @@ interface FinalTripPlan {
 
 interface SavedTrip {
   id: string;
+  user_id?: string;
   title: string;
   destination: string;
   start_date: string | null;
@@ -147,6 +149,14 @@ export default function TripDetailPage() {
   const [trip, setTrip] = useState<SavedTrip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userIsConfirmedHost, setUserIsConfirmedHost] = useState(false);
+
+  // Edit Mode States
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDestination, setEditDestination] = useState("");
+  const [editVibe, setEditVibe] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Multiplayer Hook
   const { onlineUsers, highlightedActivityId, broadcastActivityHighlight } = useMultiplayer(
@@ -176,6 +186,23 @@ export default function TripDetailPage() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         setTrip(data);
+
+        // Robust Host Check: If backend didn't return user_id, check our ownership list
+        if (data.user_id && data.user_id === session.user.id) {
+          setUserIsConfirmedHost(true);
+        } else if (!data.user_id) {
+          try {
+            const meRes = await fetch(`${API_BASE}/api/itineraries/me`, {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            if (meRes.ok) {
+              const meData = await meRes.json();
+              if (meData.itineraries?.some((t: any) => t.id === id)) {
+                setUserIsConfirmedHost(true);
+              }
+            }
+          } catch (e) {}
+        }
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Failed to load trip.");
       } finally {
@@ -206,6 +233,51 @@ export default function TripDetailPage() {
   }
 
   const { experience, logistics } = trip.ai_data;
+  const isHost = trip?.user_id ? session?.user?.id === trip?.user_id : userIsConfirmedHost;
+
+  const handleEditToggle = () => {
+    if (!isEditing && trip) {
+      setEditTitle(trip.ai_data.experience?.trip_title || trip.title);
+      setEditDestination(trip.destination);
+      setEditVibe(trip.ai_data.experience?.vibe_summary || "");
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleSave = async () => {
+    if (!session || !trip) return;
+    setIsSaving(true);
+    try {
+      const updatedAiData = {
+        ...trip.ai_data,
+        experience: {
+          ...trip.ai_data.experience,
+          trip_title: editTitle,
+          vibe_summary: editVibe,
+        }
+      };
+
+      const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
+        method: 'PATCH',
+        headers: { 
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          destination: editDestination,
+          ai_data: updatedAiData
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to save updates.");
+      setIsEditing(false);
+    } catch (err: unknown) {
+      alert("Error saving: " + (err instanceof Error ? err.message : "Unknown error"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-[#0A0A0A] text-white pb-24">
@@ -229,7 +301,6 @@ export default function TripDetailPage() {
           </motion.button>
 
           {/* Multiplayer Online Users */}
-          {onlineUsers.length > 0 && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -240,7 +311,7 @@ export default function TripDetailPage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]"></span>
                 </span>
-                Live Room
+                {isHost ? `You are hosting. ${onlineUsers.length} viewing.` : "Live viewing Host's trip."}
               </div>
               <div className="flex items-center -space-x-2">
                 {onlineUsers.slice(0, 4).map((ou, idx) => (
@@ -263,7 +334,6 @@ export default function TripDetailPage() {
                 )}
               </div>
             </motion.div>
-          )}
         </div>
 
         {/* ── Hero card ────────────────────────────────────────────── */}
@@ -271,20 +341,60 @@ export default function TripDetailPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
-          className="rounded-3xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 p-8 mb-10"
+          className="rounded-3xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 p-8 mb-10 relative group"
         >
-          <p className="text-xs text-[#00F0FF]/60 uppercase tracking-widest mb-3">
-            {trip.destination}
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight"
-              style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-            {experience.trip_title || trip.title}
-          </h1>
-          {experience.vibe_summary && (
+          {isHost && (
+            <button 
+              onClick={isEditing ? handleSave : handleEditToggle}
+              disabled={isSaving}
+              className="absolute top-6 right-6 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors text-white py-2 px-4 rounded-full text-xs font-medium backdrop-blur-md"
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : isEditing ? <Save className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
+              {isEditing ? "Save Changes" : "Edit Trip"}
+            </button>
+          )}
+
+          {isEditing ? (
+            <input 
+              className="bg-transparent border-b border-white/20 text-[#00F0FF]/60 uppercase tracking-widest text-xs mb-3 outline-none focus:border-[#00F0FF]/60 w-full md:w-1/2"
+              value={editDestination}
+              onChange={(e) => setEditDestination(e.target.value)}
+              placeholder="Destination"
+            />
+          ) : (
+            <p className="text-xs text-[#00F0FF]/60 uppercase tracking-widest mb-3">
+              {trip.destination}
+            </p>
+          )}
+
+          {isEditing ? (
+            <input 
+              className="bg-transparent border-b border-white/20 text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight outline-none focus:border-white/50 w-full block"
+              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Trip Title"
+            />
+          ) : (
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight"
+                style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              {experience.trip_title || trip.title}
+            </h1>
+          )}
+
+          {isEditing ? (
+            <textarea 
+              className="bg-black/20 border border-white/10 text-white/70 text-sm leading-relaxed w-full min-h-[80px] p-3 rounded-xl outline-none focus:border-white/30 resize-none mt-2"
+              value={editVibe}
+              onChange={(e) => setEditVibe(e.target.value)}
+              placeholder="Vibe Summary"
+            />
+          ) : experience.vibe_summary && (
             <p className="text-white/50 text-sm leading-relaxed max-w-2xl">
               {experience.vibe_summary}
             </p>
           )}
+
           <div className="flex flex-wrap gap-4 mt-5 text-sm text-white/40">
             {trip.start_date && (
               <span className="flex items-center gap-1.5">
