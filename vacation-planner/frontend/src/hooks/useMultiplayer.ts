@@ -63,6 +63,11 @@ export function useMultiplayer(itineraryId: string, currentUser: { id: string; e
       }
     });
 
+    // Custom polling trigger for LIVE updates when Replication is off
+    room.on("broadcast", { event: "trigger_refresh" }, () => {
+       if (onDatabaseUpdate) onDatabaseUpdate({ _SIGNAL_REFETCH: true });
+    });
+
     // Set up Postgres Database Sync
     // Trigger when this particular itinerary gets an UPDATE in the public schema
     room.on(
@@ -116,9 +121,20 @@ export function useMultiplayer(itineraryId: string, currentUser: { id: string; e
     }
   };
 
+  const broadcastRefreshSignal = () => {
+    if (channel) {
+      channel.send({
+        type: "broadcast",
+        event: "trigger_refresh",
+        payload: {},
+      });
+    }
+  };
+
   return {
     onlineUsers,
     highlightedActivityId,
     broadcastActivityHighlight,
+    broadcastRefreshSignal,
   };
 }

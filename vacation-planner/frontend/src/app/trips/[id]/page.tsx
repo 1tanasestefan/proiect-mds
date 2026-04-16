@@ -213,10 +213,14 @@ export default function TripDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Multiplayer Hook
-  const { onlineUsers, highlightedActivityId, broadcastActivityHighlight } = useMultiplayer(
+  const { onlineUsers, highlightedActivityId, broadcastActivityHighlight, broadcastRefreshSignal } = useMultiplayer(
     id,
     session?.user ? { id: session.user.id, email: session.user.email || "user" } : null,
     (newData) => {
+      if (newData._SIGNAL_REFETCH) {
+        loadItinerary();
+        return;
+      }
       // Postgres sync: gracefully merge incoming AI updates
       setTrip((prev) => {
         if (!prev) return prev;
@@ -225,46 +229,44 @@ export default function TripDetailPage() {
     }
   );
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) router.push("/login");
-  }, [authLoading, isAuthenticated, router]);
-
-  useEffect(() => {
+  const loadItinerary = async () => {
     if (!session || !id) return;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setTrip(data);
+    try {
+      const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setTrip(data);
 
-        // Robust Host Check: If backend didn't return user_id, check our ownership list
-        if (data.user_id && data.user_id === session.user.id) {
-          setUserIsConfirmedHost(true);
-        } else if (!data.user_id) {
-          try {
-            const meRes = await fetch(`${API_BASE}/api/itineraries/me`, {
-              headers: { Authorization: `Bearer ${session.access_token}` },
-            });
-            if (meRes.ok) {
-              const meData = await meRes.json();
-              if (meData.itineraries?.some((t: any) => t.id === id)) {
-                setUserIsConfirmedHost(true);
-              }
-            }
-          } catch (e) {}
-        }
-      } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "Failed to load trip.");
-      } finally {
-        setLoading(false);
+      // Robust Host Check
+      if (data.user_id && data.user_id === session.user.id) {
+        setUserIsConfirmedHost(true);
       }
-    };
-    load();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load trip.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadItinerary();
   }, [session, id]);
+
+  // Intelligent Polling for Regeneration
+  useEffect(() => {
+    const isAnyRegenerating = trip?.ai_data?.regenerating_keys && 
+                             Object.values(trip.ai_data.regenerating_keys).some(v => v === true);
+    
+    if (!isAnyRegenerating) return;
+
+    const interval = setInterval(() => {
+      loadItinerary();
+    }, 2000); // Poll every 2 seconds while something is cooking
+
+    return () => clearInterval(interval);
+  }, [trip?.ai_data?.regenerating_keys]);
 
   if (authLoading || loading) {
     return (
@@ -384,6 +386,9 @@ export default function TripDetailPage() {
       });
       
       const data = await resp.json();
+      
+      // BROADCAST to everyone to refetch their state so they see the vote or the loader
+      broadcastRefreshSignal();
       
       // 3. Fallback Optimistic UI (if threshold was hit via network desync but not locally)
       if (data.status === "regeneration_started" || data.status === "already_regenerating") {
