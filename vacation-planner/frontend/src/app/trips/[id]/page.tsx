@@ -8,7 +8,7 @@ import { TransportDashboard } from "@/components/TransportDashboard";
 import {
   ArrowLeft, MapPin, Calendar, Loader2,
   Plane, Hotel, Star, Clock, DollarSign, Users,
-  Edit2, Save
+  Edit2, Save, RefreshCcw, ThumbsDown
 } from "lucide-react";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 
@@ -73,25 +73,50 @@ interface SavedTrip {
   start_date: string | null;
   end_date: string | null;
   created_at: string;
-  ai_data: FinalTripPlan;
+  ai_data: any; // Relaxed FinalTripPlan to Any to easily access votes dictionary without strict TS errors
+}
+
+interface VoteUser {
+  id: string;
+  name: string;
+  avatarId?: number;
 }
 
 // ── Activity Card ─────────────────────────────────────────────────
-function ActivityCard({ act, i, isHighlighted, onClick }: { act: Activity; i: number; isHighlighted?: boolean; onClick?: () => void }) {
+function ActivityCard({ 
+  act, i, isHighlighted, onClick, 
+  voteKey, votes, isRegenerating, onVote, totalOnline 
+}: { 
+  act: Activity; i: number; isHighlighted?: boolean; onClick?: () => void;
+  voteKey: string; votes: VoteUser[]; isRegenerating: boolean; onVote: () => void; totalOnline: number;
+}) {
+  const threshold = Math.floor(totalOnline / 2);
+  const isDraw = votes.length > 0 && votes.length <= threshold;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: -16 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: i * 0.06, duration: 0.4 }}
-      onClick={onClick}
-      className={`flex gap-4 p-4 rounded-2xl bg-white/[0.03] transition-all cursor-pointer relative overflow-hidden ${
+      onClick={isRegenerating ? undefined : onClick}
+      className={`flex gap-4 p-4 rounded-2xl bg-white/[0.03] transition-all relative overflow-hidden ${
+        isRegenerating ? "border-[#22C55E]/40 shadow-[0_0_20px_rgba(34,197,94,0.2)] bg-black/40 cursor-wait" :
         isHighlighted 
-          ? "border-[#00F0FF] shadow-[0_0_15px_rgba(0,240,255,0.4)] bg-[#00F0FF]/10 scale-[1.02]" 
-          : "border-white/8 hover:border-white/20"
+          ? "border-[#00F0FF] shadow-[0_0_15px_rgba(0,240,255,0.4)] bg-[#00F0FF]/10 scale-[1.02] cursor-pointer" 
+          : "border-white/8 hover:border-white/20 cursor-pointer"
       }`}
     >
-      {isHighlighted && (
-        <div className="absolute top-2 right-3 flex items-center gap-1.5 opacity-80">
+      {isRegenerating && (
+        <div className="absolute inset-0 z-20 backdrop-blur-[2px] flex items-center justify-center bg-black/40">
+           <div className="flex flex-col items-center gap-2">
+             <Loader2 className="h-6 w-6 text-[#22C55E] animate-spin" />
+             <span className="text-xs text-[#22C55E] font-medium tracking-widest uppercase">Regenerating...</span>
+           </div>
+        </div>
+      )}
+
+      {isHighlighted && !isRegenerating && (
+        <div className="absolute top-2 right-3 flex items-center gap-1.5 opacity-80 z-10">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00F0FF] opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0FF]"></span>
@@ -99,6 +124,7 @@ function ActivityCard({ act, i, isHighlighted, onClick }: { act: Activity; i: nu
           <span className="text-[10px] text-[#00F0FF] font-medium tracking-wide">Someone is viewing</span>
         </div>
       )}
+
       {act.image_url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -108,17 +134,26 @@ function ActivityCard({ act, i, isHighlighted, onClick }: { act: Activity; i: nu
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
         />
       )}
-      <div className="flex flex-col gap-1 min-w-0">
-        <p className="text-white/90 font-semibold text-sm leading-snug line-clamp-2"
-           style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-          {act.title}
-        </p>
+      <div className="flex flex-col gap-1 min-w-0 flex-1">
+        <div className="flex justify-between items-start gap-2">
+          <p className="text-white/90 font-semibold text-sm leading-snug line-clamp-2"
+             style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            {act.title}
+          </p>
+          <button 
+             onClick={(e) => { e.stopPropagation(); onVote(); }}
+             className="text-white/20 hover:text-white/60 transition-colors shrink-0 z-10"
+             title="Vote to change this activity"
+          >
+             <RefreshCcw className="h-4 w-4" />
+          </button>
+        </div>
         {act.description && (
           <p className="text-white/45 text-xs leading-relaxed line-clamp-3">
             {act.description}
           </p>
         )}
-        <div className="flex flex-wrap gap-3 mt-1">
+        <div className="flex flex-wrap items-center gap-3 mt-1">
           {act.time && (
             <span className="flex items-center gap-1 text-[10px] text-[#00F0FF]/60">
               <Clock className="h-3 w-3" />{act.time}
@@ -135,6 +170,25 @@ function ActivityCard({ act, i, isHighlighted, onClick }: { act: Activity; i: nu
             </span>
           )}
         </div>
+        
+        {/* Voting UI */}
+        {votes.length > 0 && !isRegenerating && (
+           <div className="flex items-center gap-3 mt-2 pt-2 border-t border-white/5">
+              <div className="flex -space-x-1">
+                 {votes.map((v, idx) => (
+                    <div key={v.id} className="h-5 w-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-black z-10"
+                         style={{ background: `hsl(${(v.avatarId || idx) * 36}, 80%, 60%)` }} title={v.name}>
+                       {v.name.charAt(0).toUpperCase()}
+                    </div>
+                 ))}
+              </div>
+              <span className="text-[10px] text-white/50">
+                 {isDraw 
+                    ? <span className="text-orange-400/80">Activity will not be changed ({votes.length}/{totalOnline} votes)</span> 
+                    : <span className="text-yellow-400/80">{votes.length}/{totalOnline} want to change</span>}
+              </span>
+           </div>
+        )}
       </div>
     </motion.div>
   );
@@ -279,6 +333,75 @@ export default function TripDetailPage() {
     }
   };
 
+  const handleVoteRegenerate = async (dayIndex: number, actIndex: number) => {
+    if (!session?.user || isSaving) return;
+    const voter = {
+      id: session.user.id,
+      name: session.user.email?.split('@')[0] || "User",
+      avatarId: session.user.email?.length ? session.user.email.length % 10 : 0
+    };
+    const voteKey = `day_${dayIndex}_act_${actIndex}`;
+
+    // 1. OPTIMISTIC UI: Immediately lock in the vote visually!
+    let thresholdExceeded = false;
+    setTrip((prev) => {
+      if (!prev) return prev;
+      const newTrip = JSON.parse(JSON.stringify(prev)); // Deep clone to break reference safely
+      if (!newTrip.ai_data) newTrip.ai_data = {};
+      if (!newTrip.ai_data.votes) newTrip.ai_data.votes = {};
+      
+      const actVotes = newTrip.ai_data.votes[voteKey] || [];
+      if (!actVotes.some((v: any) => v.id === voter.id)) {
+          actVotes.push(voter);
+      }
+      newTrip.ai_data.votes[voteKey] = actVotes;
+      
+      // Calculate theoretically if this click triggers threshold
+      const totalOnline = Math.max(1, onlineUsers.length);
+      const threshold = Math.floor(totalOnline / 2);
+      if (actVotes.length > threshold) {
+          thresholdExceeded = true;
+          if (!newTrip.ai_data.regenerating_keys) newTrip.ai_data.regenerating_keys = {};
+          newTrip.ai_data.regenerating_keys[voteKey] = true;
+      }
+      return newTrip;
+    });
+
+    try {
+      // 2. Transmit gracefully in the background
+      const resp = await fetch(`${API_BASE}/api/itineraries/${id}/vote-regenerate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          day_index: dayIndex,
+          activity_index: actIndex,
+          total_online: Math.max(1, onlineUsers.length),
+          voter
+        })
+      });
+      
+      const data = await resp.json();
+      
+      // 3. Fallback Optimistic UI (if threshold was hit via network desync but not locally)
+      if (data.status === "regeneration_started" || data.status === "already_regenerating") {
+         if (!thresholdExceeded) {
+             setTrip((prev) => {
+                 if (!prev) return prev;
+                 const newTrip = JSON.parse(JSON.stringify(prev));
+                 if (!newTrip.ai_data.regenerating_keys) newTrip.ai_data.regenerating_keys = {};
+                 newTrip.ai_data.regenerating_keys[voteKey] = true;
+                 return newTrip;
+             });
+         }
+      }
+    } catch(e) {
+      console.error("Voting failed", e);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#0A0A0A] text-white pb-24">
       {/* Ambient */}
@@ -412,7 +535,7 @@ export default function TripDetailPage() {
         </motion.div>
 
         {/* ── Day-by-day itinerary ─────────────────────────────────── */}
-        {experience.itinerary?.map((day, di) => (
+        {experience.itinerary?.map((day: any, di: number) => (
           <motion.section
             key={day.day_number}
             initial={{ opacity: 0, y: 24 }}
@@ -431,13 +554,23 @@ export default function TripDetailPage() {
               </h2>
             </div>
             <div className="flex flex-col gap-3 pl-11">
-              {day.activities?.map((act, ai) => {
+              {day.activities?.map((act: any, ai: number) => {
                 const globalActivityId = `${day.day_number}-${ai}`;
+                const voteKey = `day_${di}_act_${ai}`; // Use di, since it matches the zero-based array index backend needs, not day.day_number!
+                
+                const votes = trip.ai_data?.votes?.[voteKey] || [];
+                const isRegenerating = trip.ai_data?.regenerating_keys?.[voteKey] === true;
+
                 return (
                   <ActivityCard 
                     key={ai} 
                     act={act} 
                     i={ai} 
+                    voteKey={voteKey}
+                    votes={votes}
+                    isRegenerating={isRegenerating}
+                    onVote={() => handleVoteRegenerate(di, ai)}
+                    totalOnline={Math.max(1, onlineUsers.length)}
                     isHighlighted={highlightedActivityId === globalActivityId}
                     onClick={() => broadcastActivityHighlight(globalActivityId)}
                   />
@@ -467,7 +600,7 @@ export default function TripDetailPage() {
                   <Plane className="h-3.5 w-3.5" /> Flights
                 </p>
                 <div className="flex flex-col gap-3">
-                  {logistics.flights.map((f, i) => (
+                  {logistics.flights.map((f: any, i: number) => (
                     <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/8">
                       <div>
                         <p className="text-white/80 text-sm font-medium">{f.airline_type}</p>
@@ -495,7 +628,7 @@ export default function TripDetailPage() {
                   <Hotel className="h-3.5 w-3.5" /> Accommodations
                 </p>
                 <div className="flex flex-col gap-3">
-                  {logistics.accommodations.map((a, i) => (
+                  {logistics.accommodations.map((a: any, i: number) => (
                     <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/8">
                       <div>
                         <p className="text-white/80 text-sm font-medium">{a.type}</p>

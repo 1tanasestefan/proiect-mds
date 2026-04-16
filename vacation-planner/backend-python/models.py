@@ -109,3 +109,15 @@ class ItineraryUpdate(BaseModel):
     end_date: Optional[str] = None
     ai_data: Optional[Dict[str, Any]] = None
 
+class VoteUser(BaseModel):
+    id: str
+    name: str
+    avatarId: Optional[int] = None
+
+class VoteRequest(BaseModel):
+    day_index: int
+    activity_index: int
+    total_online: int
+    voter: VoteUser
+
+

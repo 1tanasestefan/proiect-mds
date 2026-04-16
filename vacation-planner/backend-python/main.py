@@ -2,8 +2,12 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
-from models import UserInput, FinalTripPlan, ItineraryUpdate
+from models import UserInput, FinalTripPlan, ItineraryUpdate, VoteRequest
 from agent_experience import generate_experience_itinerary
+from agent_regenerate import regenerate_single_activity
+import math
+import json
+from fastapi import BackgroundTasks
 from agent_logistics import generate_logistics
 from auth_middleware import get_current_user
 from database import supabase
@@ -200,6 +204,92 @@ async def update_itinerary(
     except Exception as e:
         logger.error(f"[DB] Update failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update itinerary: {str(e)}")
+
+# ── MULTIPLAYER: Vote to Regenerate ──────────────────────────────
+
+async def _bg_regenerate(itinerary_id: str, vote_req: VoteRequest, current_ai_data: dict, current_trip: dict):
+    try:
+        vote_key = f"day_{vote_req.day_index}_act_{vote_req.activity_index}"
+        
+        # Mark as REGENERATING globally
+        current_ai_data.setdefault("regenerating_keys", {})
+        current_ai_data["regenerating_keys"][vote_key] = True
+        
+        # Clear votes to 0 since we committed to regeneratig
+        if "votes" in current_ai_data and vote_key in current_ai_data["votes"]:
+             current_ai_data["votes"][vote_key] = []
+             
+        supabase.table("itineraries").update({"ai_data": current_ai_data}).eq("id", itinerary_id).execute()
+
+        # Isolate context
+        day_obj = current_ai_data["experience"]["itinerary"][vote_req.day_index]
+        old_act = day_obj["activities"][vote_req.activity_index]
+        day_context = json.dumps([a["title"] for i, a in enumerate(day_obj["activities"]) if i != vote_req.activity_index])
+        
+        destination = current_trip.get("destination", "Unknown")
+        vibe_summary = current_ai_data["experience"].get("vibe_summary", "")
+        
+        # Regenerate!
+        new_act = await regenerate_single_activity(vibe_summary, day_context, destination, json.dumps(old_act))
+        
+        # Splice back in
+        current_ai_data["experience"]["itinerary"][vote_req.day_index]["activities"][vote_req.activity_index] = new_act.model_dump()
+        
+        # Unmark REGENERATING
+        if vote_key in current_ai_data["regenerating_keys"]:
+            del current_ai_data["regenerating_keys"][vote_key]
+            
+        supabase.table("itineraries").update({"ai_data": current_ai_data}).eq("id", itinerary_id).execute()
+        logger.info(f"Regeneration complete for {vote_key} on iter {itinerary_id}")
+
+    except Exception as e:
+        logger.error(f"Background regeneration failed: {e}")
+        vote_key = f"day_{vote_req.day_index}_act_{vote_req.activity_index}"
+        if vote_key in current_ai_data.get("regenerating_keys", {}):
+            del current_ai_data["regenerating_keys"][vote_key]
+            supabase.table("itineraries").update({"ai_data": current_ai_data}).eq("id", itinerary_id).execute()
+
+
+@app.post("/api/itineraries/{itinerary_id}/vote-regenerate")
+async def vote_regenerate(
+    itinerary_id: str,
+    vote_req: VoteRequest,
+    bg_tasks: BackgroundTasks,
+    user_id: str = Depends(get_current_user),
+):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+        
+    result = supabase.table("itineraries").select("id, ai_data, destination").eq("id", itinerary_id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Itinerary not found.")
+        
+    trip = result.data[0]
+    ai_data = trip.get("ai_data", {})
+    
+    votes_dict = ai_data.setdefault("votes", {})
+    vote_key = f"day_{vote_req.day_index}_act_{vote_req.activity_index}"
+    vote_arr = votes_dict.setdefault(vote_key, [])
+    
+    # Check if already regenerating
+    if ai_data.get("regenerating_keys", {}).get(vote_key) is True:
+        return {"status": "already_regenerating"}
+    
+    # Add vote if pure new user
+    if not any(v.get("id") == vote_req.voter.id for v in vote_arr):
+        vote_arr.append(vote_req.voter.model_dump())
+        
+    # Evaluate > 50% majority strictly
+    majority_threshold = math.floor(vote_req.total_online / 2.0)
+    
+    if len(vote_arr) > majority_threshold:
+        # Trigger bg task
+        bg_tasks.add_task(_bg_regenerate, itinerary_id, vote_req, ai_data, trip)
+        return {"status": "regeneration_started"}
+        
+    # Just update DB with new vote tally
+    supabase.table("itineraries").update({"ai_data": ai_data}).eq("id", itinerary_id).execute()
+    return {"status": "vote_recorded"}
 
 # ── PROTECTED: Delete Itinerary ──────────────────────────────────
 
