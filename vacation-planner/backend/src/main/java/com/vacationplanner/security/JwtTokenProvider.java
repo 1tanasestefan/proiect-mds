@@ -1,7 +1,6 @@
 package com.vacationplanner.security;
 
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +28,7 @@ public class JwtTokenProvider {
                 .subject(userPrincipal.getUsername())
                 .issuedAt(now)
                 .expiration(expiryDate)
-                .signWith(key(), SignatureAlgorithm.HS256)
+                .signWith(key())
                 .compact();
     }
 
@@ -39,7 +38,7 @@ public class JwtTokenProvider {
 
     public String getUsernameFromJwtToken(String token) {
         return Jwts.parser()
-                .setSigningKey(key())
+                .verifyWith((javax.crypto.SecretKey) key())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
@@ -48,7 +47,7 @@ public class JwtTokenProvider {
 
     public boolean validateJwtToken(String authToken) {
         try {
-            Jwts.parser().setSigningKey(key()).build().parseSignedClaims(authToken);
+            Jwts.parser().verifyWith((javax.crypto.SecretKey) key()).build().parseSignedClaims(authToken);
             return true;
         } catch (Exception e) {
             System.err.println("Invalid JWT signature/token: " + e.getMessage());

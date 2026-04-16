@@ -20,7 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 
 export interface Activity {
-  type: "flight" | "hotel" | "experience";
+  type: 'experience' | 'dining' | 'tour' | 'cruise' | 'cookingclass' | 'festival' | 'adventure' | 'culture' | 'relaxation' | 'shopping' | 'nightlife' | 'transport' | 'arrival' | 'departure' | 'flight' | 'hotel' | 'sightseeing' | 'museum' | 'landmark' | 'park' | 'beach';
   title: string;
   description?: string;
   time?: string;
@@ -98,6 +98,9 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
     if (!isAuthenticated) return;
     setIsSaving(true);
     try {
+      if (!supabase) {
+        throw new Error("Supabase client is not initialized. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your .env.local file.");
+      }
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("No active session");
 
@@ -317,12 +320,12 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                           ? "border-[#00F0FF]/20" 
                           : "border-[#8A2BE2]/20"
                       } ${
-                        activity.type === "experience" && (activity.image_url || activity.image)
+                        activity.type !== "flight" && activity.type !== "hotel" && (activity.image_url || activity.image)
                           ? "md:col-span-2 min-h-[320px]"
                           : "h-64"
                       }`}
                     >
-                      {activity.type === "experience" ? (
+                      {activity.type !== "flight" && activity.type !== "hotel" ? (
                         // Experience Card Redesign
                         <div className="flex flex-col md:flex-row h-full">
                           {/* Image Section */}
@@ -354,7 +357,7 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                               <div className="px-3 py-1 rounded-full bg-[#8A2BE2]/10 dark:bg-[#8A2BE2]/20 backdrop-blur-sm border border-[#8A2BE2]/30">
                                 <Sparkles className="h-3 w-3 text-[#8A2BE2] inline mr-1" />
                                 <span className="text-[#8A2BE2] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                  Experience
+                                  {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
                                 </span>
                               </div>
                             </div>

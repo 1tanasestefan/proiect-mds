@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Any
 from datetime import date, datetime
 
 
@@ -44,7 +44,26 @@ class Activity(BaseModel):
     cost: str = Field(..., description="Estimated cost or 'Free'")
     location: str = Field(..., description="Name of the place or neighborhood")
     image_url: Optional[str] = Field(default=None, description="URL of the location image")
-    type: Literal['experience', 'dining', 'tour', 'cruise', 'cookingclass', 'festival', 'adventure', 'culture', 'relaxation', 'shopping', 'nightlife', 'transport'] = Field('experience', description="Type of the activity")
+    type: Literal['experience', 'dining', 'tour', 'cruise', 'cookingclass', 'festival', 'adventure', 'culture', 'relaxation', 'shopping', 'nightlife', 'transport', 'arrival', 'departure', 'flight', 'hotel', 'sightseeing', 'museum', 'landmark', 'park', 'beach'] = Field('experience', description="Type of the activity")
+    
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_activity_data(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # 1. Handle type validation gracefully (default to 'experience' if unknown)
+            allowed_types = {
+                'experience', 'dining', 'tour', 'cruise', 'cookingclass', 
+                'festival', 'adventure', 'culture', 'relaxation', 'shopping', 
+                'nightlife', 'transport', 'arrival', 'departure', 'flight', 'hotel',
+                'sightseeing', 'museum', 'landmark', 'park', 'beach'
+            }
+            if "type" in data and data["type"] not in allowed_types:
+                data["type"] = "experience"
+            
+            # 2. Ensure title is present (fallback for safety)
+            if "title" not in data or not data["title"]:
+                data["title"] = "Activity"
+        return data
 
 class DailyItinerary(BaseModel):
     day_number: int = Field(..., description="The day number of the trip")

@@ -40,6 +40,8 @@ experience_agent = Agent(
         "   Do NOT wrap them inside a 'trip', 'data', 'result', or any other key. "
         "3. Each day object: { 'day_number': int, 'activities': [ ... ] }. "
         "4. Each activity: { 'title', 'description', 'time', 'cost', 'location', 'image_url': '', 'type': 'experience' }. "
+        "   Allowed types: 'experience', 'dining', 'tour', 'cruise', 'cookingclass', 'festival', 'adventure', 'culture', 'relaxation', 'shopping', 'nightlife', 'transport', 'arrival', 'departure', 'flight', 'hotel', 'sightseeing', 'museum', 'landmark', 'park', 'beach'. "
+        "   If unsure, use 'experience'. "
         "5. You have NO tools available. Do NOT output function calls, XML tags, or <function=...> syntax. "
         "6. Use your own extensive knowledge of the destination. Begin your response with '{' immediately."
     ),
