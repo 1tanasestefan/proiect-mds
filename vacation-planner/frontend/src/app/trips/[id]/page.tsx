@@ -8,8 +8,9 @@ import { TransportDashboard } from "@/components/TransportDashboard";
 import {
   ArrowLeft, MapPin, Calendar, Loader2,
   Plane, Hotel, Star, Clock, DollarSign, Users,
-  Edit2, Save, RefreshCcw, ThumbsDown
+  Edit2, Save, RefreshCcw, ThumbsDown, Globe, Lock
 } from "lucide-react";
+import { toast } from "sonner";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 
 const API_BASE =
@@ -73,7 +74,8 @@ interface SavedTrip {
   start_date: string | null;
   end_date: string | null;
   created_at: string;
-  ai_data: any; // Relaxed FinalTripPlan to Any to easily access votes dictionary without strict TS errors
+  ai_data: any; 
+  is_public: boolean;
 }
 
 interface VoteUser {
@@ -472,14 +474,48 @@ export default function TripDetailPage() {
           className="rounded-3xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 p-8 mb-10 relative group"
         >
           {isHost && (
-            <button 
-              onClick={isEditing ? handleSave : handleEditToggle}
-              disabled={isSaving}
-              className="absolute top-6 right-6 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors text-white py-2 px-4 rounded-full text-xs font-medium backdrop-blur-md"
-            >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : isEditing ? <Save className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
-              {isEditing ? "Save Changes" : "Edit Trip"}
-            </button>
+            <div className="absolute top-6 right-6 flex items-center gap-3">
+              <button
+                onClick={async () => {
+                  if (!session) return;
+                  const newStatus = !trip.is_public;
+                  // Optimistic update
+                  setTrip({ ...trip, is_public: newStatus });
+                  try {
+                    const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
+                      method: "PATCH",
+                      headers: {
+                        "Authorization": `Bearer ${session.access_token}`,
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({ is_public: newStatus }),
+                    });
+                    if (!res.ok) throw new Error();
+                    toast.success(newStatus ? "Published to Discover!" : "Trip is now private.");
+                  } catch (e) {
+                    setTrip({ ...trip, is_public: !newStatus });
+                    toast.error("Failed to update status.");
+                  }
+                }}
+                className={`flex items-center justify-center gap-2 transition-colors py-2 px-4 rounded-full text-xs font-medium backdrop-blur-md border ${
+                  trip.is_public 
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" 
+                    : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/60"
+                }`}
+              >
+                {trip.is_public ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                {trip.is_public ? "Public" : "Private"}
+              </button>
+
+              <button 
+                onClick={isEditing ? handleSave : handleEditToggle}
+                disabled={isSaving}
+                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors text-white py-2 px-4 rounded-full text-xs font-medium backdrop-blur-md border border-white/10"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : isEditing ? <Save className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
+                {isEditing ? "Save Changes" : "Edit Trip"}
+              </button>
+            </div>
           )}
 
           {isEditing ? (

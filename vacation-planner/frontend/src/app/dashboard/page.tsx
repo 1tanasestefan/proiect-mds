@@ -9,6 +9,8 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState, useCallback } from 'react';
 import { FinalTripPlan } from '@/components/figma/itinerary-output';
+import { toast } from 'sonner';
+import { Eye, EyeOff, Globe, Lock } from 'lucide-react';
 
 // ── Spotlight slideshow data ────────────────────────────────────────
 const SPOTLIGHT = [
@@ -190,6 +192,7 @@ interface SavedItinerary {
   end_date: string | null;
   created_at: string;
   ai_data: FinalTripPlan;
+  is_public: boolean;
 }
 
 export default function DashboardPage() {
@@ -221,6 +224,31 @@ export default function DashboardPage() {
 
     fetchItineraries();
   }, [session]);
+
+  const handleTogglePublic = async (tripId: string, currentStatus: boolean) => {
+    if (!session) return;
+    
+    // Optimistic Update
+    setItineraries(prev => prev.map(t => t.id === tripId ? { ...t, is_public: !currentStatus } : t));
+    
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_ITINERARY_API_URL || 'http://127.0.0.1:8000'}/api/itineraries/${tripId}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ is_public: !currentStatus })
+      });
+      
+      if (!response.ok) throw new Error();
+      toast.success(!currentStatus ? "Trip published to Discover feed!" : "Trip is now private.");
+    } catch (err) {
+      // Rollback
+      setItineraries(prev => prev.map(t => t.id === tripId ? { ...t, is_public: currentStatus } : t));
+      toast.error("Failed to update status.");
+    }
+  };
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || "Explorer";
 
@@ -306,6 +334,20 @@ export default function DashboardPage() {
                           <h4 className="text-xl font-bold text-gray-900 dark:text-white line-clamp-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                             {trip.title}
                           </h4>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTogglePublic(trip.id, trip.is_public);
+                            }}
+                            className={`p-2 rounded-full transition-colors ${
+                              trip.is_public 
+                                ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20" 
+                                : "bg-gray-100 dark:bg-white/5 text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10"
+                            }`}
+                            title={trip.is_public ? "Public on Discover" : "Private"}
+                          >
+                            {trip.is_public ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                          </button>
                         </div>
                         
                         <div className="space-y-3 mb-6 flex-1">

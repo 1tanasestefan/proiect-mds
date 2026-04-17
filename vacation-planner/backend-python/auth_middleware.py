@@ -12,12 +12,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError, ExpiredSignatureError, jwk
 from loguru import logger
+from typing import Optional
 
 load_dotenv()
 
 # ── Supabase ECDSA public key (ES256) ────────────────────────────
-# This is the PUBLIC half of Supabase's signing key — safe to embed.
-# Source: Supabase Dashboard → Settings → API → JWT Settings
 _SUPABASE_JWK = {
     "kty": "EC",
     "crv": "P-256",
@@ -34,47 +33,36 @@ except Exception as _e:
     _EC_VERIFY_KEY = None
     logger.error(f"[AUTH] Could not load ES256 key: {_e}")
 
-# HS256 fallback (only used if the token's alg is HS256)
 _HMAC_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
 
 security = HTTPBearer()
+security_optional = HTTPBearer(auto_error=False)
 
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> str:
+async def verify_token(token: str) -> str:
     """
-    Validates a Supabase JWT and returns the authenticated user UUID (sub).
-    Supports ES256 (Supabase default) and HS256 (legacy fallback).
-    Raises HTTP 401 on any failure.
+    Core logic to validate a JWT. Returns user_id (sub).
+    Raises HTTPException (401) on failure.
     """
-    token = credentials.credentials
-
-    # Peek at the header without validating yet
     try:
         header = jwt.get_unverified_header(token)
-    except JWTError as e:
+    except Exception as e:
         raise HTTPException(status_code=401, detail=f"Malformed token header: {e}")
 
     alg = header.get("alg", "")
-    logger.debug(f"[AUTH] Incoming token: alg={alg}, kid={header.get('kid', 'n/a')[:16]}")
-
-    # Select the correct verification key
+    
     if alg == "ES256":
         if _EC_VERIFY_KEY is None:
-            raise HTTPException(status_code=500, detail="ES256 key not configured on server.")
+            raise HTTPException(status_code=500, detail="ES256 key not configured.")
         verify_key = _EC_VERIFY_KEY
         algorithms = ["ES256"]
     elif alg in ("HS256", "HS384", "HS512"):
         if not _HMAC_SECRET:
-            raise HTTPException(status_code=500, detail="SUPABASE_JWT_SECRET not set for HS256.")
+            raise HTTPException(status_code=500, detail="SUPABASE_JWT_SECRET not set.")
         verify_key = _HMAC_SECRET
         algorithms = ["HS256", "HS384", "HS512"]
     else:
-        logger.error(f"[AUTH] Unsupported algorithm: {alg}")
-        raise HTTPException(status_code=401, detail=f"Unsupported token algorithm: {alg}")
+        raise HTTPException(status_code=401, detail=f"Unsupported algorithm: {alg}")
 
-    # Decode + verify
     try:
         payload = jwt.decode(
             token,
@@ -83,15 +71,31 @@ async def get_current_user(
             options={"verify_aud": False},
         )
     except ExpiredSignatureError:
-        logger.warning("[AUTH] Token expired.")
-        raise HTTPException(status_code=401, detail="Session expired. Please log in again.")
-    except JWTError as e:
-        logger.error(f"[AUTH] JWT verification failed: {e}")
+        raise HTTPException(status_code=401, detail="Session expired.")
+    except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
 
-    user_id: str | None = payload.get("sub")
+    user_id = payload.get("sub")
     if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token: missing user ID.")
-
-    logger.debug(f"[AUTH] ✅ User {user_id} authenticated via {alg}")
+        raise HTTPException(status_code=401, detail="Missing user ID.")
+    
     return user_id
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    """Strict: Requires a valid token."""
+    return await verify_token(credentials.credentials)
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional),
+) -> Optional[str]:
+    """Optional: Allows guests (returns None) or validates token if present."""
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        return await verify_token(credentials.credentials)
+    except Exception:
+        # If a token was provided but is invalid, we treat them as a guest
+        # rather than blocking the whole public page with a 401.
+        return None

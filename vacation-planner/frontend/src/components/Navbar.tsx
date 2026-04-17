@@ -17,6 +17,7 @@ const MARKETING_LINKS = [
 const NAV_ICONS: Record<string, React.ElementType> = {
   '/plan': Map,
   '/dashboard': LayoutDashboard,
+  '/discover': Sparkles,
   '/login': LogIn,
 };
 
@@ -28,10 +29,12 @@ export default function Navbar() {
   const links = isAuthenticated
     ? [
         { href: '/plan', label: 'Plan a Trip' },
+        { href: '/discover', label: 'Discover' },
         { href: '/dashboard', label: 'My Trips' },
       ]
     : [
         { href: '/plan', label: 'Plan a Trip' },
+        { href: '/discover', label: 'Discover' },
         { href: '/dashboard', label: 'My Trips' },
         { href: '/login', label: 'Login' },
       ];

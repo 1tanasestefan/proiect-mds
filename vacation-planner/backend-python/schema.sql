@@ -50,12 +50,30 @@ CREATE TABLE IF NOT EXISTS public.itineraries (
     start_date  DATE,
     end_date    DATE,
     is_public   BOOLEAN DEFAULT false,
+    likes_count INT DEFAULT 0,
+    forks_count INT DEFAULT 0,
     ai_data     JSONB NOT NULL,
     created_at  TIMESTAMPTZ DEFAULT now(),
     updated_at  TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_itineraries_user_id ON public.itineraries(user_id);
+CREATE INDEX IF NOT EXISTS idx_itineraries_is_public ON public.itineraries(is_public);
+
+
+-- ┌─────────────────────────────────────────────────────────────┐
+-- │  3. ITINERARY LIKES                                        │
+-- │  Prevents double-liking via composite primary key          │
+-- └─────────────────────────────────────────────────────────────┘
+
+CREATE TABLE IF NOT EXISTS public.itinerary_likes (
+    user_id      UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    itinerary_id UUID NOT NULL REFERENCES public.itineraries(id) ON DELETE CASCADE,
+    created_at   TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (user_id, itinerary_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_likes_itinerary_id ON public.itinerary_likes(itinerary_id);
 
 
 -- ┌─────────────────────────────────────────────────────────────┐
@@ -142,3 +160,18 @@ CREATE POLICY "Users can manage own collection items"
             WHERE id = collection_id AND user_id = auth.uid()
         )
     );
+
+-- Itinerary Likes
+ALTER TABLE public.itinerary_likes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can like itineraries"
+    ON public.itinerary_likes FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can unlike itineraries"
+    ON public.itinerary_likes FOR DELETE
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Anyone can see likes"
+    ON public.itinerary_likes FOR SELECT
+    USING (true);

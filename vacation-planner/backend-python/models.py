@@ -126,6 +126,7 @@ class ItineraryUpdate(BaseModel):
     destination: Optional[str] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+    is_public: Optional[bool] = None
     ai_data: Optional[Dict[str, Any]] = None
 
 class VoteUser(BaseModel):
@@ -138,5 +139,22 @@ class VoteRequest(BaseModel):
     activity_index: int
     total_online: int
     voter: VoteUser
+
+
+class CommunityItinerary(BaseModel):
+    id: str
+    user_id: str
+    title: str
+    destination: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    likes_count: int
+    forks_count: int
+    is_public: bool
+    created_at: str
+    ai_data: Dict[str, Any]
+    author_name: str
+    author_avatar: Optional[str] = None
+    is_liked_by_me: Optional[bool] = False
 
 

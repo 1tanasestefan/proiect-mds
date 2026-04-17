@@ -1,15 +1,15 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
-from models import UserInput, FinalTripPlan, ItineraryUpdate, VoteRequest
+from typing import Optional, List
+from models import UserInput, FinalTripPlan, ItineraryUpdate, VoteRequest, CommunityItinerary
 from agent_experience import generate_experience_itinerary
 from agent_regenerate import regenerate_single_activity
 import math
 import json
 from fastapi import BackgroundTasks
 from agent_logistics import generate_logistics
-from auth_middleware import get_current_user
+from auth_middleware import get_current_user, get_optional_user
 from database import supabase
 from loguru import logger
 import sys
@@ -323,6 +323,165 @@ async def delete_itinerary(
     except Exception as e:
         logger.error(f"[DB] Delete failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete: {str(e)}")
+
+
+# ── COMMUNITY: Discover Feed ────────────────────────────────────
+
+@app.get("/api/community/feed", response_model=List[CommunityItinerary])
+async def get_community_feed(
+    sort_by: str = "likes",  # "likes" or "newest"
+    user_id: Optional[str] = Depends(get_optional_user),
+):
+    """Fetch public itineraries with author details."""
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    try:
+        query = (
+            supabase
+            .table("itineraries")
+            .select("*, profiles!itineraries_user_id_fkey(display_name, avatar_url)")
+            .eq("is_public", True)
+        )
+
+        if sort_by == "likes":
+            query = query.order("likes_count", desc=True)
+        else:
+            query = query.order("created_at", desc=True)
+
+        result = query.limit(50).execute()
+        
+        # Format the join result and check likes
+        feed_items = []
+        
+        # Get all likes for the current user in one go if they are logged in
+        user_likes = set()
+        if user_id:
+            likes_res = supabase.table("itinerary_likes").select("itinerary_id").eq("user_id", user_id).execute()
+            user_likes = {l["itinerary_id"] for l in likes_res.data}
+
+        for item in result.data:
+            profile = item.get("profiles", {})
+            feed_items.append(CommunityItinerary(
+                id=item["id"],
+                user_id=item["user_id"],
+                title=item["title"],
+                destination=item["destination"],
+                start_date=item.get("start_date"),
+                end_date=item.get("end_date"),
+                likes_count=item.get("likes_count", 0),
+                forks_count=item.get("forks_count", 0),
+                is_public=item["is_public"],
+                created_at=item["created_at"],
+                ai_data=item["ai_data"],
+                author_name=profile.get("display_name", "Unknown"),
+                author_avatar=profile.get("avatar_url"),
+                is_liked_by_me=item["id"] in user_likes
+            ))
+
+        return feed_items
+
+    except Exception as e:
+        logger.error(f"[Community] Feed failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── COMMUNITY: Like/Unlike ──────────────────────────────────────
+
+@app.post("/api/community/like/{itinerary_id}")
+async def toggle_like(
+    itinerary_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Toggle a like on an itinerary."""
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    try:
+        # Check if already liked
+        existing = (
+            supabase.table("itinerary_likes")
+            .select("*")
+            .eq("user_id", user_id)
+            .eq("itinerary_id", itinerary_id)
+            .execute()
+        )
+
+        if existing.data:
+            # Unlike: Remove entry and decrement count
+            supabase.table("itinerary_likes").delete().eq("user_id", user_id).eq("itinerary_id", itinerary_id).execute()
+            
+            # Using RPC or manual update (Manual here for simplicity, but RPC is better for atomicity)
+            # Fetch current count first
+            res = supabase.table("itineraries").select("likes_count").eq("id", itinerary_id).execute()
+            new_count = max(0, (res.data[0].get("likes_count") or 0) - 1)
+            supabase.table("itineraries").update({"likes_count": new_count}).eq("id", itinerary_id).execute()
+            
+            return {"status": "unliked", "likes_count": new_count}
+        else:
+            # Like: Add entry and increment count
+            supabase.table("itinerary_likes").insert({
+                "user_id": user_id,
+                "itinerary_id": itinerary_id
+            }).execute()
+            
+            res = supabase.table("itineraries").select("likes_count").eq("id", itinerary_id).execute()
+            new_count = (res.data[0].get("likes_count") or 0) + 1
+            supabase.table("itineraries").update({"likes_count": new_count}).eq("id", itinerary_id).execute()
+            
+            return {"status": "liked", "likes_count": new_count}
+
+    except Exception as e:
+        logger.error(f"[Community] Like toggle failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── COMMUNITY: Fork (Clone) ─────────────────────────────────────
+
+@app.post("/api/community/fork/{itinerary_id}")
+async def fork_itinerary(
+    itinerary_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Clone a public itinerary for the current user."""
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Database not configured.")
+
+    try:
+        # 1. Fetch source itinerary
+        source_res = supabase.table("itineraries").select("*").eq("id", itinerary_id).execute()
+        if not source_res.data:
+            raise HTTPException(status_code=404, detail="Itinerary not found.")
+        
+        source = source_res.data[0]
+        
+        # 2. Create the clone
+        new_itinerary = {
+            "user_id": user_id,
+            "title": f"{source['title']} (Copy)",
+            "destination": source["destination"],
+            "start_date": source.get("start_date"),
+            "end_date": source.get("end_date"),
+            "is_public": False,
+            "ai_data": source["ai_data"],
+            "likes_count": 0,
+            "forks_count": 0
+        }
+        
+        clone_res = supabase.table("itineraries").insert(new_itinerary).execute()
+        
+        # 3. Increment original's fork count
+        new_forks_count = (source.get("forks_count") or 0) + 1
+        supabase.table("itineraries").update({"forks_count": new_forks_count}).eq("id", itinerary_id).execute()
+        
+        logger.info(f"[Community] User {user_id} forked itinerary {itinerary_id}")
+        return {"status": "forked", "new_id": clone_res.data[0]["id"]}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Community] Fork failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
