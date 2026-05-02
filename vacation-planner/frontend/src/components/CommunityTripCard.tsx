@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Heart, Bookmark, MapPin, Calendar, Clock, User, Share2 } from "lucide-react";
+import { Heart, Bookmark, MapPin, Clock, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
+
+interface CommunityAiData {
+  experience?: {
+    vibe_summary?: string;
+    itinerary?: unknown[];
+  };
+}
 
 interface CommunityTripCardProps {
   itinerary: {
@@ -18,7 +25,7 @@ interface CommunityTripCardProps {
     forks_count: number;
     author_name: string;
     author_avatar?: string;
-    ai_data: any;
+    ai_data: CommunityAiData;
     is_liked_by_me?: boolean;
     created_at: string;
   };
@@ -54,7 +61,7 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setLikesCount(data.likes_count);
-    } catch (err) {
+    } catch {
       // Rollback
       setIsLiked(prevLiked);
       setLikesCount(prevCount);
@@ -83,7 +90,7 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
       if (!res.ok) throw new Error();
       
       toast.success("Trip saved! You can find it in your dashboard.", { id: toastId });
-    } catch (err) {
+    } catch {
       toast.error("Failed to clone trip", { id: toastId });
     } finally {
       setIsForking(false);

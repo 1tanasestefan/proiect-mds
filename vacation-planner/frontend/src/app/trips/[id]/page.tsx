@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useAuth } from "@/context/AuthContext";
 import { TransportDashboard } from "@/components/TransportDashboard";
+import type { ConsolidatedLogistics } from "@/components/TransportDashboard";
 import {
   ArrowLeft, MapPin, Calendar, Loader2,
-  Plane, Hotel, Star, Clock, DollarSign, Users,
-  Edit2, Save, RefreshCcw, ThumbsDown, Globe, Lock
+  Plane, Hotel, Clock, DollarSign,
+  Edit2, Save, RefreshCcw, Globe, Lock
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
@@ -58,12 +59,14 @@ interface TripLogistics {
   flights: FlightOption[];
   accommodations: AccommodationOption[];
   total_estimated_budget_usd: number;
-  transit_options?: Record<string, any>;
+  transit_options?: Record<string, ConsolidatedLogistics>;
 }
 
-interface FinalTripPlan {
+interface TripAiData {
   experience: ExperienceData;
   logistics?: TripLogistics;
+  votes?: Record<string, VoteUser[]>;
+  regenerating_keys?: Record<string, boolean>;
 }
 
 interface SavedTrip {
@@ -74,7 +77,7 @@ interface SavedTrip {
   start_date: string | null;
   end_date: string | null;
   created_at: string;
-  ai_data: any; 
+  ai_data: TripAiData;
   is_public: boolean;
 }
 
@@ -87,10 +90,10 @@ interface VoteUser {
 // ── Activity Card ─────────────────────────────────────────────────
 function ActivityCard({ 
   act, i, isHighlighted, onClick, 
-  voteKey, votes, isRegenerating, onVote, totalOnline 
+  votes, isRegenerating, onVote, totalOnline 
 }: { 
   act: Activity; i: number; isHighlighted?: boolean; onClick?: () => void;
-  voteKey: string; votes: VoteUser[]; isRegenerating: boolean; onVote: () => void; totalOnline: number;
+  votes: VoteUser[]; isRegenerating: boolean; onVote: () => void; totalOnline: number;
 }) {
   const threshold = Math.floor(totalOnline / 2);
   const isDraw = votes.length > 0 && votes.length <= threshold;
@@ -200,7 +203,7 @@ function ActivityCard({
 export default function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { session, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { session, isLoading: authLoading } = useAuth();
 
   const [trip, setTrip] = useState<SavedTrip | null>(null);
   const [loading, setLoading] = useState(true);
@@ -214,31 +217,14 @@ export default function TripDetailPage() {
   const [editVibe, setEditVibe] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Multiplayer Hook
-  const { onlineUsers, highlightedActivityId, broadcastActivityHighlight, broadcastRefreshSignal } = useMultiplayer(
-    id,
-    session?.user ? { id: session.user.id, email: session.user.email || "user" } : null,
-    (newData) => {
-      if (newData._SIGNAL_REFETCH) {
-        loadItinerary();
-        return;
-      }
-      // Postgres sync: gracefully merge incoming AI updates
-      setTrip((prev) => {
-        if (!prev) return prev;
-        return { ...prev, ...newData };
-      });
-    }
-  );
-
-  const loadItinerary = async () => {
+  const loadItinerary = useCallback(async () => {
     if (!session || !id) return;
     try {
       const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await res.json() as SavedTrip;
       setTrip(data);
 
       // Robust Host Check
@@ -250,11 +236,35 @@ export default function TripDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, session]);
+
+  const handleDatabaseUpdate = useCallback((newData: Record<string, unknown> & { _SIGNAL_REFETCH?: boolean }) => {
+    if (newData._SIGNAL_REFETCH) {
+      loadItinerary();
+      return;
+    }
+    // Postgres sync: gracefully merge incoming AI updates
+    setTrip((prev) => {
+      if (!prev) return prev;
+      return { ...prev, ...newData } as SavedTrip;
+    });
+  }, [loadItinerary]);
+
+  const multiplayerUser = useMemo(
+    () => session?.user ? { id: session.user.id, email: session.user.email || "user" } : null,
+    [session?.user],
+  );
+
+  // Multiplayer Hook
+  const { onlineUsers, highlightedActivityId, broadcastActivityHighlight, broadcastRefreshSignal } = useMultiplayer(
+    id,
+    multiplayerUser,
+    handleDatabaseUpdate
+  );
 
   useEffect(() => {
     loadItinerary();
-  }, [session, id]);
+  }, [loadItinerary]);
 
   // Intelligent Polling for Regeneration
   useEffect(() => {
@@ -268,7 +278,7 @@ export default function TripDetailPage() {
     }, 2000); // Poll every 2 seconds while something is cooking
 
     return () => clearInterval(interval);
-  }, [trip?.ai_data?.regenerating_keys]);
+  }, [loadItinerary, trip?.ai_data?.regenerating_keys]);
 
   if (authLoading || loading) {
     return (
@@ -351,11 +361,10 @@ export default function TripDetailPage() {
     setTrip((prev) => {
       if (!prev) return prev;
       const newTrip = JSON.parse(JSON.stringify(prev)); // Deep clone to break reference safely
-      if (!newTrip.ai_data) newTrip.ai_data = {};
       if (!newTrip.ai_data.votes) newTrip.ai_data.votes = {};
       
       const actVotes = newTrip.ai_data.votes[voteKey] || [];
-      if (!actVotes.some((v: any) => v.id === voter.id)) {
+      if (!actVotes.some((v: VoteUser) => v.id === voter.id)) {
           actVotes.push(voter);
       }
       newTrip.ai_data.votes[voteKey] = actVotes;
@@ -492,7 +501,7 @@ export default function TripDetailPage() {
                     });
                     if (!res.ok) throw new Error();
                     toast.success(newStatus ? "Published to Discover!" : "Trip is now private.");
-                  } catch (e) {
+                  } catch {
                     setTrip({ ...trip, is_public: !newStatus });
                     toast.error("Failed to update status.");
                   }
@@ -576,7 +585,7 @@ export default function TripDetailPage() {
         </motion.div>
 
         {/* ── Day-by-day itinerary ─────────────────────────────────── */}
-        {experience.itinerary?.map((day: any, di: number) => (
+        {experience.itinerary?.map((day, di) => (
           <motion.section
             key={day.day_number}
             initial={{ opacity: 0, y: 24 }}
@@ -595,7 +604,7 @@ export default function TripDetailPage() {
               </h2>
             </div>
             <div className="flex flex-col gap-3 pl-11">
-              {day.activities?.map((act: any, ai: number) => {
+              {day.activities?.map((act, ai) => {
                 const globalActivityId = `${day.day_number}-${ai}`;
                 const voteKey = `day_${di}_act_${ai}`; // Use di, since it matches the zero-based array index backend needs, not day.day_number!
                 
@@ -607,7 +616,6 @@ export default function TripDetailPage() {
                     key={ai} 
                     act={act} 
                     i={ai} 
-                    voteKey={voteKey}
                     votes={votes}
                     isRegenerating={isRegenerating}
                     onVote={() => handleVoteRegenerate(di, ai)}
@@ -641,7 +649,7 @@ export default function TripDetailPage() {
                   <Plane className="h-3.5 w-3.5" /> Flights
                 </p>
                 <div className="flex flex-col gap-3">
-                  {logistics.flights.map((f: any, i: number) => (
+                  {logistics.flights.map((f, i) => (
                     <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/8">
                       <div>
                         <p className="text-white/80 text-sm font-medium">{f.airline_type}</p>
@@ -669,7 +677,7 @@ export default function TripDetailPage() {
                   <Hotel className="h-3.5 w-3.5" /> Accommodations
                 </p>
                 <div className="flex flex-col gap-3">
-                  {logistics.accommodations.map((a: any, i: number) => (
+                  {logistics.accommodations.map((a, i) => (
                     <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/8">
                       <div>
                         <p className="text-white/80 text-sm font-medium">{a.type}</p>

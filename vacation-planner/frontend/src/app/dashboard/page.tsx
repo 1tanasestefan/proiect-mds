@@ -2,15 +2,14 @@
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { Calendar, MapPin, Compass, ArrowRight, Heart, Wallet, Loader2, Plane, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
-import { supabase } from '@/lib/supabase';
 import { useEffect, useState, useCallback } from 'react';
 import { FinalTripPlan } from '@/components/figma/itinerary-output';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Globe, Lock } from 'lucide-react';
+import { Globe, Lock } from 'lucide-react';
 
 // ── Spotlight slideshow data ────────────────────────────────────────
 const SPOTLIGHT = [
@@ -54,7 +53,7 @@ const SLIDE_VARIANTS = {
   exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
 };
 
-function SpotlightSlideshow({ onPlan }: { onPlan: (query: string) => void }) {
+function SpotlightSlideshow() {
   const [index, setIndex] = useState(0);
   const [dir, setDir] = useState(1);
 
@@ -214,7 +213,7 @@ export default function DashboardPage() {
         if (!response.ok) throw new Error("Failed to fetch itineraries");
         const data = await response.json();
         setItineraries(data.itineraries || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error(err);
         setError("Could not load your trips.");
       } finally {
@@ -243,7 +242,7 @@ export default function DashboardPage() {
       
       if (!response.ok) throw new Error();
       toast.success(!currentStatus ? "Trip published to Discover feed!" : "Trip is now private.");
-    } catch (err) {
+    } catch {
       // Rollback
       setItineraries(prev => prev.map(t => t.id === tripId ? { ...t, is_public: currentStatus } : t));
       toast.error("Failed to update status.");
@@ -277,7 +276,7 @@ export default function DashboardPage() {
           >
             {/* Spotlight Slideshow - Span 2 columns */}
             <motion.div variants={item} className="md:col-span-2">
-              <SpotlightSlideshow onPlan={(q) => router.push(`/plan?destination=${encodeURIComponent(q)}`)} />
+              <SpotlightSlideshow />
             </motion.div>
 
             {/* Empty space filler for col 3 */}
@@ -319,7 +318,7 @@ export default function DashboardPage() {
                     <MapPin className="h-10 w-10 text-gray-400 dark:text-white/20" />
                   </div>
                   <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>No Trips Yet</h4>
-                  <p className="text-gray-500 dark:text-white/50 max-w-md mx-auto">You haven't saved any itineraries yet. Head over to the planning tool to create your first adventure!</p>
+                  <p className="text-gray-500 dark:text-white/50 max-w-md mx-auto">You haven&apos;t saved any itineraries yet. Head over to the planning tool to create your first adventure!</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

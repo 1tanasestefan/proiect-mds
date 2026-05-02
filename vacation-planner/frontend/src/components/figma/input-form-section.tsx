@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useDebounce } from "@/hooks/useDebounce";
 import { 
@@ -29,6 +29,11 @@ interface FormData {
   travelers: string;
 }
 
+interface NominatimResult {
+  place_id: number;
+  display_name: string;
+}
+
 export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => void }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
@@ -44,13 +49,13 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
 
   // --- Nominatim Autocomplete State (shared for Origin + Destination) ---
   const [originInput, setOriginInput] = useState("");
-  const [originSuggestions, setOriginSuggestions] = useState<{ place_id: number; display_name: string }[]>([]);
+  const [originSuggestions, setOriginSuggestions] = useState<NominatimResult[]>([]);
   const [originLoading, setOriginLoading] = useState(false);
   const [selectedOrigin, setSelectedOrigin] = useState("");
   const [originHighlight, setOriginHighlight] = useState(-1);
 
   const [destInput, setDestInput] = useState("");
-  const [destSuggestions, setDestSuggestions] = useState<{ place_id: number; display_name: string }[]>([]);
+  const [destSuggestions, setDestSuggestions] = useState<NominatimResult[]>([]);
   const [destLoading, setDestLoading] = useState(false);
   const [selectedDest, setSelectedDest] = useState("");
   const [destHighlight, setDestHighlight] = useState(-1);
@@ -59,10 +64,10 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
   const debouncedDest = useDebounce(destInput, 500);
 
   // --- Nominatim Fetch (reusable) ---
-  const fetchNominatim = async (
+  const fetchNominatim = useCallback(async (
     term: string,
     selected: string,
-    setSuggestions: (s: { place_id: number; display_name: string }[]) => void,
+    setSuggestions: (s: NominatimResult[]) => void,
     setLoading: (b: boolean) => void,
     setHighlight: (n: number) => void,
   ) => {
@@ -77,8 +82,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           }
         });
         if (!response.ok) throw new Error('Geocoding failed');
-        const data = await response.json();
-        const parsed = data.map((item: any) => {
+        const data = await response.json() as NominatimResult[];
+        const parsed = data.map((item) => {
           const parts = item.display_name.split(',').map((p: string) => p.trim());
           const formatted = parts.length >= 3 
             ? `${parts[0]}, ${parts[parts.length - 1]}`
@@ -96,15 +101,15 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
       setSuggestions([]);
       setHighlight(-1);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchNominatim(debouncedOrigin, selectedOrigin, setOriginSuggestions, setOriginLoading, setOriginHighlight);
-  }, [debouncedOrigin, selectedOrigin]);
+  }, [debouncedOrigin, fetchNominatim, selectedOrigin]);
 
   useEffect(() => {
     fetchNominatim(debouncedDest, selectedDest, setDestSuggestions, setDestLoading, setDestHighlight);
-  }, [debouncedDest, selectedDest]);
+  }, [debouncedDest, fetchNominatim, selectedDest]);
 
 
   // --- Date Validation ---
@@ -181,8 +186,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
     field: "origin" | "destination";
     inputValue: string;
     setInputValue: (v: string) => void;
-    suggestions: { place_id: number; display_name: string }[];
-    setSuggestions: (s: any[]) => void;
+    suggestions: NominatimResult[];
+    setSuggestions: (s: NominatimResult[]) => void;
     isLoading: boolean;
     selectedLocation: string;
     setSelectedLocation: (v: string) => void;

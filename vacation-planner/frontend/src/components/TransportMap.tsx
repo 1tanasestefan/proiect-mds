@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -37,7 +37,7 @@ function MapViewController({ currentOption }: { currentOption: ConsolidatedLogis
               allCoords.push([c[1], c[0]])
             );
           }
-        } catch (_) {}
+        } catch {}
       }
     });
 

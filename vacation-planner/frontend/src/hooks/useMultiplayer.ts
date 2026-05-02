@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 export interface OnlineUser {
   id: string;
@@ -7,10 +8,22 @@ export interface OnlineUser {
   avatarId?: number; // deterministic avatar seed
 }
 
-export function useMultiplayer(itineraryId: string, currentUser: { id: string; email: string } | null, onDatabaseUpdate?: (payload: any) => void) {
+interface PresenceUser extends OnlineUser {
+  onlineAt?: string;
+}
+
+type DatabaseUpdatePayload = Record<string, unknown> & {
+  _SIGNAL_REFETCH?: boolean;
+};
+
+export function useMultiplayer(
+  itineraryId: string,
+  currentUser: { id: string; email: string } | null,
+  onDatabaseUpdate?: (payload: DatabaseUpdatePayload) => void,
+) {
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [highlightedActivityId, setHighlightedActivityId] = useState<string | null>(null);
-  const [channel, setChannel] = useState<any>(null);
+  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!supabase || !itineraryId || !currentUser) return;
@@ -29,7 +42,7 @@ export function useMultiplayer(itineraryId: string, currentUser: { id: string; e
         const users: OnlineUser[] = [];
         
         Object.keys(state).forEach((key) => {
-          const presences = state[key] as any[];
+          const presences = state[key] as unknown as PresenceUser[];
           if (presences && presences.length > 0) {
             // Keep unique users by ID
             if (!users.some(u => u.id === presences[0].id)) {
@@ -44,10 +57,10 @@ export function useMultiplayer(itineraryId: string, currentUser: { id: string; e
         
         setOnlineUsers(users);
       })
-      .on("presence", { event: "join" }, ({ key, newPresences }) => {
+      .on("presence", { event: "join" }, () => {
          // optional: toast logs can go here
       })
-      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+      .on("presence", { event: "leave" }, () => {
          // optional: toast logs can go here
       });
 
@@ -79,7 +92,7 @@ export function useMultiplayer(itineraryId: string, currentUser: { id: string; e
         filter: `id=eq.${itineraryId}`,
       },
       (payload) => {
-        if (onDatabaseUpdate) onDatabaseUpdate(payload.new);
+        if (onDatabaseUpdate) onDatabaseUpdate(payload.new as DatabaseUpdatePayload);
       }
     );
 
@@ -103,7 +116,7 @@ export function useMultiplayer(itineraryId: string, currentUser: { id: string; e
       room.unsubscribe();
       supabase?.removeChannel(room);
     };
-  }, [itineraryId, currentUser?.id, currentUser?.email]);
+  }, [itineraryId, currentUser, onDatabaseUpdate]);
 
   const broadcastActivityHighlight = (activityId: string) => {
     if (channel && currentUser) {

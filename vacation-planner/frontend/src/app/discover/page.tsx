@@ -1,18 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, TrendingUp, Clock, Filter, Loader2, Compass } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Sparkles, TrendingUp, Clock, Loader2, Compass } from "lucide-react";
 import { CommunityTripCard } from "@/components/CommunityTripCard";
 import { useAuth } from "@/context/AuthContext";
 
+interface CommunityItinerary {
+  id: string;
+  title: string;
+  destination: string;
+  start_date?: string;
+  end_date?: string;
+  likes_count: number;
+  forks_count: number;
+  author_name: string;
+  author_avatar?: string;
+  ai_data: {
+    experience?: {
+      vibe_summary?: string;
+      itinerary?: unknown[];
+    };
+  };
+  is_liked_by_me?: boolean;
+  created_at: string;
+}
+
 export default function DiscoverPage() {
   const { session } = useAuth();
-  const [itineraries, setItineraries] = useState<any[]>([]);
+  const [itineraries, setItineraries] = useState<CommunityItinerary[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"likes" | "newest">("likes");
 
-  const fetchFeed = async () => {
+  const fetchFeed = useCallback(async () => {
     setLoading(true);
     try {
       const url = new URL("http://127.0.0.1:8000/api/community/feed");
@@ -32,11 +52,11 @@ export default function DiscoverPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.access_token, sortBy]);
 
   useEffect(() => {
     fetchFeed();
-  }, [sortBy, session]);
+  }, [fetchFeed]);
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#050505] pt-32 pb-24 px-8 relative overflow-hidden">
