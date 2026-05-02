@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, AliasChoices, ConfigDict, model_validator
 from typing import List, Optional, Literal, Any
 from datetime import date, datetime
 
@@ -6,17 +6,37 @@ from datetime import date, datetime
 # ── Agent 1 (Experience Guide) Contracts ─────────────────────────
 
 class UserInput(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     budget: str = Field(..., description="The user's budget level (e.g., Economy, Mid-range, Luxury)")
     lifestyle: str = Field(..., description="The user's lifestyle or interests (e.g., Adventurous, Cultural, Relaxing)")
     vacationType: str = Field(..., description="The type of vacation (e.g., Beach, City, Nature)")
-    destination: str = Field(..., description="The travel destination")
+    destination: Optional[str] = Field(default=None, description="The travel destination")
+    price_range_per_person: Optional[str] = Field(
+        default=None,
+        description="Desired total price range per person for the trip",
+    )
+    flexible_dates: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("flexible_dates", "flexibleDates"),
+        description="Whether the backend should recommend travel dates based on budget and destination seasonality",
+    )
+    flexible_destination: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("flexible_destination", "flexibleDestination"),
+        description="Whether the backend should recommend the destination from previous user signals",
+    )
     origin: str = Field(..., description="The departure / origin city")
     travelers: int = Field(..., description="Number of travelers")
-    start_date: str = Field(..., description="Trip start date (YYYY-MM-DD)")
-    end_date: str = Field(..., description="Trip end date (YYYY-MM-DD)")
+    start_date: Optional[str] = Field(default=None, description="Trip start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(default=None, description="Trip end date (YYYY-MM-DD)")
 
     @model_validator(mode="after")
     def validate_dates(self):
+        if self.flexible_dates:
+            return self
+        if not self.start_date or not self.end_date:
+            raise ValueError("Dates are required unless flexible dates mode is enabled.")
         try:
             start = datetime.strptime(self.start_date, "%Y-%m-%d").date()
             end = datetime.strptime(self.end_date, "%Y-%m-%d").date()
@@ -28,10 +48,14 @@ class UserInput(BaseModel):
             raise ValueError("End date must be after start date.")
         if delta > 5:
             raise ValueError("Trips are limited to a maximum of 5 days.")
+        if not self.flexible_destination and not (self.destination or "").strip():
+            raise ValueError("Destination is required unless flexible destination mode is enabled.")
         return self
 
     @property
     def trip_days(self) -> int:
+        if not self.start_date or not self.end_date:
+            return 3
         start = datetime.strptime(self.start_date, "%Y-%m-%d").date()
         end = datetime.strptime(self.end_date, "%Y-%m-%d").date()
         return (end - start).days
