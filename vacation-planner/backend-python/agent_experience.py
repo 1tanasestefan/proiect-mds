@@ -131,7 +131,8 @@ async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput
                 f"Create a {user_input.trip_days}-day itinerary for {user_input.destination}. "
                 f"Travel dates: {user_input.start_date} to {user_input.end_date}. "
                 f"Origin: {user_input.origin}. "
-                f"Lifestyle: {user_input.lifestyle}, Budget: {user_input.budget}, "
+                f"Lifestyle: {user_input.lifestyle}, Budget tier: {user_input.budget}, "
+                f"Price range per person: {user_input.price_range_per_person or 'not specified'}, "
                 f"Vibe: {user_input.vacationType}.",
                 deps=user_input
             ),

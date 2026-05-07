@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - Tudor
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: vacation-planner/frontend
+
+    env:
+      NEXT_PUBLIC_ITINERARY_API_URL: http://127.0.0.1:8000/api/generate-itinerary
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key-for-ci
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: vacation-planner/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+  backend-python:
+    name: Python backend import check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: vacation-planner/backend-python
+
+    env:
+      GROQ_API_KEY: dummy-groq-key-for-ci
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_KEY: dummy-service-role-key-for-ci
+      SUPABASE_JWT_SECRET: dummy-jwt-secret-for-ci
+      PEXELS_API_KEY: dummy-pexels-key-for-ci
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: vacation-planner/backend-python/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify backend imports
+        run: python -c "import main; print('Backend imports successfully')"

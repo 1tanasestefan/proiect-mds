@@ -25,6 +25,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
     setLoading(true);
 
     try {
+      if (!supabase) {
+        throw new Error('Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to frontend/.env.local.');
+      }
+
       if (mode === 'register') {
         const { error: signUpError } = await supabase.auth.signUp({
           email,
@@ -45,8 +49,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
         if (signInError) throw signInError;
         router.push('/dashboard');
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during authentication');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred during authentication');
     } finally {
       setLoading(false);
     }
@@ -133,7 +137,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           type="submit"
-          disabled={loading}
+          disabled={loading || !supabase}
           className="w-full py-4 mt-4 bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(0,240,255,0.3)] disabled:opacity-50 transition-all cursor-pointer"
         >
           {loading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Create Account')}
@@ -144,7 +148,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <div className="mt-8 text-center text-gray-600 dark:text-gray-400">
         {mode === 'login' ? (
           <p>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="font-medium text-[#00F0FF] hover:text-[#00F0FF]/80 transition-colors">
               Sign up
             </Link>

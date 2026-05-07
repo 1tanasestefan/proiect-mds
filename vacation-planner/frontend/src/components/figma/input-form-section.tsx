@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useDebounce } from "@/hooks/useDebounce";
+import { supabase } from "@/lib/supabase";
 import { 
   Wallet, 
   Heart, 
@@ -20,23 +21,47 @@ import {
 
 interface FormData {
   budget: string;
+  priceMin: string;
+  priceMax: string;
   lifestyle: string;
   vacationType: string;
   origin: string;
   destination: string;
+  flexibleDestination: boolean;
+  flexibleDates: boolean;
   startDate: string;
   endDate: string;
   travelers: string;
+}
+
+interface NominatimResult {
+  place_id: number;
+  display_name: string;
+}
+
+interface DestinationRecommendation {
+  destination: string;
+  reason: string;
+  match_score: number;
+  suggested_dates?: {
+    start_date: string;
+    end_date: string;
+    reason: string;
+  };
 }
 
 export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => void }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
     budget: "",
+    priceMin: "",
+    priceMax: "",
     lifestyle: "",
     vacationType: "",
     origin: "",
     destination: "",
+    flexibleDestination: false,
+    flexibleDates: false,
     startDate: "",
     endDate: "",
     travelers: "",
@@ -44,25 +69,28 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
 
   // --- Nominatim Autocomplete State (shared for Origin + Destination) ---
   const [originInput, setOriginInput] = useState("");
-  const [originSuggestions, setOriginSuggestions] = useState<{ place_id: number; display_name: string }[]>([]);
+  const [originSuggestions, setOriginSuggestions] = useState<NominatimResult[]>([]);
   const [originLoading, setOriginLoading] = useState(false);
   const [selectedOrigin, setSelectedOrigin] = useState("");
   const [originHighlight, setOriginHighlight] = useState(-1);
 
   const [destInput, setDestInput] = useState("");
-  const [destSuggestions, setDestSuggestions] = useState<{ place_id: number; display_name: string }[]>([]);
+  const [destSuggestions, setDestSuggestions] = useState<NominatimResult[]>([]);
   const [destLoading, setDestLoading] = useState(false);
   const [selectedDest, setSelectedDest] = useState("");
   const [destHighlight, setDestHighlight] = useState(-1);
+  const [recommendations, setRecommendations] = useState<DestinationRecommendation[]>([]);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
+  const [recommendationError, setRecommendationError] = useState<string | null>(null);
 
   const debouncedOrigin = useDebounce(originInput, 500);
   const debouncedDest = useDebounce(destInput, 500);
 
   // --- Nominatim Fetch (reusable) ---
-  const fetchNominatim = async (
+  const fetchNominatim = useCallback(async (
     term: string,
     selected: string,
-    setSuggestions: (s: { place_id: number; display_name: string }[]) => void,
+    setSuggestions: (s: NominatimResult[]) => void,
     setLoading: (b: boolean) => void,
     setHighlight: (n: number) => void,
   ) => {
@@ -77,8 +105,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           }
         });
         if (!response.ok) throw new Error('Geocoding failed');
-        const data = await response.json();
-        const parsed = data.map((item: any) => {
+        const data = await response.json() as NominatimResult[];
+        const parsed = data.map((item) => {
           const parts = item.display_name.split(',').map((p: string) => p.trim());
           const formatted = parts.length >= 3 
             ? `${parts[0]}, ${parts[parts.length - 1]}`
@@ -96,15 +124,15 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
       setSuggestions([]);
       setHighlight(-1);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchNominatim(debouncedOrigin, selectedOrigin, setOriginSuggestions, setOriginLoading, setOriginHighlight);
-  }, [debouncedOrigin, selectedOrigin]);
+  }, [debouncedOrigin, fetchNominatim, selectedOrigin]);
 
   useEffect(() => {
     fetchNominatim(debouncedDest, selectedDest, setDestSuggestions, setDestLoading, setDestHighlight);
-  }, [debouncedDest, selectedDest]);
+  }, [debouncedDest, fetchNominatim, selectedDest]);
 
 
   // --- Date Validation ---
@@ -122,29 +150,49 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
   }, [formData.startDate, formData.endDate]);
 
   const dateError = useMemo(() => {
+    if (formData.flexibleDates) return null;
     if (!formData.startDate || !formData.endDate) return null;
     if (tripDays <= 0) return "Check-out must be after check-in.";
     if (tripDays > 5) return "Trips are currently limited to a maximum of 5 days.";
     return null;
-  }, [formData.startDate, formData.endDate, tripDays]);
+  }, [formData.flexibleDates, formData.startDate, formData.endDate, tripDays]);
 
-  const datesValid = formData.startDate && formData.endDate && !dateError && tripDays > 0;
+  const datesValid = formData.flexibleDates || (formData.startDate && formData.endDate && !dateError && tripDays > 0);
+
+  const priceRangeValid = useMemo(() => {
+    if (formData.budget === "unlimited") return true;
+    const min = Number(formData.priceMin);
+    const max = Number(formData.priceMax);
+    return Number.isFinite(min) && Number.isFinite(max) && min > 0 && max >= min;
+  }, [formData.budget, formData.priceMin, formData.priceMax]);
 
 
   const steps = [
-    { id: "budget", title: "Budget Tier" },
+    { id: "mode", title: "How do you want to plan?" },
+    { id: "budget", title: "Budget & Price Range" },
     { id: "lifestyle", title: "Your Lifestyle" },
     { id: "vacationType", title: "Vacation Type" },
     { id: "origin", title: "Where are you flying from?" },
     { id: "destination", title: "Where are you going?" },
     { id: "dates", title: "Travel Dates" },
     { id: "travelers", title: "Travelers" },
+    { id: "recommendations", title: "Choose a Recommended City" },
   ];
+
+  const visibleSteps = formData.flexibleDestination
+    ? steps.filter((step) => ["budget", "lifestyle", "vacationType", "origin", "dates", "travelers", "recommendations"].includes(step.id))
+    : steps.filter((step) => step.id !== "recommendations");
+
+  const activeStepIndex = Math.max(
+    0,
+    visibleSteps.findIndex((step) => step.id === steps[currentStep].id)
+  );
 
   const budgetOptions = [
     { id: "low", label: "Budget Explorer", icon: Wallet, desc: "Smart spending, big adventures", gradient: "from-emerald-500 to-teal-500" },
     { id: "medium", label: "Comfort Seeker", icon: Heart, desc: "Balance of value and comfort", gradient: "from-blue-500 to-cyan-500" },
     { id: "luxury", label: "Luxury Voyager", icon: Zap, desc: "Premium all the way", gradient: "from-purple-500 to-pink-500" },
+    { id: "unlimited", label: "Unlimited", icon: Zap, desc: "Best of everything", gradient: "from-amber-400 to-fuchsia-500" },
   ];
 
   const lifestyleOptions = [
@@ -161,19 +209,106 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
 
   const handleSelect = (field: keyof FormData, value: string) => {
     setFormData({ ...formData, [field]: value });
+    if (field === "budget") return;
     if (currentStep < steps.length - 1) {
       setTimeout(() => setCurrentStep(currentStep + 1), 300);
     }
+  };
+
+  const handleModeSelect = (isFlexible: boolean) => {
+    setFormData({
+      ...formData,
+      flexibleDestination: isFlexible,
+      destination: isFlexible ? "" : formData.destination,
+    });
+    if (isFlexible) {
+      setDestInput("");
+      setSelectedDest("");
+      setDestSuggestions([]);
+    }
+    setRecommendations([]);
+    setRecommendationError(null);
+    setCurrentStep(1);
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData({ ...formData, [field]: value });
   };
 
+  const handleBack = () => {
+    if (formData.flexibleDestination && currentStep === 8) {
+      setCurrentStep(7);
+      return;
+    }
+    if (formData.flexibleDestination && currentStep === 6) {
+      setCurrentStep(4);
+      return;
+    }
+    setCurrentStep(currentStep - 1);
+  };
+
   const handleSubmitForm = () => {
-    if (formData.destination && formData.travelers && formData.origin && datesValid) {
+    if (formData.destination && formData.travelers && formData.origin && datesValid && priceRangeValid) {
       onSubmit(formData);
     }
+  };
+
+  const buildFlexiblePayload = (destination = "") => ({
+    budget: formData.budget,
+    price_range_per_person: formData.budget === "unlimited" ? "Unlimited" : `$${formData.priceMin}-$${formData.priceMax}`,
+    lifestyle: formData.lifestyle,
+    vacationType: formData.vacationType,
+    origin: formData.origin,
+    destination,
+    flexibleDestination: formData.flexibleDestination,
+    flexibleDates: formData.flexibleDates,
+    start_date: formData.flexibleDates ? null : formData.startDate,
+    end_date: formData.flexibleDates ? null : formData.endDate,
+    travelers: parseInt(formData.travelers, 10) || 1,
+  });
+
+  const handleGetRecommendations = async () => {
+    if (!formData.travelers || !formData.origin || !datesValid || !priceRangeValid) return;
+
+    setRecommendationLoading(true);
+    setRecommendationError(null);
+    setRecommendations([]);
+
+    try {
+      const baseUrl = (process.env.NEXT_PUBLIC_ITINERARY_API_URL || "http://127.0.0.1:8000/api/generate-itinerary")
+        .replace(/\/api\/generate-itinerary$/, "");
+      const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+
+      const response = await fetch(`${baseUrl}/api/recommend-destinations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {}),
+        },
+        body: JSON.stringify(buildFlexiblePayload()),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || "Could not get recommendations.");
+      }
+
+      const result = (await response.json()) as { recommendations: DestinationRecommendation[] };
+      setRecommendations(result.recommendations || []);
+      setCurrentStep(8);
+    } catch (error) {
+      setRecommendationError(error instanceof Error ? error.message : "Could not get recommendations.");
+    } finally {
+      setRecommendationLoading(false);
+    }
+  };
+
+  const handleChooseRecommendation = (recommendation: DestinationRecommendation) => {
+    onSubmit({
+      ...formData,
+      destination: recommendation.destination,
+      flexibleDestination: true,
+    });
   };
 
   // --- Reusable Nominatim Autocomplete Renderer ---
@@ -181,8 +316,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
     field: "origin" | "destination";
     inputValue: string;
     setInputValue: (v: string) => void;
-    suggestions: { place_id: number; display_name: string }[];
-    setSuggestions: (s: any[]) => void;
+    suggestions: NominatimResult[];
+    setSuggestions: (s: NominatimResult[]) => void;
     isLoading: boolean;
     selectedLocation: string;
     setSelectedLocation: (v: string) => void;
@@ -326,14 +461,14 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
 
         {/* Progress Indicator */}
         <div className="flex justify-center gap-3 mb-16">
-          {steps.map((step, index) => (
+          {visibleSteps.map((step, index) => (
             <motion.div
               key={step.id}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: index * 0.1 }}
               className={`h-2 rounded-full transition-all duration-500 ${
-                index <= currentStep 
+                index <= activeStepIndex 
                   ? "w-12 bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2]" 
                   : "w-6 bg-white/10"
               }`}
@@ -359,38 +494,141 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
             >
               {steps[currentStep].title}
             </h3>
-
-            {/* Step 0: Budget Selection */}
             {currentStep === 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {budgetOptions.map((option) => (
-                  <motion.button
-                    key={option.id}
-                    whileHover={{ scale: 1.03, y: -4 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleSelect("budget", option.id)}
-                    className={`group relative p-8 rounded-[24px] border transition-all duration-300 ${
-                      formData.budget === option.id
-                        ? "bg-black/10 dark:bg-white/10 border-gray-400 dark:border-white/30 shadow-[0_0_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                        : "bg-black/5 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
-                    }`}
-                  >
-                    <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center mb-6 shadow-lg`}>
-                      <option.icon className="h-8 w-8 text-white" />
-                    </div>
-                    <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                      {option.label}
-                    </h4>
-                    <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
-                      {option.desc}
-                    </p>
-                  </motion.button>
-                ))}
+              <p className="mb-8 max-w-2xl text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                Choose your own city, or let VibeTrips recommend cities and dates from your travel needs, budget, and past likes.
+              </p>
+            )}
+
+            {/* Step 0: Planning Mode */}
+            {currentStep === 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <motion.button
+                  whileHover={{ scale: 1.03, y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleModeSelect(true)}
+                  className="text-left p-8 rounded-[24px] bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#00F0FF]/50 transition-all"
+                >
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#00F0FF] to-[#8A2BE2] flex items-center justify-center mb-6 shadow-lg">
+                    <MapPin className="h-8 w-8 text-white" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    I am flexible
+                  </h4>
+                  <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    Tell us your budget, needs, origin, group size, and date flexibility. We will recommend cities and travel dates before generating a plan.
+                  </p>
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.03, y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleModeSelect(false)}
+                  className="text-left p-8 rounded-[24px] bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#8A2BE2]/50 transition-all"
+                >
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-lg">
+                    <Plane className="h-8 w-8 text-white" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    I know the destination
+                  </h4>
+                  <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    Pick a city yourself, with either a price range or unlimited budget.
+                  </p>
+                </motion.button>
               </div>
             )}
 
-            {/* Step 1: Lifestyle Selection */}
+            {/* Step 1: Budget Selection */}
             {currentStep === 1 && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  {budgetOptions.map((option) => (
+                    <motion.button
+                      key={option.id}
+                      whileHover={{ scale: 1.03, y: -4 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleSelect("budget", option.id)}
+                      className={`group relative p-8 rounded-[24px] border transition-all duration-300 ${
+                        formData.budget === option.id
+                          ? "bg-black/10 dark:bg-white/10 border-gray-400 dark:border-white/30 shadow-[0_0_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+                          : "bg-black/5 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
+                      }`}
+                    >
+                      <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center mb-6 shadow-lg`}>
+                        <option.icon className="h-8 w-8 text-white" />
+                      </div>
+                      <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                        {option.label}
+                      </h4>
+                      <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                        {option.desc}
+                      </p>
+                    </motion.button>
+                  ))}
+                </div>
+
+                <AnimatePresence>
+                  {formData.budget && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 12 }}
+                      className="space-y-6"
+                    >
+                      <div className="max-w-2xl ml-auto">
+                        {formData.budget === "unlimited" ? (
+                          <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            Unlimited budget will prioritize the best season, hotels, flights, restaurants, and experiences instead of optimizing for price.
+                          </p>
+                        ) : (
+                          <>
+                            <p className="text-sm font-medium text-gray-500 dark:text-white/50 mb-3 uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+                              Price range per person
+                            </p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <input
+                                type="number"
+                                min="1"
+                                value={formData.priceMin}
+                                onChange={(e) => handleInputChange("priceMin", e.target.value)}
+                                placeholder="Min budget, e.g. 300"
+                                className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] px-5 py-4 text-gray-900 dark:text-white text-lg placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#00F0FF]/50 transition-all"
+                              />
+                              <input
+                                type="number"
+                                min="1"
+                                value={formData.priceMax}
+                                onChange={(e) => handleInputChange("priceMax", e.target.value)}
+                                placeholder="Max budget, e.g. 700"
+                                className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] px-5 py-4 text-gray-900 dark:text-white text-lg placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#8A2BE2]/50 transition-all"
+                              />
+                            </div>
+                            {!priceRangeValid && (formData.priceMin || formData.priceMax) && (
+                              <p className="mt-3 text-sm text-red-400">Add a valid min and max price per person.</p>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col md:flex-row gap-4 justify-end">
+                        <button
+                          onClick={() => setCurrentStep(2)}
+                          disabled={!priceRangeValid}
+                          className="px-6 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-semibold flex items-center justify-center gap-2 hover:bg-[#00F0FF]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Continue
+                          <ArrowRight className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Step 2: Lifestyle Selection */}
+            {currentStep === 2 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {lifestyleOptions.map((option) => (
                   <motion.button
@@ -418,8 +656,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               </div>
             )}
 
-            {/* Step 2: Vacation Type Selection */}
-            {currentStep === 2 && (
+            {/* Step 3: Vacation Type Selection */}
+            {currentStep === 3 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {vacationTypeOptions.map((option) => (
                   <motion.button
@@ -459,8 +697,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               </div>
             )}
 
-            {/* Step 3: Origin Input (Nominatim Autocomplete) */}
-            {currentStep === 3 && renderLocationStep({
+            {/* Step 4: Origin Input (Nominatim Autocomplete) */}
+            {currentStep === 4 && renderLocationStep({
               field: "origin",
               inputValue: originInput,
               setInputValue: setOriginInput,
@@ -475,11 +713,11 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               icon: Plane,
               iconColor: "#8A2BE2",
               focusColor: "#8A2BE2",
-              nextStep: 4,
+              nextStep: formData.flexibleDestination ? 6 : 5,
             })}
 
-            {/* Step 4: Destination Input (Nominatim Autocomplete) */}
-            {currentStep === 4 && renderLocationStep({
+            {/* Step 5: Destination Input (Nominatim Autocomplete) */}
+            {currentStep === 5 && renderLocationStep({
               field: "destination",
               inputValue: destInput,
               setInputValue: setDestInput,
@@ -494,11 +732,11 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               icon: MapPin,
               iconColor: "#00F0FF",
               focusColor: "#00F0FF",
-              nextStep: 5,
+              nextStep: 6,
             })}
 
-            {/* Step 5: Travel Dates */}
-            {currentStep === 5 && (
+            {/* Step 6: Travel Dates */}
+            {currentStep === 6 && (
               <div className="max-w-2xl mx-auto space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Check-in */}
@@ -513,11 +751,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                         value={formData.startDate}
                         min={today}
                         onChange={(e) => {
-                          handleInputChange("startDate", e.target.value);
+                          setFormData({ ...formData, flexibleDates: false, startDate: e.target.value, endDate: formData.endDate && e.target.value >= formData.endDate ? "" : formData.endDate });
                           // Auto-clear end date if it becomes invalid
-                          if (formData.endDate && e.target.value >= formData.endDate) {
-                            handleInputChange("endDate", "");
-                          }
                         }}
                         className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] pl-14 pr-6 py-5 text-gray-900 dark:text-white text-lg focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_20px_rgba(0,240,255,0.15)] transition-all appearance-none [color-scheme:dark]"
                         style={{ fontFamily: "'Inter', sans-serif" }}
@@ -537,7 +772,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                         type="date"
                         value={formData.endDate}
                         min={formData.startDate || today}
-                        onChange={(e) => handleInputChange("endDate", e.target.value)}
+                        onChange={(e) => setFormData({ ...formData, flexibleDates: false, endDate: e.target.value })}
                         disabled={!formData.startDate}
                         className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] pl-14 pr-6 py-5 text-gray-900 dark:text-white text-lg focus:outline-none focus:border-[#8A2BE2]/50 focus:shadow-[0_0_20px_rgba(138,43,226,0.15)] transition-all appearance-none [color-scheme:dark] disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{ fontFamily: "'Inter', sans-serif" }}
@@ -546,8 +781,41 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   </div>
                 </div>
 
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, flexibleDates: true, startDate: "", endDate: "" })}
+                  className={`w-full rounded-[18px] border px-5 py-4 text-left transition-all ${
+                    formData.flexibleDates
+                      ? "border-[#00F0FF]/50 bg-[#00F0FF]/10 text-[#00F0FF]"
+                      : "border-gray-200 dark:border-white/10 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-white/60 hover:border-[#00F0FF]/30"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <CalendarDays className="h-5 w-5" />
+                    <div>
+                      <p className="font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>I am fully flexible with dates</p>
+                      <p className="text-sm opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>
+                        VibeTrips will suggest dates that fit your city and budget, including avoiding peak seasons when price matters.
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
                 {/* Trip duration badge */}
-                {tripDays > 0 && !dateError && (
+                {formData.flexibleDates && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center"
+                  >
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#8A2BE2]/10 border border-[#8A2BE2]/20 text-[#8A2BE2] text-sm font-medium">
+                      <CalendarDays className="h-4 w-4" />
+                      Dates will be recommended for your budget
+                    </span>
+                  </motion.div>
+                )}
+
+                {tripDays > 0 && !dateError && !formData.flexibleDates && (
                   <motion.div
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -582,7 +850,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     disabled={!datesValid}
-                    onClick={() => setCurrentStep(6)}
+                    onClick={() => setCurrentStep(7)}
                     className="px-8 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-medium flex items-center gap-2 hover:bg-[#00F0FF]/20 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue
@@ -592,8 +860,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               </div>
             )}
 
-            {/* Step 6: Travelers Input */}
-            {currentStep === 6 && (
+            {/* Step 7: Travelers Input */}
+            {currentStep === 7 && (
               <div className="max-w-2xl mx-auto space-y-8">
                 <div className="relative">
                   <Users className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-[#8A2BE2]" />
@@ -603,7 +871,11 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     onChange={(e) => handleInputChange("travelers", e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && formData.travelers) {
-                        handleSubmitForm();
+                        if (formData.flexibleDestination) {
+                          handleGetRecommendations();
+                        } else {
+                          handleSubmitForm();
+                        }
                       }
                     }}
                     placeholder="Number of travelers"
@@ -614,27 +886,77 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   />
                 </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleSubmitForm}
-                  disabled={!formData.destination || !formData.travelers || !formData.origin || !datesValid}
-                  className="w-full py-6 rounded-[20px] bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] text-white text-xl font-bold flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(0,240,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                >
-                  Generate My Itinerary
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={formData.flexibleDestination ? handleGetRecommendations : handleSubmitForm}
+                    disabled={recommendationLoading || (!formData.flexibleDestination && !formData.destination) || !formData.travelers || !formData.origin || !datesValid || !priceRangeValid}
+                    className="w-full py-6 rounded-[20px] bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] text-white text-xl font-bold flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(0,240,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                  >
+                  {recommendationLoading ? "Finding Cities..." : formData.flexibleDestination ? "Show City Recommendations" : "Generate My Itinerary"}
                   <ArrowRight className="h-6 w-6" />
                 </motion.button>
+                {recommendationError && (
+                  <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                    {recommendationError}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 8: Flexible City Recommendations */}
+            {currentStep === 8 && (
+              <div className="space-y-6">
+                <p className="text-gray-500 dark:text-white/60 max-w-2xl" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  Pick one city. After this, VibeTrips will generate the full itinerary and logistics for that destination.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {recommendations.map((recommendation) => (
+                    <motion.button
+                      key={recommendation.destination}
+                      whileHover={{ scale: 1.02, y: -3 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleChooseRecommendation(recommendation)}
+                      className="text-left p-6 rounded-[22px] bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#00F0FF]/50 transition-all"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="h-12 w-12 rounded-2xl bg-[#00F0FF]/10 border border-[#00F0FF]/20 flex items-center justify-center">
+                          <MapPin className="h-6 w-6 text-[#00F0FF]" />
+                        </div>
+                        <div>
+                          <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            {recommendation.destination}
+                          </h4>
+                          <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            {recommendation.reason}
+                          </p>
+                          {recommendation.suggested_dates && (
+                            <div className="mt-4 rounded-2xl bg-[#8A2BE2]/10 border border-[#8A2BE2]/20 px-4 py-3">
+                              <p className="text-sm font-semibold text-[#8A2BE2]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                                Suggested dates: {recommendation.suggested_dates.start_date} to {recommendation.suggested_dates.end_date}
+                              </p>
+                              <p className="text-sm text-gray-500 dark:text-white/60 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                {recommendation.suggested_dates.reason}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             )}
           </motion.div>
 
           {/* Navigation */}
-          {currentStep > 0 && currentStep <= 6 && (
+          {currentStep > 0 && currentStep <= 8 && (
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              onClick={() => setCurrentStep(currentStep - 1)}
+              onClick={handleBack}
               className="mt-8 text-gray-500 dark:text-white/60 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center gap-2"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >

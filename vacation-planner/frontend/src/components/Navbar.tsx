@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Sparkles, User as UserIcon, Map, LayoutDashboard, LogIn, LogOut } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 const MARKETING_LINKS = [
