@@ -6,6 +6,7 @@ import { Heart, Bookmark, MapPin, Clock, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
+import { apiUrl } from "@/lib/backend";
 
 interface CommunityAiData {
   experience?: {
@@ -51,7 +52,7 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
     setLikesCount(prevLiked ? prevCount - 1 : prevCount + 1);
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/community/like/${itinerary.id}`, {
+      const res = await fetch(apiUrl(`/api/community/like/${itinerary.id}`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session?.access_token}`,
@@ -80,7 +81,7 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
     const toastId = toast.loading("Cloning itinerary to your account...");
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/community/fork/${itinerary.id}`, {
+      const res = await fetch(apiUrl(`/api/community/fork/${itinerary.id}`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${session?.access_token}`,

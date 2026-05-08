@@ -5,6 +5,7 @@ import { InputFormSection } from '@/components/figma/input-form-section';
 import { AIProcessing } from '@/components/figma/ai-processing';
 import { ItineraryOutput, FinalTripPlan } from '@/components/figma/itinerary-output';
 import { useAuth } from '@/context/AuthContext';
+import { apiUrl } from '@/lib/backend';
 
 type ViewState = 'INPUT' | 'PROCESSING' | 'RESULTS';
 type TripFormData = {
@@ -29,9 +30,7 @@ export default function PlanTripPage() {
   const [itineraryData, setItineraryData] = useState<FinalTripPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const ITINERARY_API_URL =
-    process.env.NEXT_PUBLIC_ITINERARY_API_URL ||
-    "http://127.0.0.1:8000/api/generate-itinerary";
+  const ITINERARY_API_URL = apiUrl("/api/generate-itinerary");
 
   const handleGenerateItinerary = async (data: TripFormData) => {
     setFormData(data);

@@ -13,10 +13,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
+import { API_BASE_URL } from "@/lib/backend";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_ITINERARY_API_URL?.replace("/api/generate-itinerary", "") ||
-  "http://127.0.0.1:8000";
+const API_BASE = API_BASE_URL;
 
 // ── Types ──────────────────────────────────────────────────────────
 interface Activity {

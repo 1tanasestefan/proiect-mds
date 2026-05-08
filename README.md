@@ -5,10 +5,9 @@ VibeTrips is an AI-powered travel planning app. Users can generate personalized 
 The project is built as a multi-part app:
 
 - `vacation-planner/frontend` - Next.js frontend
-- `vacation-planner/backend-python` - FastAPI backend with AI travel agents
-- `vacation-planner/backend` - Spring Boot backend prototype/legacy module
+- `vacation-planner/backend` - FastAPI backend with AI travel agents
 
-For local development, run the Python backend and the Next.js frontend.
+For local development, run the FastAPI backend and the Next.js frontend.
 
 ## Main Features
 
@@ -40,10 +39,6 @@ Install these before running the project:
 - Python 3.12 or newer
 - Git
 
-Optional:
-
-- Java 21 and Maven, only if you want to run the Spring Boot module.
-
 ## Environment Setup
 
 Never commit real API keys or `.env` files.
@@ -53,7 +48,7 @@ Never commit real API keys or `.env` files.
 Create this file:
 
 ```powershell
-cd "vacation-planner/backend-python"
+cd "vacation-planner/backend"
 copy .env.template .env
 ```
 
@@ -85,7 +80,7 @@ notepad .env.local
 Add:
 
 ```env
-NEXT_PUBLIC_ITINERARY_API_URL=http://127.0.0.1:8000/api/generate-itinerary
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_public_key
 ```
@@ -102,7 +97,7 @@ Open two PowerShell terminals.
 ### Terminal 1 - Backend
 
 ```powershell
-cd "vacation-planner/backend-python"
+cd "vacation-planner/backend"
 python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
@@ -150,7 +145,7 @@ The backend expects Supabase tables and policies to exist.
 Run this SQL in the Supabase SQL Editor:
 
 ```text
-vacation-planner/backend-python/schema.sql
+vacation-planner/backend/schema.sql
 ```
 
 Then get your keys from:
@@ -161,7 +156,7 @@ Supabase Dashboard -> Project Settings -> API
 
 Use:
 
-- `service_role` key in `backend-python/.env`
+- `service_role` key in `backend/.env`
 - `anon` / `public` key in `frontend/.env.local`
 
 ## Useful Local Checks
@@ -169,7 +164,7 @@ Use:
 Backend dependency/database diagnostic:
 
 ```powershell
-cd "vacation-planner/backend-python"
+cd "vacation-planner/backend"
 .\.venv\Scripts\activate
 python test_db.py
 ```
@@ -211,7 +206,7 @@ Check:
 - backend is running on port `8000`
 - `GROQ_API_KEY` is valid
 - `PEXELS_API_KEY` is valid
-- frontend uses `NEXT_PUBLIC_ITINERARY_API_URL=http://127.0.0.1:8000/api/generate-itinerary`
+- frontend uses `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`
 
 ### Saving trips fails
 
@@ -238,7 +233,7 @@ Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'python|pip' }
 proiect-mds/
   README.md
   vacation-planner/
-    backend-python/
+    backend/
       main.py
       agent_experience.py
       agent_logistics.py
@@ -251,9 +246,6 @@ proiect-mds/
       src/context/
       src/hooks/
       package.json
-    backend/
-      pom.xml
-      src/main/java/
 ```
 
 ## Notes For MDS Evaluation
@@ -272,4 +264,3 @@ Remaining process artifacts should be added under a future `docs/` folder:
 - bug report and pull request evidence
 - CI/CD workflow
 - report about AI tool usage during development
-

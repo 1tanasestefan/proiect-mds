@@ -16,6 +16,7 @@ import {
 import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { apiUrl } from "@/lib/backend";
 
 export interface Activity {
   type: 'experience' | 'dining' | 'tour' | 'cruise' | 'cookingclass' | 'festival' | 'adventure' | 'culture' | 'relaxation' | 'shopping' | 'nightlife' | 'transport' | 'arrival' | 'departure' | 'flight' | 'hotel' | 'sightseeing' | 'museum' | 'landmark' | 'park' | 'beach';
@@ -102,7 +103,7 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("No active session");
 
-      const response = await fetch("http://127.0.0.1:8000/api/itineraries/save", {
+      const response = await fetch(apiUrl("/api/itineraries/save"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

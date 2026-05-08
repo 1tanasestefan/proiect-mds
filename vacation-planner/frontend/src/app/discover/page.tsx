@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, TrendingUp, Clock, Loader2, Compass } from "lucide-react";
 import { CommunityTripCard } from "@/components/CommunityTripCard";
 import { useAuth } from "@/context/AuthContext";
+import { apiUrl } from "@/lib/backend";
 
 interface CommunityItinerary {
   id: string;
@@ -35,7 +36,7 @@ export default function DiscoverPage() {
   const fetchFeed = useCallback(async () => {
     setLoading(true);
     try {
-      const url = new URL("http://127.0.0.1:8000/api/community/feed");
+      const url = new URL(apiUrl("/api/community/feed"));
       url.searchParams.append("sort_by", sortBy);
       
       const headers: Record<string, string> = {};
