@@ -10,6 +10,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { FinalTripPlan } from '@/components/figma/itinerary-output';
 import { toast } from 'sonner';
 import { Globe, Lock } from 'lucide-react';
+import { apiUrl } from '@/lib/backend';
 
 // ── Spotlight slideshow data ────────────────────────────────────────
 const SPOTLIGHT = [
@@ -205,7 +206,7 @@ export default function DashboardPage() {
     const fetchItineraries = async () => {
       if (!session) return;
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/itineraries/me", {
+        const response = await fetch(apiUrl("/api/itineraries/me"), {
           headers: {
             "Authorization": `Bearer ${session.access_token}`
           }
@@ -231,7 +232,7 @@ export default function DashboardPage() {
     setItineraries(prev => prev.map(t => t.id === tripId ? { ...t, is_public: !currentStatus } : t));
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_ITINERARY_API_URL || 'http://127.0.0.1:8000'}/api/itineraries/${tripId}`, {
+      const response = await fetch(apiUrl(`/api/itineraries/${tripId}`), {
         method: "PATCH",
         headers: {
           "Authorization": `Bearer ${session.access_token}`,

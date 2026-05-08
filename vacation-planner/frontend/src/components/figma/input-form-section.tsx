@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useDebounce } from "@/hooks/useDebounce";
 import { supabase } from "@/lib/supabase";
+import { apiUrl } from "@/lib/backend";
 import { 
   Wallet, 
   Heart, 
@@ -275,11 +276,9 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
     setRecommendations([]);
 
     try {
-      const baseUrl = (process.env.NEXT_PUBLIC_ITINERARY_API_URL || "http://127.0.0.1:8000/api/generate-itinerary")
-        .replace(/\/api\/generate-itinerary$/, "");
       const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
 
-      const response = await fetch(`${baseUrl}/api/recommend-destinations`, {
+      const response = await fetch(apiUrl("/api/recommend-destinations"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
