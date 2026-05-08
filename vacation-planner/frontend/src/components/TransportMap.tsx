@@ -9,6 +9,12 @@ interface Coordinate { lat: number; lng: number; }
 interface TransportLeg { mode: string; name: string; origin_coords: Coordinate; destination_coords: Coordinate; price: number; duration_minutes: number; polyline: string | null; }
 interface ConsolidatedLogistics { total_price: number; currency: string; legs: TransportLeg[]; map_center: Coordinate; }
 
+const isCoordValid = (c?: Coordinate | null) =>
+  Number.isFinite(c?.lat) &&
+  Number.isFinite(c?.lng) &&
+  c?.lat !== 0 &&
+  c?.lng !== 0;
+
 /**
  * Inner component that always runs inside <MapContainer>.
  * Re-fires fitBounds whenever `currentOption` reference changes so switching
@@ -19,12 +25,13 @@ function MapViewController({ currentOption }: { currentOption: ConsolidatedLogis
 
   useEffect(() => {
     const allCoords: [number, number][] = [];
+    const resizeTimer = window.setTimeout(() => map.invalidateSize(), 80);
 
     currentOption.legs.forEach((leg) => {
       // Collect every non-zero coordinate in this leg
-      if (leg.origin_coords?.lat && leg.origin_coords?.lng)
+      if (isCoordValid(leg.origin_coords))
         allCoords.push([leg.origin_coords.lat, leg.origin_coords.lng]);
-      if (leg.destination_coords?.lat && leg.destination_coords?.lng)
+      if (isCoordValid(leg.destination_coords))
         allCoords.push([leg.destination_coords.lat, leg.destination_coords.lng]);
 
       // Spread all road-curve points from the GeoJSON polyline (gives tightest bounds)
@@ -41,12 +48,20 @@ function MapViewController({ currentOption }: { currentOption: ConsolidatedLogis
       }
     });
 
-    if (allCoords.length > 1) {
-      map.fitBounds(allCoords, { padding: [50, 50], maxZoom: 14 });
-    } else {
-      const c = currentOption.map_center;
-      if (c?.lat && c?.lng) map.setView([c.lat, c.lng], 12);
-    }
+    const fitTimer = window.setTimeout(() => {
+      if (allCoords.length > 1) {
+        map.fitBounds(allCoords, { padding: [50, 50], maxZoom: 14 });
+      } else {
+        const c = currentOption.map_center;
+        if (isCoordValid(c)) map.setView([c.lat, c.lng], 12);
+      }
+      map.invalidateSize();
+    }, 120);
+
+    return () => {
+      window.clearTimeout(resizeTimer);
+      window.clearTimeout(fitTimer);
+    };
   // `currentOption` identity change triggers this (e.g. Budget → Premium)
   }, [currentOption, map]);
 
@@ -94,7 +109,7 @@ export default function TransportMap({ currentOption }: Props) {
 
   if (!mounted) return null;
 
-  const center = currentOption.map_center;
+  const center = isCoordValid(currentOption.map_center) ? currentOption.map_center : { lat: 0, lng: 0 };
 
   // ── Derive polylines (GeoJSON [lng,lat] → Leaflet [lat,lng]) ──────────────
   const polylinesToDraw: { key: string; positions: [number, number][]; color: string; dashed: boolean }[] = [];
@@ -103,7 +118,7 @@ export default function TransportMap({ currentOption }: Props) {
   // Use a Map so duplicate coordinates (airport leg shares coords with ground leg) are collapsed.
   const markerMap = new Map<string, { pos: [number, number]; icon: L.DivIcon; label: string }>();
 
-  currentOption.legs.forEach((leg) => {
+  currentOption.legs.forEach((leg, index) => {
     // --- polyline ---
     if (leg.polyline) {
       try {
@@ -114,7 +129,7 @@ export default function TransportMap({ currentOption }: Props) {
             (c: [number, number]) => [c[1], c[0]]
           );
           polylinesToDraw.push({
-            key: leg.mode,
+            key: `${leg.mode}-${index}`,
             positions: latLngs,
             color: leg.mode === "uber" ? "#8A2BE2" : "#00F0FF",
             dashed: leg.mode === "bus" || leg.mode === "train",
@@ -126,9 +141,6 @@ export default function TransportMap({ currentOption }: Props) {
     }
 
     // --- markers ---
-    const isCoordValid = (c: Coordinate) =>
-      c && !(c.lat === 0 && c.lng === 0) && c.lat !== undefined && c.lng !== undefined;
-
     if (isCoordValid(leg.origin_coords)) {
       const key = `${leg.origin_coords.lat.toFixed(4)},${leg.origin_coords.lng.toFixed(4)}`;
       if (!markerMap.has(key)) {
@@ -191,7 +203,7 @@ export default function TransportMap({ currentOption }: Props) {
         zoom={12}
         zoomControl={false}
         scrollWheelZoom={true}
-        className="w-full h-full z-0 relative"
+        className="absolute inset-0 z-0"
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
