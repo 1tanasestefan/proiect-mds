@@ -144,6 +144,35 @@ http://localhost:3000
 
 Open it in your browser.
 
+## How To Run With Docker
+
+Create the same env files described above:
+
+- `vacation-planner/backend/.env`
+- `vacation-planner/frontend/.env.local`
+
+Then run both services:
+
+```powershell
+cd "vacation-planner"
+docker compose up --build
+```
+
+Docker ports:
+
+```text
+Frontend: http://localhost:3000
+Backend:  http://localhost:8000
+```
+
+If you use Ollama on your host machine, the backend container uses:
+
+```env
+LOCAL_LLM_BASE_URL=http://host.docker.internal:11434
+```
+
+On Linux, replace that with your host gateway address if `host.docker.internal` is not available.
+
 ## Supabase Setup
 
 The backend expects Supabase tables and policies to exist.
