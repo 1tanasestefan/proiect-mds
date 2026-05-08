@@ -83,6 +83,9 @@ class FakeSupabase:
         self.tables = {
             "itineraries": [],
             "itinerary_likes": [],
+            "trip_collaborators": [],
+            "trip_invites": [],
+            "activity_votes": [],
         }
         self._ids = itertools.count(100)
 
@@ -351,6 +354,14 @@ def test_get_itinerary_returns_404_when_missing(client):
 
 def test_vote_regenerate_records_vote_without_majority(client, fake_supabase):
     fake_supabase.tables["itineraries"].append(sample_itinerary())
+    fake_supabase.tables["trip_collaborators"].append(
+        {
+            "itinerary_id": "trip-1",
+            "user_id": OTHER_USER_ID,
+            "role": "viewer",
+            "joined_at": "2026-05-01T10:00:00+00:00",
+        }
+    )
 
     response = client.post(
         "/api/itineraries/trip-1/vote-regenerate",
@@ -363,9 +374,75 @@ def test_vote_regenerate_records_vote_without_majority(client, fake_supabase):
     )
 
     assert response.status_code == 200
-    assert response.json() == {"status": "vote_recorded"}
-    votes = fake_supabase.tables["itineraries"][0]["ai_data"]["votes"]
-    assert votes["day_0_act_0"][0]["id"] == TEST_USER_ID
+    assert response.json()["status"] == "vote_recorded"
+    assert response.json()["eligible_voters"] == 2
+    votes = fake_supabase.tables["activity_votes"]
+    assert votes[0]["user_id"] == TEST_USER_ID
+    assert votes[0]["day_index"] == 0
+    assert votes[0]["activity_index"] == 0
+
+
+def test_collaboration_state_lists_members_and_votes(client, fake_supabase):
+    fake_supabase.tables["itineraries"].append(sample_itinerary())
+    fake_supabase.tables["trip_collaborators"].append(
+        {
+            "itinerary_id": "trip-1",
+            "user_id": OTHER_USER_ID,
+            "role": "editor",
+            "joined_at": "2026-05-01T10:00:00+00:00",
+            "profiles": {"display_name": "Alex", "avatar_url": None},
+        }
+    )
+    fake_supabase.tables["activity_votes"].append(
+        {
+            "itinerary_id": "trip-1",
+            "day_index": 0,
+            "activity_index": 0,
+            "user_id": OTHER_USER_ID,
+            "voter_name": "Alex",
+            "voter_avatar_id": 3,
+            "created_at": "2026-05-01T10:00:00+00:00",
+        }
+    )
+
+    response = client.get("/api/itineraries/trip-1/collaboration")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["role"] == "owner"
+    assert body["can_invite"] is True
+    assert body["eligible_voters"] == 2
+    assert body["collaborators"][0]["user_id"] == OTHER_USER_ID
+    assert body["votes"][0]["voter_name"] == "Alex"
+
+
+def test_owner_can_create_and_user_can_accept_invite(client, fake_supabase):
+    fake_supabase.tables["itineraries"].append(sample_itinerary())
+
+    create_response = client.post(
+        "/api/itineraries/trip-1/collaboration/invites",
+        json={"role": "editor", "expires_in_days": 3},
+    )
+    token = create_response.json()["token"]
+
+    main.app.dependency_overrides[get_current_user] = lambda: OTHER_USER_ID
+    accept_response = client.post(f"/api/collaboration/invites/{token}/accept")
+
+    assert create_response.status_code == 200
+    assert accept_response.status_code == 200
+    assert accept_response.json() == {"itinerary_id": "trip-1", "role": "editor"}
+    collaborator = fake_supabase.tables["trip_collaborators"][0]
+    assert collaborator["user_id"] == OTHER_USER_ID
+    assert collaborator["role"] == "editor"
+
+
+def test_private_trip_blocks_non_collaborator(client, fake_supabase):
+    fake_supabase.tables["itineraries"].append(sample_itinerary())
+    main.app.dependency_overrides[get_current_user] = lambda: OTHER_USER_ID
+
+    response = client.get("/api/itineraries/trip-1")
+
+    assert response.status_code == 403
 
 
 def test_community_feed_marks_liked_items(client, fake_supabase):

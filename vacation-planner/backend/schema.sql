@@ -77,7 +77,63 @@ CREATE INDEX IF NOT EXISTS idx_likes_itinerary_id ON public.itinerary_likes(itin
 
 
 -- ┌─────────────────────────────────────────────────────────────┐
--- │  3. COLLECTIONS (folders / wishlists)                      │
+-- │  4. TRIP COLLABORATORS                                     │
+-- │  Real shared access for private itinerary collaboration     │
+-- └─────────────────────────────────────────────────────────────┘
+
+CREATE TABLE IF NOT EXISTS public.trip_collaborators (
+    itinerary_id UUID NOT NULL REFERENCES public.itineraries(id) ON DELETE CASCADE,
+    user_id      UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    role         TEXT NOT NULL CHECK (role IN ('viewer', 'editor')),
+    invited_by   UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    joined_at    TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (itinerary_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_trip_collaborators_user_id ON public.trip_collaborators(user_id);
+
+
+-- ┌─────────────────────────────────────────────────────────────┐
+-- │  5. TRIP INVITES                                           │
+-- │  Expiring invite tokens that create collaborator records    │
+-- └─────────────────────────────────────────────────────────────┘
+
+CREATE TABLE IF NOT EXISTS public.trip_invites (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    itinerary_id UUID NOT NULL REFERENCES public.itineraries(id) ON DELETE CASCADE,
+    token        TEXT NOT NULL UNIQUE,
+    role         TEXT NOT NULL CHECK (role IN ('viewer', 'editor')),
+    created_by   UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    expires_at   TIMESTAMPTZ NOT NULL,
+    accepted_at  TIMESTAMPTZ,
+    created_at   TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_trip_invites_itinerary_id ON public.trip_invites(itinerary_id);
+CREATE INDEX IF NOT EXISTS idx_trip_invites_token ON public.trip_invites(token);
+
+
+-- ┌─────────────────────────────────────────────────────────────┐
+-- │  6. ACTIVITY VOTES                                         │
+-- │  Persistent per-user votes for activity regeneration        │
+-- └─────────────────────────────────────────────────────────────┘
+
+CREATE TABLE IF NOT EXISTS public.activity_votes (
+    itinerary_id    UUID NOT NULL REFERENCES public.itineraries(id) ON DELETE CASCADE,
+    day_index       INT NOT NULL,
+    activity_index  INT NOT NULL,
+    user_id         UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    voter_name      TEXT NOT NULL,
+    voter_avatar_id INT,
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (itinerary_id, day_index, activity_index, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_votes_itinerary_id ON public.activity_votes(itinerary_id);
+
+
+-- ┌─────────────────────────────────────────────────────────────┐
+-- │  7. COLLECTIONS (folders / wishlists)                      │
 -- └─────────────────────────────────────────────────────────────┘
 
 CREATE TABLE IF NOT EXISTS public.collections (
@@ -92,7 +148,7 @@ CREATE INDEX IF NOT EXISTS idx_collections_user_id ON public.collections(user_id
 
 
 -- ┌─────────────────────────────────────────────────────────────┐
--- │  4. COLLECTION ↔ ITINERARY (many-to-many join)             │
+-- │  8. COLLECTION ↔ ITINERARY (many-to-many join)             │
 -- └─────────────────────────────────────────────────────────────┘
 
 CREATE TABLE IF NOT EXISTS public.collection_itineraries (
@@ -142,6 +198,24 @@ CREATE POLICY "Anyone can view public itineraries"
     ON public.itineraries FOR SELECT
     USING (is_public = true);
 
+CREATE POLICY "Collaborators can view shared itineraries"
+    ON public.itineraries FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.trip_collaborators
+            WHERE itinerary_id = id AND user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Editors can update shared itineraries"
+    ON public.itineraries FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.trip_collaborators
+            WHERE itinerary_id = id AND user_id = auth.uid() AND role = 'editor'
+        )
+    );
+
 -- Collections
 ALTER TABLE public.collections ENABLE ROW LEVEL SECURITY;
 
@@ -175,3 +249,90 @@ CREATE POLICY "Users can unlike itineraries"
 CREATE POLICY "Anyone can see likes"
     ON public.itinerary_likes FOR SELECT
     USING (true);
+
+-- Trip Collaborators
+ALTER TABLE public.trip_collaborators ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Owners can manage collaborators"
+    ON public.trip_collaborators FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.itineraries
+            WHERE id = itinerary_id AND user_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.itineraries
+            WHERE id = itinerary_id AND user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Collaborators can view trip collaborators"
+    ON public.trip_collaborators FOR SELECT
+    USING (
+        user_id = auth.uid()
+        OR EXISTS (
+            SELECT 1 FROM public.itineraries
+            WHERE id = itinerary_id AND user_id = auth.uid()
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.trip_collaborators tc
+            WHERE tc.itinerary_id = trip_collaborators.itinerary_id
+              AND tc.user_id = auth.uid()
+        )
+    );
+
+-- Trip Invites
+ALTER TABLE public.trip_invites ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Owners can create and view invites"
+    ON public.trip_invites FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.itineraries
+            WHERE id = itinerary_id AND user_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.itineraries
+            WHERE id = itinerary_id AND user_id = auth.uid()
+        )
+    );
+
+-- Activity Votes
+ALTER TABLE public.activity_votes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Trip members can view votes"
+    ON public.activity_votes FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.itineraries
+            WHERE id = itinerary_id AND (user_id = auth.uid() OR is_public = true)
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.trip_collaborators
+            WHERE itinerary_id = activity_votes.itinerary_id AND user_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Trip members can vote"
+    ON public.activity_votes FOR INSERT
+    WITH CHECK (
+        user_id = auth.uid()
+        AND (
+            EXISTS (
+                SELECT 1 FROM public.itineraries
+                WHERE id = itinerary_id AND user_id = auth.uid()
+            )
+            OR EXISTS (
+                SELECT 1 FROM public.trip_collaborators
+                WHERE itinerary_id = activity_votes.itinerary_id AND user_id = auth.uid()
+            )
+        )
+    );
+
+CREATE POLICY "Users can remove own votes"
+    ON public.activity_votes FOR DELETE
+    USING (user_id = auth.uid());

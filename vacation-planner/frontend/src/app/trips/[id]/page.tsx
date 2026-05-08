@@ -10,7 +10,8 @@ import type { ConsolidatedLogistics } from "@/components/TransportDashboard";
 import {
   ArrowLeft, MapPin, Calendar, Loader2,
   Plane, Hotel, Clock, DollarSign,
-  Edit2, Save, RefreshCcw, Globe, Lock
+  Edit2, Save, RefreshCcw, Globe, Lock,
+  Link2, Users
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
@@ -65,7 +66,6 @@ interface TripLogistics {
 interface TripAiData {
   experience: ExperienceData;
   logistics?: TripLogistics;
-  votes?: Record<string, VoteUser[]>;
   regenerating_keys?: Record<string, boolean>;
 }
 
@@ -87,6 +87,33 @@ interface VoteUser {
   avatarId?: number;
 }
 
+interface CollaborationVote {
+  day_index: number;
+  activity_index: number;
+  user_id: string;
+  voter_name: string;
+  voter_avatar_id?: number | null;
+  created_at?: string | null;
+}
+
+interface CollaborationMember {
+  user_id: string;
+  role: "viewer" | "editor";
+  display_name?: string | null;
+  avatar_url?: string | null;
+  joined_at?: string | null;
+}
+
+interface CollaborationState {
+  itinerary_id: string;
+  role: "owner" | "editor" | "viewer" | "public";
+  can_edit: boolean;
+  can_invite: boolean;
+  eligible_voters: number;
+  collaborators: CollaborationMember[];
+  votes: CollaborationVote[];
+}
+
 // ── Activity Card ─────────────────────────────────────────────────
 const imageFallbackFor = (activity: Activity, destination: string) => {
   const text = encodeURIComponent((activity.location || activity.title || destination || "Travel").slice(0, 32));
@@ -95,13 +122,13 @@ const imageFallbackFor = (activity: Activity, destination: string) => {
 
 function ActivityCard({ 
   act, i, isHighlighted, onClick, 
-  votes, isRegenerating, onVote, totalOnline, destination
+  votes, isRegenerating, onVote, eligibleVoters, canVote, destination
 }: { 
   act: Activity; i: number; isHighlighted?: boolean; onClick?: () => void;
-  votes: VoteUser[]; isRegenerating: boolean; onVote: () => void; totalOnline: number; destination: string;
+  votes: VoteUser[]; isRegenerating: boolean; onVote: () => void; eligibleVoters: number; canVote: boolean; destination: string;
 }) {
-  const threshold = Math.floor(totalOnline / 2);
-  const isDraw = votes.length > 0 && votes.length <= threshold;
+  const threshold = Math.floor(eligibleVoters / 2) + 1;
+  const needsMoreVotes = votes.length > 0 && votes.length < threshold;
   const fallbackImage = imageFallbackFor(act, destination);
 
   return (
@@ -154,8 +181,9 @@ function ActivityCard({
           </p>
           <button 
              onClick={(e) => { e.stopPropagation(); onVote(); }}
-             className="text-white/20 hover:text-white/60 transition-colors shrink-0 z-10"
-             title="Vote to change this activity"
+             disabled={!canVote}
+             className="text-white/20 hover:text-white/60 disabled:opacity-20 disabled:hover:text-white/20 transition-colors shrink-0 z-10"
+             title={canVote ? "Vote to change this activity" : "Join this trip to vote"}
           >
              <RefreshCcw className="h-4 w-4" />
           </button>
@@ -195,9 +223,9 @@ function ActivityCard({
                  ))}
               </div>
               <span className="text-[10px] text-white/50">
-                 {isDraw 
-                    ? <span className="text-orange-400/80">Activity will not be changed ({votes.length}/{totalOnline} votes)</span> 
-                    : <span className="text-yellow-400/80">{votes.length}/{totalOnline} want to change</span>}
+                 {needsMoreVotes 
+                    ? <span className="text-orange-400/80">{votes.length}/{threshold} votes to regenerate</span> 
+                    : <span className="text-yellow-400/80">{votes.length}/{eligibleVoters} collaborators voted</span>}
               </span>
            </div>
         )}
@@ -216,6 +244,9 @@ export default function TripDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userIsConfirmedHost, setUserIsConfirmedHost] = useState(false);
+  const [collaboration, setCollaboration] = useState<CollaborationState | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
 
   // Edit Mode States
   const [isEditing, setIsEditing] = useState(false);
@@ -224,12 +255,36 @@ export default function TripDetailPage() {
   const [editVibe, setEditVibe] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  const loadCollaboration = useCallback(async () => {
+    if (!session || !id) return;
+    const res = await fetch(`${API_BASE}/api/itineraries/${id}/collaboration`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (res.ok) {
+      setCollaboration(await res.json() as CollaborationState);
+    }
+  }, [id, session]);
+
   const loadItinerary = useCallback(async () => {
     if (!session || !id) return;
     try {
-      const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
+      setError(null);
+      let res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
+
+      if (res.status === 403 && inviteToken) {
+        const acceptRes = await fetch(`${API_BASE}/api/collaboration/invites/${inviteToken}/accept`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!acceptRes.ok) throw new Error(`Invite failed with HTTP ${acceptRes.status}`);
+        toast.success("You joined this trip.");
+        res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+      }
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as SavedTrip;
       setTrip(data);
@@ -238,16 +293,18 @@ export default function TripDetailPage() {
       if (data.user_id && data.user_id === session.user.id) {
         setUserIsConfirmedHost(true);
       }
+      await loadCollaboration();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load trip.");
     } finally {
       setLoading(false);
     }
-  }, [id, session]);
+  }, [id, inviteToken, loadCollaboration, session]);
 
   const handleDatabaseUpdate = useCallback((newData: Record<string, unknown> & { _SIGNAL_REFETCH?: boolean }) => {
     if (newData._SIGNAL_REFETCH) {
       loadItinerary();
+      loadCollaboration();
       return;
     }
     // Postgres sync: gracefully merge incoming AI updates
@@ -255,7 +312,7 @@ export default function TripDetailPage() {
       if (!prev) return prev;
       return { ...prev, ...newData } as SavedTrip;
     });
-  }, [loadItinerary]);
+  }, [loadCollaboration, loadItinerary]);
 
   const multiplayerUser = useMemo(
     () => session?.user ? { id: session.user.id, email: session.user.email || "user" } : null,
@@ -268,6 +325,24 @@ export default function TripDetailPage() {
     multiplayerUser,
     handleDatabaseUpdate
   );
+
+  const votesByActivity = useMemo(() => {
+    const grouped: Record<string, VoteUser[]> = {};
+    for (const vote of collaboration?.votes || []) {
+      const key = `day_${vote.day_index}_act_${vote.activity_index}`;
+      grouped[key] ||= [];
+      grouped[key].push({
+        id: vote.user_id,
+        name: vote.voter_name,
+        avatarId: vote.voter_avatar_id ?? undefined,
+      });
+    }
+    return grouped;
+  }, [collaboration?.votes]);
+
+  useEffect(() => {
+    setInviteToken(new URLSearchParams(window.location.search).get("invite"));
+  }, []);
 
   useEffect(() => {
     loadItinerary();
@@ -309,6 +384,33 @@ export default function TripDetailPage() {
 
   const { experience, logistics } = trip.ai_data;
   const isHost = trip?.user_id ? session?.user?.id === trip?.user_id : userIsConfirmedHost;
+  const canEditTrip = collaboration?.can_edit ?? isHost;
+  const canInvite = collaboration?.can_invite ?? isHost;
+  const canVote = collaboration?.role !== "public";
+
+  const handleCreateInvite = async () => {
+    if (!session || !id || inviteLoading) return;
+    setInviteLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/itineraries/${id}/collaboration/invites`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role: "editor", expires_in_days: 7 }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const invite = await res.json() as { token: string };
+      const link = `${window.location.origin}/trips/${id}?invite=${invite.token}`;
+      await navigator.clipboard.writeText(link);
+      toast.success("Invite link copied.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not create invite.");
+    } finally {
+      setInviteLoading(false);
+    }
+  };
 
   const handleEditToggle = () => {
     if (!isEditing && trip) {
@@ -320,7 +422,7 @@ export default function TripDetailPage() {
   };
 
   const handleSave = async () => {
-    if (!session || !trip) return;
+    if (!session || !trip || !canEditTrip) return;
     setIsSaving(true);
     try {
       const updatedAiData = {
@@ -356,6 +458,10 @@ export default function TripDetailPage() {
 
   const handleVoteRegenerate = async (dayIndex: number, actIndex: number) => {
     if (!session?.user || isSaving) return;
+    if (!canVote) {
+      toast.error("Join this trip before voting.");
+      return;
+    }
     const voter = {
       id: session.user.id,
       name: session.user.email?.split('@')[0] || "User",
@@ -363,32 +469,27 @@ export default function TripDetailPage() {
     };
     const voteKey = `day_${dayIndex}_act_${actIndex}`;
 
-    // 1. OPTIMISTIC UI: Immediately lock in the vote visually!
-    let thresholdExceeded = false;
-    setTrip((prev) => {
+    setCollaboration((prev) => {
       if (!prev) return prev;
-      const newTrip = JSON.parse(JSON.stringify(prev)); // Deep clone to break reference safely
-      if (!newTrip.ai_data.votes) newTrip.ai_data.votes = {};
-      
-      const actVotes = newTrip.ai_data.votes[voteKey] || [];
-      if (!actVotes.some((v: VoteUser) => v.id === voter.id)) {
-          actVotes.push(voter);
+      if (prev.votes.some((vote) => vote.day_index === dayIndex && vote.activity_index === actIndex && vote.user_id === voter.id)) {
+        return prev;
       }
-      newTrip.ai_data.votes[voteKey] = actVotes;
-      
-      // Calculate theoretically if this click triggers threshold
-      const totalOnline = Math.max(1, onlineUsers.length);
-      const threshold = Math.floor(totalOnline / 2);
-      if (actVotes.length > threshold) {
-          thresholdExceeded = true;
-          if (!newTrip.ai_data.regenerating_keys) newTrip.ai_data.regenerating_keys = {};
-          newTrip.ai_data.regenerating_keys[voteKey] = true;
-      }
-      return newTrip;
+      return {
+        ...prev,
+        votes: [
+          ...prev.votes,
+          {
+            day_index: dayIndex,
+            activity_index: actIndex,
+            user_id: voter.id,
+            voter_name: voter.name,
+            voter_avatar_id: voter.avatarId,
+          },
+        ],
+      };
     });
 
     try {
-      // 2. Transmit gracefully in the background
       const resp = await fetch(`${API_BASE}/api/itineraries/${id}/vote-regenerate`, {
         method: 'POST',
         headers: {
@@ -398,30 +499,28 @@ export default function TripDetailPage() {
         body: JSON.stringify({
           day_index: dayIndex,
           activity_index: actIndex,
-          total_online: Math.max(1, onlineUsers.length),
           voter
         })
       });
       
       const data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || "Voting failed");
       
-      // BROADCAST to everyone to refetch their state so they see the vote or the loader
       broadcastRefreshSignal();
+      await loadCollaboration();
       
-      // 3. Fallback Optimistic UI (if threshold was hit via network desync but not locally)
       if (data.status === "regeneration_started" || data.status === "already_regenerating") {
-         if (!thresholdExceeded) {
-             setTrip((prev) => {
-                 if (!prev) return prev;
-                 const newTrip = JSON.parse(JSON.stringify(prev));
-                 if (!newTrip.ai_data.regenerating_keys) newTrip.ai_data.regenerating_keys = {};
-                 newTrip.ai_data.regenerating_keys[voteKey] = true;
-                 return newTrip;
-             });
-         }
+        setTrip((prev) => {
+          if (!prev) return prev;
+          const newTrip = JSON.parse(JSON.stringify(prev));
+          if (!newTrip.ai_data.regenerating_keys) newTrip.ai_data.regenerating_keys = {};
+          newTrip.ai_data.regenerating_keys[voteKey] = true;
+          return newTrip;
+        });
       }
     } catch(e) {
-      console.error("Voting failed", e);
+      toast.error(e instanceof Error ? e.message : "Voting failed");
+      await loadCollaboration();
     }
   };
 
@@ -457,7 +556,9 @@ export default function TripDetailPage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]"></span>
                 </span>
-                {isHost ? `You are hosting. ${onlineUsers.length} viewing.` : "Live viewing Host's trip."}
+                {collaboration?.role === "owner"
+                  ? `You are hosting. ${onlineUsers.length} viewing.`
+                  : `${collaboration?.role || "viewer"} access. ${onlineUsers.length} viewing.`}
               </div>
               <div className="flex items-center -space-x-2">
                 {onlineUsers.slice(0, 4).map((ou, idx) => (
@@ -489,48 +590,62 @@ export default function TripDetailPage() {
           transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
           className="rounded-3xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 p-8 mb-10 relative group"
         >
-          {isHost && (
+          {(canEditTrip || canInvite) && (
             <div className="absolute top-6 right-6 flex items-center gap-3">
-              <button
-                onClick={async () => {
-                  if (!session) return;
-                  const newStatus = !trip.is_public;
-                  // Optimistic update
-                  setTrip({ ...trip, is_public: newStatus });
-                  try {
-                    const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
-                      method: "PATCH",
-                      headers: {
-                        "Authorization": `Bearer ${session.access_token}`,
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({ is_public: newStatus }),
-                    });
-                    if (!res.ok) throw new Error();
-                    toast.success(newStatus ? "Published to Discover!" : "Trip is now private.");
-                  } catch {
-                    setTrip({ ...trip, is_public: !newStatus });
-                    toast.error("Failed to update status.");
-                  }
-                }}
-                className={`flex items-center justify-center gap-2 transition-colors py-2 px-4 rounded-full text-xs font-medium backdrop-blur-md border ${
-                  trip.is_public 
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" 
-                    : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/60"
-                }`}
-              >
-                {trip.is_public ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-                {trip.is_public ? "Public" : "Private"}
-              </button>
+              {isHost && (
+                <button
+                  onClick={async () => {
+                    if (!session) return;
+                    const newStatus = !trip.is_public;
+                    setTrip({ ...trip, is_public: newStatus });
+                    try {
+                      const res = await fetch(`${API_BASE}/api/itineraries/${id}`, {
+                        method: "PATCH",
+                        headers: {
+                          "Authorization": `Bearer ${session.access_token}`,
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ is_public: newStatus }),
+                      });
+                      if (!res.ok) throw new Error();
+                      toast.success(newStatus ? "Published to Discover!" : "Trip is now private.");
+                    } catch {
+                      setTrip({ ...trip, is_public: !newStatus });
+                      toast.error("Failed to update status.");
+                    }
+                  }}
+                  className={`flex items-center justify-center gap-2 transition-colors py-2 px-4 rounded-full text-xs font-medium backdrop-blur-md border ${
+                    trip.is_public 
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20" 
+                      : "bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/60"
+                  }`}
+                >
+                  {trip.is_public ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                  {trip.is_public ? "Public" : "Private"}
+                </button>
+              )}
 
-              <button 
-                onClick={isEditing ? handleSave : handleEditToggle}
-                disabled={isSaving}
-                className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors text-white py-2 px-4 rounded-full text-xs font-medium backdrop-blur-md border border-white/10"
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : isEditing ? <Save className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
-                {isEditing ? "Save Changes" : "Edit Trip"}
-              </button>
+              {canInvite && (
+                <button
+                  onClick={handleCreateInvite}
+                  disabled={inviteLoading}
+                  className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 transition-colors text-white/60 py-2 px-4 rounded-full text-xs font-medium backdrop-blur-md border border-white/10"
+                >
+                  {inviteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                  Invite
+                </button>
+              )}
+
+              {canEditTrip && (
+                <button 
+                  onClick={isEditing ? handleSave : handleEditToggle}
+                  disabled={isSaving}
+                  className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 transition-colors text-white py-2 px-4 rounded-full text-xs font-medium backdrop-blur-md border border-white/10"
+                >
+                  {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : isEditing ? <Save className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
+                  {isEditing ? "Save Changes" : "Edit Trip"}
+                </button>
+              )}
             </div>
           )}
 
@@ -588,6 +703,12 @@ export default function TripDetailPage() {
                 Est. ${logistics.total_estimated_budget_usd.toLocaleString()} total
               </span>
             )}
+            {collaboration && (
+              <span className="flex items-center gap-1.5">
+                <Users className="h-4 w-4 text-[#22C55E]/60" />
+                {collaboration.eligible_voters} collaborator{collaboration.eligible_voters === 1 ? "" : "s"} can vote
+              </span>
+            )}
           </div>
         </motion.div>
 
@@ -615,7 +736,7 @@ export default function TripDetailPage() {
                 const globalActivityId = `${day.day_number}-${ai}`;
                 const voteKey = `day_${di}_act_${ai}`; // Use di, since it matches the zero-based array index backend needs, not day.day_number!
                 
-                const votes = trip.ai_data?.votes?.[voteKey] || [];
+                const votes = votesByActivity[voteKey] || [];
                 const isRegenerating = trip.ai_data?.regenerating_keys?.[voteKey] === true;
 
                 return (
@@ -627,7 +748,8 @@ export default function TripDetailPage() {
                     votes={votes}
                     isRegenerating={isRegenerating}
                     onVote={() => handleVoteRegenerate(di, ai)}
-                    totalOnline={Math.max(1, onlineUsers.length)}
+                    eligibleVoters={Math.max(1, collaboration?.eligible_voters || 1)}
+                    canVote={canVote}
                     isHighlighted={highlightedActivityId === globalActivityId}
                     onClick={() => broadcastActivityHighlight(globalActivityId)}
                   />

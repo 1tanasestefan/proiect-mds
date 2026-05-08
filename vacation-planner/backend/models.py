@@ -161,8 +161,51 @@ class VoteUser(BaseModel):
 class VoteRequest(BaseModel):
     day_index: int
     activity_index: int
-    total_online: int
-    voter: VoteUser
+    total_online: Optional[int] = None
+    voter: Optional[VoteUser] = None
+
+
+class Collaborator(BaseModel):
+    user_id: str
+    role: Literal["viewer", "editor"] = "viewer"
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    joined_at: Optional[str] = None
+
+
+class ActivityVote(BaseModel):
+    day_index: int
+    activity_index: int
+    user_id: str
+    voter_name: str
+    voter_avatar_id: Optional[int] = None
+    created_at: Optional[str] = None
+
+
+class CollaborationState(BaseModel):
+    itinerary_id: str
+    role: Literal["owner", "editor", "viewer", "public"]
+    can_edit: bool
+    can_invite: bool
+    eligible_voters: int
+    collaborators: List[Collaborator]
+    votes: List[ActivityVote]
+
+
+class CreateInviteRequest(BaseModel):
+    role: Literal["viewer", "editor"] = "viewer"
+    expires_in_days: int = Field(default=7, ge=1, le=30)
+
+
+class InviteResponse(BaseModel):
+    token: str
+    role: Literal["viewer", "editor"]
+    expires_at: str
+
+
+class AcceptInviteResponse(BaseModel):
+    itinerary_id: str
+    role: Literal["viewer", "editor"]
 
 
 class CommunityItinerary(BaseModel):
@@ -180,5 +223,4 @@ class CommunityItinerary(BaseModel):
     author_name: str
     author_avatar: Optional[str] = None
     is_liked_by_me: Optional[bool] = False
-
 

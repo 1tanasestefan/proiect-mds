@@ -4,8 +4,9 @@ from fastapi import APIRouter, BackgroundTasks, Depends
 from pydantic import BaseModel
 
 from app.core.security import get_current_user
+from app.services import collaboration as collaboration_service
 from app.services import itineraries as itinerary_service
-from models import ItineraryUpdate, VoteRequest
+from models import CollaborationState, CreateInviteRequest, InviteResponse, ItineraryUpdate, VoteRequest
 
 router = APIRouter(prefix="/api/itineraries", tags=["itineraries"])
 
@@ -56,7 +57,7 @@ async def vote_regenerate(
     bg_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user),
 ):
-    return await itinerary_service.vote_regenerate(itinerary_id, vote_req, bg_tasks, user_id)
+    return await collaboration_service.vote_regenerate(itinerary_id, vote_req, bg_tasks, user_id)
 
 
 @router.delete("/{itinerary_id}")
@@ -65,3 +66,29 @@ async def delete_itinerary(
     user_id: str = Depends(get_current_user),
 ):
     return await itinerary_service.delete_itinerary(itinerary_id, user_id)
+
+
+@router.get("/{itinerary_id}/collaboration", response_model=CollaborationState)
+async def get_collaboration_state(
+    itinerary_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    return await collaboration_service.get_collaboration_state(itinerary_id, user_id)
+
+
+@router.post("/{itinerary_id}/collaboration/invites", response_model=InviteResponse)
+async def create_invite(
+    itinerary_id: str,
+    payload: CreateInviteRequest,
+    user_id: str = Depends(get_current_user),
+):
+    return await collaboration_service.create_invite(itinerary_id, payload, user_id)
+
+
+@router.delete("/{itinerary_id}/collaboration/collaborators/{collaborator_user_id}")
+async def remove_collaborator(
+    itinerary_id: str,
+    collaborator_user_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    return await collaboration_service.remove_collaborator(itinerary_id, collaborator_user_id, user_id)

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import community, health, itineraries, planning
+from app.api.routes import collaboration, community, health, itineraries, planning
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -23,5 +23,6 @@ def create_app() -> FastAPI:
     app.include_router(planning.router)
     app.include_router(itineraries.router)
     app.include_router(community.router)
+    app.include_router(collaboration.router)
 
     return app
