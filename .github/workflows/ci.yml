@@ -73,3 +73,6 @@ jobs:
 
       - name: Verify backend imports
         run: python -c "import main; print('Backend imports successfully')"
+
+      - name: Run backend tests
+        run: pytest -q

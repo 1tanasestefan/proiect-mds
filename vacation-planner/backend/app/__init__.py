@@ -1,0 +1,1 @@
+"""VibeTrips backend application package."""

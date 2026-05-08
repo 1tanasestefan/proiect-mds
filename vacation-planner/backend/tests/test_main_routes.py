@@ -9,6 +9,8 @@ from fastapi.testclient import TestClient
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import main
+from app.db import supabase as supabase_db
+from app.services import planning as planning_service
 from auth_middleware import get_current_user, get_optional_user
 from models import (
     AccommodationOption,
@@ -188,7 +190,7 @@ class FakeQuery:
 @pytest.fixture
 def fake_supabase(monkeypatch):
     db = FakeSupabase()
-    monkeypatch.setattr(main, "supabase", db)
+    monkeypatch.setattr(supabase_db, "supabase", db)
     return db
 
 
@@ -276,8 +278,8 @@ def test_generate_itinerary_uses_mocked_agents(client, monkeypatch):
             total_estimated_budget_usd=450,
         )
 
-    monkeypatch.setattr(main, "generate_experience_itinerary", fake_experience)
-    monkeypatch.setattr(main, "generate_logistics", fake_logistics)
+    monkeypatch.setattr(planning_service, "generate_experience_itinerary", fake_experience)
+    monkeypatch.setattr(planning_service, "generate_logistics", fake_logistics)
 
     response = client.post(
         "/api/generate-itinerary",
@@ -440,7 +442,7 @@ def test_fork_itinerary_clones_public_trip(client, fake_supabase):
 
 
 def test_database_routes_return_503_when_supabase_missing(monkeypatch):
-    monkeypatch.setattr(main, "supabase", None)
+    monkeypatch.setattr(supabase_db, "supabase", None)
     main.app.dependency_overrides[get_current_user] = lambda: TEST_USER_ID
     with TestClient(main.app) as test_client:
         response = test_client.get("/api/itineraries/me")
