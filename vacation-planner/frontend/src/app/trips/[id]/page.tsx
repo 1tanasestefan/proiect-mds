@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useAuth } from "@/context/AuthContext";
 import { TransportDashboard } from "@/components/TransportDashboard";
+import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 import type { ConsolidatedLogistics } from "@/components/TransportDashboard";
 import {
   ArrowLeft, MapPin, Calendar, Loader2,
@@ -87,15 +88,21 @@ interface VoteUser {
 }
 
 // ── Activity Card ─────────────────────────────────────────────────
+const imageFallbackFor = (activity: Activity, destination: string) => {
+  const text = encodeURIComponent((activity.location || activity.title || destination || "Travel").slice(0, 32));
+  return `https://placehold.co/320x320/101828/7dd3fc?text=${text}`;
+};
+
 function ActivityCard({ 
   act, i, isHighlighted, onClick, 
-  votes, isRegenerating, onVote, totalOnline 
+  votes, isRegenerating, onVote, totalOnline, destination
 }: { 
   act: Activity; i: number; isHighlighted?: boolean; onClick?: () => void;
-  votes: VoteUser[]; isRegenerating: boolean; onVote: () => void; totalOnline: number;
+  votes: VoteUser[]; isRegenerating: boolean; onVote: () => void; totalOnline: number; destination: string;
 }) {
   const threshold = Math.floor(totalOnline / 2);
   const isDraw = votes.length > 0 && votes.length <= threshold;
+  const fallbackImage = imageFallbackFor(act, destination);
 
   return (
     <motion.div
@@ -129,15 +136,16 @@ function ActivityCard({
         </div>
       )}
 
-      {act.image_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={act.image_url}
+      <div className="w-20 h-20 rounded-xl shrink-0 overflow-hidden bg-white/5 border border-white/10">
+        <ImageWithFallback
+          src={act.image_url || fallbackImage}
+          fallbackSrc={fallbackImage}
           alt={act.title}
-          className="w-20 h-20 object-cover rounded-xl shrink-0"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
         />
-      )}
+      </div>
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         <div className="flex justify-between items-start gap-2">
           <p className="text-white/90 font-semibold text-sm leading-snug line-clamp-2"
@@ -615,6 +623,7 @@ export default function TripDetailPage() {
                     key={ai} 
                     act={act} 
                     i={ai} 
+                    destination={trip.destination}
                     votes={votes}
                     isRegenerating={isRegenerating}
                     onVote={() => handleVoteRegenerate(di, ai)}

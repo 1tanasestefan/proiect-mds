@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "motion/react";
 import { Train, Bus, Car, Plane } from "lucide-react";
@@ -35,24 +35,76 @@ interface Props {
 // Dynamically import the map to avoid Next.js SSR window is not defined errors
 const TransportMapSSR = dynamic<{ currentOption: ConsolidatedLogistics }>(
   () => import("./TransportMap"),
-  { ssr: false, loading: () => <div className="w-full h-full bg-white/5 animate-pulse rounded-2xl" /> }
+  { ssr: false, loading: () => <div className="absolute inset-0 bg-white/5 animate-pulse rounded-2xl" /> }
 );
+
+const isValidCoordinate = (coord?: Coordinate | null) =>
+  Number.isFinite(coord?.lat) &&
+  Number.isFinite(coord?.lng) &&
+  coord?.lat !== 0 &&
+  coord?.lng !== 0;
+
+const normalizeCoordinate = (coord?: Partial<Coordinate> | null): Coordinate | null => {
+  const lat = Number(coord?.lat);
+  const lng = Number(coord?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+};
+
+const normalizeTransportOption = (option: ConsolidatedLogistics): ConsolidatedLogistics | null => {
+  const rawLegs = Array.isArray(option?.legs) ? option.legs : [];
+  const legs = rawLegs
+    .map((leg) => {
+      const origin = normalizeCoordinate(leg.origin_coords);
+      const destination = normalizeCoordinate(leg.destination_coords);
+      if (!origin || !destination) return null;
+      return {
+        ...leg,
+        origin_coords: origin,
+        destination_coords: destination,
+        price: Number(leg.price || 0),
+        duration_minutes: Number(leg.duration_minutes || 0),
+      };
+    })
+    .filter((leg): leg is TransportLeg => Boolean(leg));
+
+  const explicitCenter = normalizeCoordinate(option?.map_center);
+  const firstValid = legs.find((leg) => isValidCoordinate(leg.destination_coords) || isValidCoordinate(leg.origin_coords));
+  const mapCenter = explicitCenter || firstValid?.destination_coords || firstValid?.origin_coords;
+
+  if (!mapCenter || legs.length === 0) return null;
+
+  return {
+    ...option,
+    total_price: Number(option.total_price || legs.reduce((sum, leg) => sum + Number(leg.price || 0), 0)),
+    currency: option.currency || "USD",
+    legs,
+    map_center: mapCenter,
+  };
+};
 
 export function TransportDashboard({ options }: Props) {
   const [activeTier, setActiveTier] = useState<string>("budget");
+  const normalizedOptions = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(options || {})
+        .map(([key, option]) => [key, normalizeTransportOption(option)] as const)
+        .filter((entry): entry is readonly [string, ConsolidatedLogistics] => Boolean(entry[1]))
+    );
+  }, [options]);
 
   // Default to balanced → budget → first available tier
   // MUST be before any early returns (React rules of hooks)
   useEffect(() => {
-    if (options["balanced"]) setActiveTier("balanced");
-    else if (options["budget"]) setActiveTier("budget");
-    else setActiveTier(Object.keys(options)[0] ?? "budget");
-  }, [options]);
+    if (normalizedOptions["balanced"]) setActiveTier("balanced");
+    else if (normalizedOptions["budget"]) setActiveTier("budget");
+    else setActiveTier(Object.keys(normalizedOptions)[0] ?? "budget");
+  }, [normalizedOptions]);
 
   // Fallback if no valid options provided
-  if (!options || Object.keys(options).length === 0) return null;
+  if (!normalizedOptions || Object.keys(normalizedOptions).length === 0) return null;
 
-  const currentOption = options[activeTier];
+  const currentOption = normalizedOptions[activeTier] || normalizedOptions[Object.keys(normalizedOptions)[0]];
   if (!currentOption) return null;
 
   const modeIcons: Record<string, React.ReactNode> = {
@@ -78,9 +130,9 @@ export function TransportDashboard({ options }: Props) {
 
         {/* Toggles */}
         <div className="flex flex-col gap-3">
-          {Object.keys(options).map((tierKey) => {
+          {Object.keys(normalizedOptions).map((tierKey) => {
             const isActive = activeTier === tierKey;
-            const price = options[tierKey].total_price;
+            const price = normalizedOptions[tierKey].total_price;
             
             return (
               <button
@@ -95,7 +147,7 @@ export function TransportDashboard({ options }: Props) {
                 <div className="flex flex-col items-start z-10">
                   <span className="text-white font-medium capitalize">{tierKey}</span>
                   <span className="text-white/40 text-xs mt-0.5">
-                    {options[tierKey].legs.length > 1 ? options[tierKey].legs[1].name : "Standard Flight"}
+                    {normalizedOptions[tierKey].legs.length > 1 ? normalizedOptions[tierKey].legs[1].name : "Standard Flight"}
                   </span>
                 </div>
                 <div className="z-10 font-bold text-[#00F0FF]">
@@ -126,7 +178,7 @@ export function TransportDashboard({ options }: Props) {
 
       {/* Map Canvas */}
       <div className="relative flex-1 min-h-[400px] md:min-h-[500px] rounded-3xl overflow-hidden border border-white/10 bg-[#0A0A0A]">
-         <TransportMapSSR currentOption={currentOption} />
+         <TransportMapSSR key={activeTier} currentOption={currentOption} />
          
          {/* Route overlay details */}
          <div className="absolute bottom-4 left-4 right-4 flex gap-2 overflow-x-auto pb-2 z-[400]">
