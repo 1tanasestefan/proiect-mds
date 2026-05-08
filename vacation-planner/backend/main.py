@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
+import asyncio
 from models import UserInput, FinalTripPlan, ItineraryUpdate, VoteRequest, CommunityItinerary
 from agent_experience import generate_experience_itinerary
 from agent_regenerate import regenerate_single_activity
@@ -216,12 +217,12 @@ async def generate_itinerary(
                 "end_date": date_recommendation["end_date"],
             })
 
-        logger.info(f"[Orchestrator] Step 1: Experience Agent for {user_input.destination}")
-        experience_result = await generate_experience_itinerary(user_input)
-
-        logger.info(f"[Orchestrator] Step 2: Logistics Agent for {user_input.destination}")
+        logger.info(f"[Orchestrator] Running experience and logistics in parallel for {user_input.destination}")
         logistics_context = f"Origin: {user_input.origin}, Destination: {user_input.destination}, Check-in: {user_input.start_date}, Check-out: {user_input.end_date}, Price range per person: {user_input.price_range_per_person or user_input.budget}. Provide flight and hotel estimates."
-        logistics_result = await generate_logistics(user_input, logistics_context)
+        experience_result, logistics_result = await asyncio.gather(
+            generate_experience_itinerary(user_input),
+            generate_logistics(user_input, logistics_context),
+        )
 
         final_plan = FinalTripPlan(
             experience=experience_result,

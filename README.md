@@ -24,10 +24,10 @@ For local development, run the FastAPI backend and the Next.js frontend.
 ## Tech Stack
 
 - Frontend: Next.js, React, TypeScript, Tailwind CSS
-- Backend: Python, FastAPI, PydanticAI
-- AI provider: Groq
+- Backend: Python, FastAPI, Pydantic
+- AI provider: local Ollama-compatible model
 - Database/auth: Supabase
-- Images: Pexels API
+- Images: keyless DuckDuckGo image search with fallback image
 - Maps/transport UI: Leaflet-based frontend components
 
 ## Prerequisites
@@ -38,6 +38,10 @@ Install these before running the project:
 - npm
 - Python 3.12 or newer
 - Git
+
+Optional:
+
+- Ollama, if you want local AI generation instead of deterministic fallbacks.
 
 ## Environment Setup
 
@@ -55,11 +59,11 @@ copy .env.template .env
 Fill in:
 
 ```env
-GROQ_API_KEY=your_groq_api_key
+LOCAL_LLM_BASE_URL=http://localhost:11434
+LOCAL_LLM_MODEL=llama3.1:8b
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your_supabase_service_role_key
 SUPABASE_JWT_SECRET=your_supabase_jwt_secret
-PEXELS_API_KEY=your_pexels_api_key
 PORT=8000
 ```
 
@@ -67,6 +71,8 @@ Important:
 
 - `SUPABASE_KEY` must be the Supabase `service_role` key.
 - This key is backend-only. Do not put it in the frontend.
+- For local AI, install Ollama and run `ollama pull llama3.1:8b`.
+- No Groq, Gemini, or Pexels API key is required for agents or image enrichment.
 
 ### Frontend env
 
@@ -204,8 +210,8 @@ Restart the frontend after changing env values.
 Check:
 
 - backend is running on port `8000`
-- `GROQ_API_KEY` is valid
-- `PEXELS_API_KEY` is valid
+- Ollama is running at `LOCAL_LLM_BASE_URL`
+- `LOCAL_LLM_MODEL` is pulled locally, for example `ollama pull llama3.1:8b`
 - frontend uses `NEXT_PUBLIC_API_URL=http://127.0.0.1:8000`
 
 ### Saving trips fails
@@ -219,7 +225,7 @@ Check:
 
 ### Python install is slow
 
-`pydantic-ai` pulls many optional AI dependencies, so the first install can take a few minutes.
+The Supabase and HTTP client dependencies can take a few minutes on the first install.
 
 If installation gets stuck after an interrupted run, close lingering Python processes and retry:
 

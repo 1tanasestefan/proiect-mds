@@ -31,6 +31,7 @@ export default function PlanTripPage() {
   const [error, setError] = useState<string | null>(null);
 
   const ITINERARY_API_URL = apiUrl("/api/generate-itinerary");
+  const LOCAL_AGENT_TIMEOUT_MS = 15 * 60 * 1000;
 
   const handleGenerateItinerary = async (data: TripFormData) => {
     setFormData(data);
@@ -39,7 +40,7 @@ export default function PlanTripPage() {
     setViewState('PROCESSING');
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 100000); // 100s timeout
+    const timeoutId = setTimeout(() => controller.abort(), LOCAL_AGENT_TIMEOUT_MS);
 
     try {
       const payload = {
@@ -67,8 +68,6 @@ export default function PlanTripPage() {
         body: JSON.stringify(payload),
       });
 
-      clearTimeout(timeoutId);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         let errorMsg = `Backend error: ${response.status}`;
@@ -92,8 +91,17 @@ export default function PlanTripPage() {
       setViewState('RESULTS');
     } catch (err: unknown) {
       console.error("Failed to generate itinerary:", err);
-      setError(err instanceof Error ? err.message : "Something went wrong while crafting your journey. Please try again.");
+      const isAbortError = err instanceof DOMException && err.name === "AbortError";
+      setError(
+        isAbortError
+          ? "Local itinerary generation timed out. Please try a shorter trip or check that Ollama is still running."
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong while crafting your journey. Please try again."
+      );
       setViewState('INPUT');
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
 

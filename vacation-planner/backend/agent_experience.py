@@ -1,205 +1,241 @@
-import warnings
-import os
 import asyncio
-import json
-import re
-import httpx
-from dotenv import load_dotenv
-from pydantic_ai import Agent
-from models import UserInput, AgentOneOutput
-from loguru import logger
+from time import monotonic
+
+from ddgs import DDGS
 from fastapi import HTTPException
+from loguru import logger
 
-# Global lock to serialize searches
-search_lock = asyncio.Lock()
+from local_llm import generate_local_json, local_model_name
+from models import Activity, AgentOneOutput, DailyItinerary, UserInput
 
-load_dotenv()
-
-# The ONE AND ONLY fallback image
 STATIC_FALLBACK = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1000&q=80"
 
-# Cooldown between DDGS image requests (seconds)
-_last_ddgs_time = 0.0
-_DDGS_COOLDOWN = 3.0
+search_lock = asyncio.Lock()
+_last_image_search = 0.0
+_IMAGE_SEARCH_COOLDOWN = 0.3
+_image_search_available = True
 
 
-# ---------- AGENT DEFINITION ----------
-experience_agent = Agent(
-    'groq:llama-3.3-70b-versatile',
-    output_type=str,  # str avoids pydantic-ai injecting a second `final_result` tool which Groq rejects
-    retries=3,
-    system_prompt=(
-        "You are the 'Experience Guide', a premier Travel Concierge. "
-        "Your mission is to provide an authentic, high-end itinerary for the specified destination. "
-        "The number of days will be specified in the user prompt. "
+EXPERIENCE_SYSTEM_PROMPT = """
+You are VibeTrips' local Experience Guide agent. You run fully locally and do not call paid or hosted AI APIs.
+Create authentic, practical, destination-aware vacation itineraries from the user's constraints.
 
-        "CRITICAL OUTPUT RULES: "
-        "1. Your ENTIRE response must be a single valid JSON object — no markdown fences, no prose, no commentary. "
-        "2. The root JSON object MUST have exactly these three top-level keys: "
-        "   'trip_title' (string), 'vibe_summary' (string), 'itinerary' (array of day objects). "
-        "   Do NOT wrap them inside a 'trip', 'data', 'result', or any other key. "
-        "3. Each day object: { 'day_number': int, 'activities': [ ... ] }. "
-        "4. Each activity: { 'title', 'description', 'time', 'cost', 'location', 'image_url': '', 'type': 'experience' }. "
-        "   Allowed types: 'experience', 'dining', 'tour', 'cruise', 'cookingclass', 'festival', 'adventure', 'culture', 'relaxation', 'shopping', 'nightlife', 'transport', 'arrival', 'departure', 'flight', 'hotel', 'sightseeing', 'museum', 'landmark', 'park', 'beach'. "
-        "   If unsure, use 'experience'. "
-        "5. You have NO tools available. Do NOT output function calls, XML tags, or <function=...> syntax. "
-        "6. Use your own extensive knowledge of the destination. Begin your response with '{' immediately."
-    ),
-)
+Return exactly one valid JSON object with this schema:
+{
+  "trip_title": "string",
+  "vibe_summary": "string",
+  "itinerary": [
+    {
+      "day_number": 1,
+      "activities": [
+        {
+          "title": "string",
+          "description": "string",
+          "time": "string",
+          "cost": "string",
+          "location": "string",
+          "image_url": "",
+          "type": "experience"
+        }
+      ]
+    }
+  ]
+}
 
+Rules:
+- Output raw JSON only. No markdown, commentary, XML, or function calls.
+- Generate exactly 3 activities per day.
+- Keep activity types within: experience, dining, tour, cruise, cookingclass, festival, adventure, culture,
+  relaxation, shopping, nightlife, transport, arrival, departure, flight, hotel, sightseeing, museum,
+  landmark, park, beach.
+- Keep image_url as an empty string. The backend web image scraper fills it later.
+- Avoid generic filler like "explore the city"; name concrete neighborhoods, landmarks, markets, museums,
+  restaurants, waterfronts, parks, or local experiences.
+"""
 
-# ---------- IMAGE FETCHER — "SNIPER" ARCHITECTURE ----------
 
 def _is_valid_image(url: str) -> bool:
-    """
-    Returns True only if the URL points to an actual hotlink-safe image file.
-    Rejects sites known to block hotlinking and non-image extensions.
-    """
     if not url:
         return False
     low = url.lower()
+    blocked = ("wikipedia", "wikimedia", "foursquare", "tripadvisor", "svg", "icon", "logo")
+    if any(item in low for item in blocked):
+        return False
+    return any(ext in low for ext in (".jpg", ".jpeg", ".png", ".webp"))
 
-    # Blocklist: sites that do not allow hotlinking or won't resolve to a raw image
-    BLOCKED_DOMAINS = ("wikipedia", "wikimedia", "foursquare", "tripadvisor")
-    BLOCKED_PATTERNS = ("svg", "icon", "logo")
-    for blocked in BLOCKED_DOMAINS + BLOCKED_PATTERNS:
-        if blocked in low:
-            return False
 
-    # Allowlist: must contain a valid image extension
-    VALID_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
-    return any(ext in low for ext in VALID_EXTENSIONS)
+def _search_image_sync(query: str) -> str | None:
+    with DDGS() as ddgs:
+        results = ddgs.images(query, max_results=8, safesearch="moderate")
+        for item in results:
+            candidate = item.get("image") or item.get("thumbnail")
+            if _is_valid_image(candidate):
+                return candidate
+    return None
+
+
+def _search_destination_context_sync(query: str) -> str:
+    with DDGS() as ddgs:
+        results = ddgs.text(query, max_results=5, safesearch="moderate")
+    snippets = []
+    for item in results[:5]:
+        title = item.get("title") or "Result"
+        body = item.get("body") or item.get("snippet") or ""
+        href = item.get("href") or item.get("url") or ""
+        snippets.append(f"- {title}: {body} ({href})")
+    return "\n".join(snippets)
+
+
+async def fetch_destination_web_context(destination: str, vibe: str) -> str:
+    """Collect a compact keyless web-search context for the local model."""
+    query = f"{destination} best things to do neighborhoods food culture {vibe} travel"
+    try:
+        return await asyncio.to_thread(_search_destination_context_sync, query)
+    except Exception as exc:
+        logger.warning(f"[search] Destination context search failed for '{query}': {exc}")
+        return "No live web context available; rely on local travel knowledge."
 
 
 async def fetch_image_for_activity(activity_name: str, destination: str) -> str:
     """
-    Fetches high-quality, relevant images instantly using the free Pexels API.
-    Replaces rate-limited DuckDuckGo logic.
+    Fetch an activity image through DuckDuckGo image search.
+
+    This keeps image enrichment keyless. If search fails or returns blocked links,
+    the UI still gets a stable fallback image.
     """
-    pexels_key = os.getenv("PEXELS_API_KEY")
-    if not pexels_key:
-        logger.warning("[img] PEXELS_API_KEY not found in .env, returning fallback.")
+    global _image_search_available, _last_image_search
+    if not _image_search_available:
         return STATIC_FALLBACK
 
-    url = "https://api.pexels.com/v1/search"
-    headers = {"Authorization": pexels_key}
-    
-    # Primary strict query
-    query = f"{activity_name} {destination}"
-    params = {"query": query, "per_page": 1, "orientation": "landscape"}
-    
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url, headers=headers, params=params)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("photos"):
-                    img_url = data["photos"][0]["src"]["large"]
-                    logger.info(f"[img] ✅ Found via Pexels (Primary): '{query}' -> {img_url[:60]}")
-                    return img_url
-            
-            # Fallback query
-            logger.debug(f"[img] No results for '{query}', trying fallback query: '{destination}'")
-            params_fallback = {"query": destination, "per_page": 1, "orientation": "landscape"}
-            response_fallback = await client.get(url, headers=headers, params=params_fallback)
-            
-            if response_fallback.status_code == 200:
-                data_fw = response_fallback.json()
-                if data_fw.get("photos"):
-                    img_url = data_fw["photos"][0]["src"]["large"]
-                    logger.info(f"[img] ✅ Found via Pexels (Fallback): '{destination}' -> {img_url[:60]}")
-                    return img_url
+    query = f"{activity_name} {destination} travel photo"
 
-    except Exception as e:
-        logger.error(f"[img] Pexels API request failed: {e}")
+    async with search_lock:
+        elapsed = monotonic() - _last_image_search
+        if elapsed < _IMAGE_SEARCH_COOLDOWN:
+            await asyncio.sleep(_IMAGE_SEARCH_COOLDOWN - elapsed)
+        _last_image_search = monotonic()
 
-    logger.warning(f"[img] All Pexels attempts failed for '{activity_name}'. Returning fallback.")
+        try:
+            image_url = await asyncio.to_thread(_search_image_sync, query)
+            if image_url:
+                logger.info(f"[img] Found keyless DDGS image for '{query}'")
+                return image_url
+        except Exception as exc:
+            logger.warning(f"[img] DDGS image search failed for '{query}': {exc}")
+            _image_search_available = False
+
     return STATIC_FALLBACK
 
 
+def _fallback_experience(user_input: UserInput) -> AgentOneOutput:
+    destination = user_input.destination or "the destination"
+    city = destination.split(",")[0].strip()
+    vibe = user_input.vacationType or user_input.lifestyle or "balanced"
+    budget = user_input.budget or "medium"
+    days: list[DailyItinerary] = []
 
-
-# ---------- MAIN ENTRY POINT ----------
-async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput:
-    """Generate itinerary then enrich every activity with a real image."""
-    try:
-        logger.info(f"Starting itinerary generation for: {user_input.destination}")
-
-        result = await asyncio.wait_for(
-            experience_agent.run(
-                f"Create a {user_input.trip_days}-day itinerary for {user_input.destination}. "
-                f"Travel dates: {user_input.start_date} to {user_input.end_date}. "
-                f"Origin: {user_input.origin}. "
-                f"Lifestyle: {user_input.lifestyle}, Budget tier: {user_input.budget}, "
-                f"Price range per person: {user_input.price_range_per_person or 'not specified'}, "
-                f"Vibe: {user_input.vacationType}.",
-                deps=user_input
+    for day_number in range(1, user_input.trip_days + 1):
+        activities = [
+            Activity(
+                title=f"{city} orientation walk",
+                description=f"Start with a walk through the most central area of {city}, using it to understand the rhythm, transport links, and nearby food options.",
+                time="Morning",
+                cost="Free to low cost",
+                location=f"Central {city}",
+                image_url="",
+                type="sightseeing",
             ),
-            timeout=180 # Increased timeout for tool-calling loops
+            Activity(
+                title=f"Local food stop in {city}",
+                description=f"Choose a well-reviewed local market, bistro, or casual restaurant that fits a {budget} budget and gives the group a strong first taste of the destination.",
+                time="Lunch",
+                cost="Moderate",
+                location=f"{city} food district",
+                image_url="",
+                type="dining",
+            ),
+            Activity(
+                title=f"{vibe.title()} highlight experience",
+                description=f"Spend the afternoon on an experience matched to the trip vibe: culture, waterfront time, nightlife scouting, museums, shopping streets, or a scenic viewpoint.",
+                time="Afternoon",
+                cost="Varies",
+                location=f"{city} highlights",
+                image_url="",
+                type="experience",
+            ),
+            Activity(
+                title=f"Evening in {city}",
+                description="End the day with a relaxed dinner or evening walk in an active but safe area close to the accommodation.",
+                time="Evening",
+                cost="Moderate",
+                location=f"{city} evening district",
+                image_url="",
+                type="nightlife",
+            ),
+        ]
+        days.append(DailyItinerary(day_number=day_number, activities=activities))
+
+    return AgentOneOutput(
+        trip_title=f"{city} {vibe.title()} Escape",
+        vibe_summary=f"A {user_input.trip_days}-day {vibe} itinerary for {destination}, tuned for a {budget} budget and {user_input.travelers} traveler(s).",
+        itinerary=days,
+    )
+
+
+async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput:
+    """Generate itinerary locally, then enrich every activity with a keyless scraped image."""
+    try:
+        logger.info(f"Starting local itinerary generation for: {user_input.destination}")
+        web_context = await fetch_destination_web_context(
+            user_input.destination or "",
+            user_input.vacationType or user_input.lifestyle or "",
+        )
+        compact_web_context = web_context[:1200]
+        user_prompt = (
+            f"Create a {user_input.trip_days}-day itinerary.\n"
+            f"Destination: {user_input.destination}\n"
+            f"Travel dates: {user_input.start_date} to {user_input.end_date}\n"
+            f"Origin: {user_input.origin}\n"
+            f"Travelers: {user_input.travelers}\n"
+            f"Lifestyle: {user_input.lifestyle}\n"
+            f"Vacation type / vibe: {user_input.vacationType}\n"
+            f"Budget tier: {user_input.budget}\n"
+            f"Price range per person: {user_input.price_range_per_person or 'not specified'}\n"
+            f"Keyless web-search context:\n{compact_web_context}\n"
+            "Remember: raw JSON only."
         )
 
-        # 1. Access the output. It might be a model (if pydantic-ai worked) or a string (older versions)
-        output_obj = getattr(result, 'output', result)
-        
-        if isinstance(output_obj, AgentOneOutput):
-            logger.info("Agent provided structured data directly as AgentOneOutput.")
-            parsed = output_obj
-        else:
-            raw_text = str(output_obj)
-            logger.debug(f"Raw Agent Output (length {len(raw_text)}): {raw_text[:200]}...")
-
-            # 2. Bulletproof JSON Extraction
-            def extract_json(text: str):
-                match = re.search(r"(\{.*\})", text, re.DOTALL)
-                if match:
-                    try:
-                        return json.loads(match.group(1))
-                    except json.JSONDecodeError:
-                        pass
-                cleaned = re.sub(r"```(json)?", "", text).strip()
-                cleaned = re.sub(r"<function.*?>.*?</function>", "", cleaned, flags=re.DOTALL).strip()
-                try:
-                    return json.loads(cleaned)
-                except json.JSONDecodeError:
-                    return None
-
-            data = extract_json(raw_text)
-            if not data:
-                logger.error(f"Failed to extract JSON from: {raw_text}")
-                raise ValueError("No valid JSON found in agent output.")
-
-            # Unwrap any single-key envelope (e.g. {"trip": {...}}, {"result": {...}})
-            if data and "trip_title" not in data and len(data) == 1:
-                inner = next(iter(data.values()))
-                if isinstance(inner, dict) and "trip_title" in inner:
-                    logger.info(f"Unwrapping envelope key: '{next(iter(data.keys()))}'")
-                    data = inner
-
+        try:
+            data = await generate_local_json(
+                EXPERIENCE_SYSTEM_PROMPT,
+                user_prompt,
+                timeout=90,
+                temperature=0.35,
+                num_predict=1300,
+            )
             parsed = AgentOneOutput(**data)
+            logger.info(f"Local experience agent completed with model {local_model_name()}.")
+        except Exception as exc:
+            logger.warning(f"Local experience agent unavailable or invalid; using deterministic fallback. {exc}")
+            parsed = _fallback_experience(user_input)
 
-        # --- IMAGE ENRICHMENT (DDGS ONLY) ---
-        logger.info("Starting image enrichment (DDGS only)...")
         normalized_days = []
         for day in parsed.itinerary:
-            normalized_acts = []
-            for act in day.activities:
-                img_url = await fetch_image_for_activity(
-                    activity_name=act.title,
-                    destination=user_input.destination
-                )
-                normalized_acts.append(
-                    act.model_copy(update={"image_url": img_url})
-                )
-            normalized_days.append(
-                day.model_copy(update={"activities": normalized_acts})
-            )
+            image_tasks = [
+                fetch_image_for_activity(act.title, user_input.destination or "")
+                for act in day.activities
+            ]
+            image_urls = await asyncio.gather(*image_tasks)
+            normalized_acts = [
+                act.model_copy(update={"image_url": image_url})
+                for act, image_url in zip(day.activities, image_urls)
+            ]
+            normalized_days.append(day.model_copy(update={"activities": normalized_acts}))
 
-        logger.info("Image enrichment complete.")
         return parsed.model_copy(update={"itinerary": normalized_days})
 
-    except Exception as e:
-        logger.error(f"Itinerary generation failed: {e}")
-        if isinstance(e, HTTPException):
-            raise e
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:
+        logger.error(f"Itinerary generation failed: {exc}")
+        if isinstance(exc, HTTPException):
+            raise exc
+        raise HTTPException(status_code=500, detail=str(exc))

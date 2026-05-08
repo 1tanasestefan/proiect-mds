@@ -40,7 +40,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
         }
         return prev;
       });
-    }, 4000); // 4 seconds per phase for better readability
+    }, 7000);
     intervalIdsRef.current.phase = phaseInterval;
 
     const progressInterval = setInterval(() => {
@@ -52,13 +52,12 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
           return prev >= 100 ? 100 : Math.min(100, prev + 1);
         }
 
-        if (prev >= 98) {
-          // If we reach 99, stay there but allow it to finish if the parent switches view
-          return prev >= 99.5 ? 99.5 : prev + 0.05; 
+        if (prev >= 92) {
+          return 92;
         }
-        return prev + 1;
+        return Math.min(92, prev + 0.5);
       });
-    }, 150);
+    }, 300);
     intervalIdsRef.current.progress = progressInterval;
 
     return () => {
@@ -300,14 +299,14 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
           </motion.p>
 
           {/* Long running hint */}
-          {progress >= 99 && (
+          {progress >= 92 && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="text-center text-[#8A2BE2] mt-4 text-sm font-medium animate-pulse"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              Our agents are finding the best hidden gems... almost there!
+              Local models can take a little longer. Still working, not frozen.
             </motion.p>
           )}
 

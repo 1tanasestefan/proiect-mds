@@ -1,81 +1,87 @@
-import os
 import json
-import re
-import asyncio
-from pydantic_ai import Agent
-from models import Activity
-from loguru import logger
+
 from fastapi import HTTPException
+from loguru import logger
+
 from agent_experience import fetch_image_for_activity
-
-regenerate_agent = Agent(
-    'groq:llama-3.3-70b-versatile',
-    output_type=str,
-    retries=3,
-    system_prompt=(
-        "You are the 'Experience Guide', tasked to replace exactly ONE rejected activity in a user's itinerary. "
-        "The users have democratically voted to remove this activity, so you must provide an alternative that fits seamlessly "
-        "into the existing day and matches the specified overall vibe. "
-
-        "CRITICAL OUTPUT RULES: "
-        "1. Your ENTIRE response must be a single valid JSON object representing exactly ONE new activity. "
-        "2. The JSON object MUST have exactly these keys: "
-        "   'title' (str), 'description' (str), 'time' (str), 'cost' (str), 'location' (str), "
-        "   'image_url' (empty string ''), and 'type' (str from the Allowed Types). "
-        "3. Allowed Types: 'experience', 'dining', 'tour', 'cruise', 'cookingclass', 'festival', 'adventure', 'culture', 'relaxation', 'shopping', 'nightlife', 'transport'. "
-        "4. Do NOT output function calls, XML tags, or <function=...> syntax. "
-        "5. Begin your response with '{' immediately."
-    ),
-)
+from local_llm import generate_local_json, local_model_name
+from models import Activity
 
 
-async def regenerate_single_activity(vibe_summary: str, day_context: str, destination: str, old_activity_json: str) -> Activity:
-    """Invokes the regenerate agent for a single activity replacement and fetches a new image."""
+REGENERATE_SYSTEM_PROMPT = """
+You are VibeTrips' local Activity Regeneration Agent. You run locally and must not call hosted AI APIs.
+Replace exactly one rejected itinerary activity with a fresh alternative that fits the same day and vibe.
+
+Return exactly one valid JSON object:
+{
+  "title": "string",
+  "description": "string",
+  "time": "string",
+  "cost": "string",
+  "location": "string",
+  "image_url": "",
+  "type": "experience"
+}
+
+Rules:
+- Output raw JSON only. No markdown, commentary, XML, or function calls.
+- Do not duplicate the rejected activity or the existing activities in the same day.
+- Keep type within: experience, dining, tour, cruise, cookingclass, festival, adventure, culture,
+  relaxation, shopping, nightlife, transport, sightseeing, museum, landmark, park, beach.
+- Keep image_url empty; the backend scraper fills it later.
+"""
+
+
+def _fallback_activity(vibe_summary: str, day_context: str, destination: str, old_activity_json: str) -> Activity:
+    city = (destination or "the destination").split(",")[0].strip()
     try:
-        logger.info(f"Regenerating activity replacement for: {destination}")
+        old_activity = json.loads(old_activity_json)
+        old_time = old_activity.get("time", "Afternoon")
+    except Exception:
+        old_time = "Afternoon"
 
+    return Activity(
+        title=f"Alternative local highlight in {city}",
+        description=(
+            f"Swap in a different local experience that keeps the {vibe_summary or 'trip'} vibe, "
+            f"avoids the already planned activities ({day_context}), and gives the group a fresh option."
+        ),
+        time=old_time,
+        cost="Moderate",
+        location=f"{city} local district",
+        image_url="",
+        type="experience",
+    )
+
+
+async def regenerate_single_activity(
+    vibe_summary: str,
+    day_context: str,
+    destination: str,
+    old_activity_json: str,
+) -> Activity:
+    """Generate one replacement activity locally and enrich it with a keyless scraped image."""
+    try:
+        logger.info(f"Regenerating activity locally for: {destination}")
         prompt = (
             f"Destination: {destination}\n"
-            f"Overall Vibe: {vibe_summary}\n"
-            f"Context of the Rest of the Day (do not duplicate these): {day_context}\n"
-            f"\nREJECTED ACTIVITY TO REPLACE:\n{old_activity_json}\n\n"
-            "Provide a fresh, entirely different replacement activity."
+            f"Overall vibe: {vibe_summary}\n"
+            f"Existing activities in this day, do not duplicate: {day_context}\n"
+            f"Rejected activity to replace:\n{old_activity_json}\n\n"
+            "Provide a fresh, different replacement activity as raw JSON."
         )
 
-        result = await asyncio.wait_for(
-            regenerate_agent.run(prompt),
-            timeout=60
-        )
+        try:
+            data = await generate_local_json(REGENERATE_SYSTEM_PROMPT, prompt, timeout=90, temperature=0.55)
+            parsed = Activity(**data)
+            logger.info(f"Local regeneration agent completed with model {local_model_name()}.")
+        except Exception as exc:
+            logger.warning(f"Local regeneration agent unavailable or invalid; using fallback. {exc}")
+            parsed = _fallback_activity(vibe_summary, day_context, destination, old_activity_json)
 
-        raw_text = str(getattr(result, 'output', result))
+        image_url = await fetch_image_for_activity(parsed.title, destination)
+        return parsed.model_copy(update={"image_url": image_url})
 
-        def extract_json(text: str):
-            match = re.search(r"(\{.*\})", text, re.DOTALL)
-            if match:
-                try:
-                    return json.loads(match.group(1))
-                except json.JSONDecodeError:
-                    pass
-            cleaned = re.sub(r"```(json)?", "", text).strip()
-            # aggressive strip
-            cleaned = re.sub(r"<function.*?>.*?</function>", "", cleaned, flags=re.DOTALL).strip()
-            try:
-                return json.loads(cleaned)
-            except json.JSONDecodeError:
-                return None
-
-        # Clean JSON
-        data = extract_json(raw_text)
-        if not data:
-            raise ValueError(f"No valid JSON found in regenerate agent output: {raw_text[:200]}")
-
-        parsed_act = Activity(**data)
-
-        # Append new Image using our fast sniper!
-        new_img_url = await fetch_image_for_activity(parsed_act.title, destination)
-        
-        return parsed_act.model_copy(update={"image_url": new_img_url})
-
-    except Exception as e:
-        logger.error(f"Activity regeneration failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Regeneration error: {str(e)}")
+    except Exception as exc:
+        logger.error(f"Activity regeneration failed: {exc}")
+        raise HTTPException(status_code=500, detail=f"Regeneration error: {str(exc)}")
