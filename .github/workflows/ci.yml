@@ -40,20 +40,20 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-  backend-python:
+  backend:
     name: Python backend import check
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: vacation-planner/backend-python
+        working-directory: vacation-planner/backend
 
     env:
-      GROQ_API_KEY: dummy-groq-key-for-ci
+      LOCAL_LLM_BASE_URL: http://localhost:11434
+      LOCAL_LLM_MODEL: llama3.1:8b
       SUPABASE_URL: https://example.supabase.co
       SUPABASE_KEY: dummy-service-role-key-for-ci
       SUPABASE_JWT_SECRET: dummy-jwt-secret-for-ci
-      PEXELS_API_KEY: dummy-pexels-key-for-ci
 
     steps:
       - name: Checkout repository
@@ -64,7 +64,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: vacation-planner/backend-python/requirements.txt
+          cache-dependency-path: vacation-planner/backend/requirements.txt
 
       - name: Install backend dependencies
         run: |
