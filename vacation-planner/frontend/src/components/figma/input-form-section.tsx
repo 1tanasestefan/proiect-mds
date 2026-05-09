@@ -419,11 +419,11 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           className="mt-8 flex justify-end"
         >
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
             disabled={!formData[config.field].trim() || !config.selectedLocation}
             onClick={() => setCurrentStep(config.nextStep)}
-            className="px-8 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-medium flex items-center gap-2 hover:bg-[#00F0FF]/20 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-8 py-4 rounded-full bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white font-medium flex items-center gap-2 shadow-[0_4px_18px_rgba(255,107,90,0.30)] hover:shadow-[0_6px_24px_rgba(255,107,90,0.45)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue
             <ArrowRight className="h-5 w-5" />
@@ -449,10 +449,10 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           className="text-center mb-20"
         >
           <h2 
-            className="text-6xl md:text-7xl font-black mb-6 text-[#10223A]"
-            style={{ fontFamily: "'Archivo Black', sans-serif" }}
+            className="text-5xl md:text-6xl font-bold mb-6 text-[#10223A]"
+            style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontSize: "clamp(2.6rem, 6vw, 4.5rem)" }}
           >
-            CRAFT YOUR JOURNEY
+            Craft Your Journey
           </h2>
           <p className="text-xl text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
             Answer a few questions and let our AI agents create your perfect itinerary
@@ -490,7 +490,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           >
             <h3 
               className="text-3xl font-bold text-[#10223A] mb-8"
-              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
             >
               {steps[currentStep].title}
             </h3>
@@ -504,15 +504,15 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
             {currentStep === 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <motion.button
-                  whileHover={{ scale: 1.03, y: -4 }}
+                  whileHover={{ scale: 1.01, y: -4 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleModeSelect(true)}
-                  className="text-left p-8 rounded-[24px] bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#00F0FF]/50 transition-all"
+                  className="text-left p-8 rounded-[24px] bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] hover:border-[#FF6B5A]/50 hover:shadow-[0_8px_28px_rgba(255,107,90,0.12)] transition-all"
                 >
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#00F0FF] to-[#8A2BE2] flex items-center justify-center mb-6 shadow-lg">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#FF6B5A] to-[#FF8FA3] flex items-center justify-center mb-6 shadow-[0_6px_20px_rgba(255,107,90,0.35)]">
                     <MapPin className="h-8 w-8 text-white" />
                   </div>
-                  <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                     I am flexible
                   </h4>
                   <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -521,7 +521,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                 </motion.button>
 
                 <motion.button
-                  whileHover={{ scale: 1.03, y: -4 }}
+                  whileHover={{ scale: 1.01, y: -4 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleModeSelect(false)}
                   className="text-left p-8 rounded-[24px] bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] hover:border-[#FF9F43]/60 hover:shadow-[0_8px_32px_rgba(255,159,67,0.15)] hover:-translate-y-1 transition-all"
@@ -529,7 +529,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#FF9F43] to-[#FFD166] flex items-center justify-center mb-6 shadow-[0_6px_20px_rgba(255,159,67,0.4)]">
                     <Plane className="h-8 w-8 text-white" />
                   </div>
-                  <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                     I know the destination
                   </h4>
                   <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -546,7 +546,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   {budgetOptions.map((option) => (
                     <motion.button
                       key={option.id}
-                      whileHover={{ scale: 1.03, y: -4 }}
+                      whileHover={{ scale: 1.01, y: -4 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleSelect("budget", option.id)}
                       className={`group relative p-8 rounded-[24px] border-2 transition-all duration-300 ${
@@ -558,7 +558,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                       <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center mb-6 shadow-lg`}>
                         <option.icon className="h-8 w-8 text-white" />
                       </div>
-                      <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                      <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                         {option.label}
                       </h4>
                       <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -633,7 +633,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                 {lifestyleOptions.map((option) => (
                   <motion.button
                     key={option.id}
-                    whileHover={{ scale: 1.03, y: -4 }}
+                    whileHover={{ scale: 1.01, y: -4 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSelect("lifestyle", option.id)}
                     className={`group relative p-8 rounded-[24px] border-2 transition-all duration-300 ${
@@ -646,7 +646,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center mb-6 shadow-lg`}>
                       <option.icon className="h-8 w-8 text-white" />
                     </div>
-                    <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                       {option.label}
                     </h4>
                     <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -663,7 +663,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                 {vacationTypeOptions.map((option) => (
                   <motion.button
                     key={option.id}
-                    whileHover={{ scale: 1.03, y: -4 }}
+                    whileHover={{ scale: 1.015, y: -4 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSelect("vacationType", option.id)}
                     className={`group relative overflow-hidden h-80 rounded-[24px] border transition-all duration-300 ${
@@ -685,7 +685,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                         <div className="h-12 w-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
                           <option.icon className="h-6 w-6 text-white" />
                         </div>
-                        <h4 className="text-2xl font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                        <h4 className="text-2xl font-bold text-white" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                           {option.label}
                         </h4>
                       </div>
@@ -712,8 +712,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               setHighlightedIndex: setOriginHighlight,
               placeholder: "Your departure city (e.g., Bucharest)",
               icon: Plane,
-              iconColor: "#8A2BE2",
-              focusColor: "#8A2BE2",
+              iconColor: "#FF9F43",
+              focusColor: "#FF9F43",
               nextStep: formData.flexibleDestination ? 6 : 5,
             })}
 
@@ -731,8 +731,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               setHighlightedIndex: setDestHighlight,
               placeholder: "Where do you want to go?",
               icon: MapPin,
-              iconColor: "#00F0FF",
-              focusColor: "#00F0FF",
+              iconColor: "#FF6B5A",
+              focusColor: "#FF6B5A",
               nextStep: 6,
             })}
 
@@ -793,7 +793,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   <div className="flex items-center gap-3">
                     <CalendarDays className="h-5 w-5" />
                     <div>
-                      <p className="font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>I am fully flexible with dates</p>
+                      <p className="font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>I am fully flexible with dates</p>
                       <p className="text-sm opacity-80" style={{ fontFamily: "'Inter', sans-serif" }}>
                         VibeTrips will suggest dates that fit your city and budget, including avoiding peak seasons when price matters.
                       </p>
@@ -847,7 +847,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   className="mt-4 flex justify-end"
                 >
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.95 }}
                     disabled={!datesValid}
                     onClick={() => setCurrentStep(7)}
@@ -887,12 +887,12 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                 </div>
 
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={formData.flexibleDestination ? handleGetRecommendations : handleSubmitForm}
                     disabled={recommendationLoading || (!formData.flexibleDestination && !formData.destination) || !formData.travelers || !formData.origin || !datesValid || !priceRangeValid}
                     className="w-full py-6 rounded-[20px] bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white text-xl font-bold flex items-center justify-center gap-3 shadow-[0_4px_32px_rgba(255,107,90,0.40)] disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                    style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                   {recommendationLoading ? "Finding Cities..." : formData.flexibleDestination ? "Show City Recommendations" : "Generate My Itinerary"}
                   <ArrowRight className="h-6 w-6" />
@@ -916,28 +916,28 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   {recommendations.map((recommendation) => (
                     <motion.button
                       key={recommendation.destination}
-                      whileHover={{ scale: 1.02, y: -3 }}
+                      whileHover={{ scale: 1.01, y: -4 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleChooseRecommendation(recommendation)}
-                      className="text-left p-6 rounded-[22px] bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#00F0FF]/50 transition-all"
+                      className="text-left p-6 rounded-[22px] bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] hover:border-[#FF6B5A]/50 hover:shadow-[0_8px_28px_rgba(255,107,90,0.12)] transition-all"
                     >
                       <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-2xl bg-[#00F0FF]/10 border border-[#00F0FF]/20 flex items-center justify-center">
-                          <MapPin className="h-6 w-6 text-[#00F0FF]" />
+                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#FF6B5A] to-[#FF9F43] flex items-center justify-center shadow-[0_4px_14px_rgba(255,107,90,0.30)]">
+                          <MapPin className="h-6 w-6 text-white" />
                         </div>
                         <div>
-                          <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                          <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                             {recommendation.destination}
                           </h4>
-                          <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                          <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
                             {recommendation.reason}
                           </p>
                           {recommendation.suggested_dates && (
-                            <div className="mt-4 rounded-2xl bg-[#8A2BE2]/10 border border-[#8A2BE2]/20 px-4 py-3">
-                              <p className="text-sm font-semibold text-[#8A2BE2]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            <div className="mt-4 rounded-2xl bg-[rgba(255,159,67,0.10)] border border-[rgba(255,159,67,0.25)] px-4 py-3">
+                              <p className="text-sm font-semibold text-[#FF9F43]" style={{ fontFamily: "'Inter', sans-serif" }}>
                                 Suggested dates: {recommendation.suggested_dates.start_date} to {recommendation.suggested_dates.end_date}
                               </p>
-                              <p className="text-sm text-gray-500 dark:text-white/60 mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
+                              <p className="text-sm text-[#64748B] mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
                                 {recommendation.suggested_dates.reason}
                               </p>
                             </div>
