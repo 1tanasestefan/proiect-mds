@@ -35,7 +35,7 @@ except Exception as _e:
 
 _HMAC_SECRET: str = os.getenv("SUPABASE_JWT_SECRET", "")
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 security_optional = HTTPBearer(auto_error=False)
 
 async def verify_token(token: str) -> str:
@@ -82,9 +82,14 @@ async def verify_token(token: str) -> str:
     return user_id
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> str:
     """Strict: Requires a valid token."""
+    if not credentials or not credentials.credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication token.",
+        )
     return await verify_token(credentials.credentials)
 
 async def get_optional_user(

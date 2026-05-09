@@ -20,6 +20,7 @@ jobs:
 
     env:
       NEXT_PUBLIC_ITINERARY_API_URL: http://127.0.0.1:8000/api/generate-itinerary
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key-for-ci
 
@@ -37,11 +38,17 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: Build frontend
         run: npm run build
 
+      - name: Run frontend smoke tests
+        run: npm run test:e2e
+
   backend:
-    name: Python backend import check
+    name: Python backend tests
     runs-on: ubuntu-latest
 
     defaults:
@@ -73,3 +80,6 @@ jobs:
 
       - name: Verify backend imports
         run: python -c "import main; print('Backend imports successfully')"
+
+      - name: Run backend API tests
+        run: python -m pytest

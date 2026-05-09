@@ -9,6 +9,9 @@ venv/
 __pycache__/
 *.py[cod]
 
+# Legacy local backend folder kept only on some machines after the FastAPI move.
+vacation-planner/backend-python/
+
 # Node / Next.js
 node_modules/
 .next/

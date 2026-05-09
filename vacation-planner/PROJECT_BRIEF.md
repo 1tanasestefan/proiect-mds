@@ -2,13 +2,12 @@
 
 ## Overview
 
-VibeTrips is an AI travel planning application that helps users generate, save, share, and explore vacation itineraries. The main app is split into a Next.js frontend, a FastAPI AI backend, and a legacy/prototype Spring Boot backend.
+VibeTrips is an AI travel planning application that helps users generate, save, share, and explore vacation itineraries. The main app is split into a Next.js frontend and a FastAPI AI backend.
 
 ## Project Structure
 
 - `frontend/`: Next.js app used by travelers.
-- `backend-python/`: FastAPI backend that handles AI itinerary generation, authentication checks, persistence, and community features.
-- `backend/`: Spring Boot backend prototype/legacy module.
+- `backend/`: FastAPI backend that handles AI itinerary generation, authentication checks, persistence, and community features.
 
 ## Technologies Used
 
@@ -19,7 +18,6 @@ VibeTrips is an AI travel planning application that helps users generate, save, 
 - AI: local Ollama-compatible model, custom experience/logistics/regeneration agents, deterministic fallbacks.
 - Database and auth: Supabase, Supabase Auth, PostgreSQL-style schema, JWT validation.
 - External services: keyless DuckDuckGo image search, OpenStreetMap Nominatim, and OSRM routing.
-- Legacy backend: Java 21, Spring Boot 3, Spring Security, Spring Data JPA, H2/PostgreSQL, Maven.
 
 ## Main Functionality
 
@@ -63,7 +61,7 @@ Supabase stores user profiles, itineraries, itinerary likes, collections, and co
 
 ## Brief Check Notes
 
-- The active local development path appears to be `backend-python/` plus `frontend/`.
+- The active local development path is `backend/` plus `frontend/`.
 - The root README already contains setup and run instructions.
-- The Python backend exposes the main feature API, while the Java backend appears to be a prototype or legacy module.
+- Older local folders such as `backend-python/` are legacy leftovers and should not be used for current development.
 - Environment variables are required for Supabase persistence; local AI uses `LOCAL_LLM_BASE_URL` and `LOCAL_LLM_MODEL`.

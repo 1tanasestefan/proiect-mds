@@ -347,6 +347,16 @@ def test_get_itinerary_returns_404_when_missing(client):
     assert response.json()["detail"] == "Itinerary not found."
 
 
+def test_protected_routes_return_401_without_token(fake_supabase):
+    main.app.dependency_overrides.clear()
+
+    with TestClient(main.app) as test_client:
+        response = test_client.get("/api/itineraries/me")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Missing authentication token."
+
+
 def test_vote_regenerate_records_vote_without_majority(client, fake_supabase):
     fake_supabase.tables["itineraries"].append(sample_itinerary())
 
