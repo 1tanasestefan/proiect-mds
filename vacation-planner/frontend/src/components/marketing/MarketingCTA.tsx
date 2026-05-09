@@ -1,11 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { FadeUp } from "@/components/landing/FadeUp";
 import { Sparkles, CheckCircle2 } from "lucide-react";
 
 interface MarketingCTAProps {
-  onStartPlanning: () => void;
+  onStartPlanning?: () => void;
 }
 
 const TRUST_ITEMS = [
@@ -15,6 +16,8 @@ const TRUST_ITEMS = [
 ];
 
 export function MarketingCTA({ onStartPlanning }: MarketingCTAProps) {
+  const router = useRouter();
+  const handleStartPlanning = onStartPlanning ?? (() => router.push("/plan"));
   return (
     <section
       id="pricing"
@@ -66,7 +69,7 @@ export function MarketingCTA({ onStartPlanning }: MarketingCTAProps) {
 
         <FadeUp delay={0.34}>
           <motion.button
-            onClick={onStartPlanning}
+            onClick={handleStartPlanning}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             transition={{ type: "spring", stiffness: 400, damping: 25 }}

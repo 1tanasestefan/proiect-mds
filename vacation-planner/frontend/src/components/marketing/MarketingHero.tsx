@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import {
   Sparkles,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react";
 
 interface MarketingHeroProps {
-  onStartPlanning: () => void;
+  onStartPlanning?: () => void;
 }
 
 const ITINERARY = [
@@ -30,6 +31,8 @@ const AVATARS = [
 ];
 
 export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
+  const router = useRouter();
+  const handleStartPlanning = onStartPlanning ?? (() => router.push("/plan"));
   return (
     <section
       id="hero"
@@ -121,7 +124,7 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
               } as React.CSSProperties}
             >
               <motion.button
-                onClick={onStartPlanning}
+                onClick={handleStartPlanning}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.22, ease: "easeOut" }}

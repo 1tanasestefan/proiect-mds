@@ -179,9 +179,11 @@ const container = {
   }
 };
 
-const item = {
+import type { Variants } from "framer-motion";
+
+const item: Variants = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: "easeOut" } }
+  show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: "easeOut" as const } }
 };
 
 interface SavedItinerary {
