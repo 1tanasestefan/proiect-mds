@@ -5,7 +5,6 @@ import { InputFormSection } from '@/components/figma/input-form-section';
 import { AIProcessing } from '@/components/figma/ai-processing';
 import { ItineraryOutput, FinalTripPlan } from '@/components/figma/itinerary-output';
 import { useAuth } from '@/context/AuthContext';
-import { apiUrl } from '@/lib/backend';
 
 type ViewState = 'INPUT' | 'PROCESSING' | 'RESULTS';
 type TripFormData = {
@@ -30,8 +29,9 @@ export default function PlanTripPage() {
   const [itineraryData, setItineraryData] = useState<FinalTripPlan | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const ITINERARY_API_URL = apiUrl("/api/generate-itinerary");
-  const LOCAL_AGENT_TIMEOUT_MS = 15 * 60 * 1000;
+  const ITINERARY_API_URL =
+    process.env.NEXT_PUBLIC_ITINERARY_API_URL ||
+    "http://127.0.0.1:8000/api/generate-itinerary";
 
   const handleGenerateItinerary = async (data: TripFormData) => {
     setFormData(data);
@@ -40,11 +40,7 @@ export default function PlanTripPage() {
     setViewState('PROCESSING');
 
     const controller = new AbortController();
-<<<<<<< HEAD
-    const timeoutId = setTimeout(() => controller.abort(), LOCAL_AGENT_TIMEOUT_MS);
-=======
     const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
->>>>>>> DEV-17-Change-frontend-color-theme
 
     try {
       const payload = {
@@ -72,6 +68,8 @@ export default function PlanTripPage() {
         body: JSON.stringify(payload),
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         let errorMsg = `Backend error: ${response.status}`;
@@ -95,17 +93,8 @@ export default function PlanTripPage() {
       setViewState('RESULTS');
     } catch (err: unknown) {
       console.error("Failed to generate itinerary:", err);
-      const isAbortError = err instanceof DOMException && err.name === "AbortError";
-      setError(
-        isAbortError
-          ? "Local itinerary generation timed out. Please try a shorter trip or check that Ollama is still running."
-          : err instanceof Error
-            ? err.message
-            : "Something went wrong while crafting your journey. Please try again."
-      );
+      setError(err instanceof Error ? err.message : "Something went wrong while crafting your journey. Please try again.");
       setViewState('INPUT');
-    } finally {
-      clearTimeout(timeoutId);
     }
   };
 
