@@ -42,8 +42,11 @@ experience_agent = Agent(
         "4. Each activity: { 'title', 'description', 'time', 'cost', 'location', 'image_url': '', 'type': 'experience' }. "
         "   Allowed types: 'experience', 'dining', 'tour', 'cruise', 'cookingclass', 'festival', 'adventure', 'culture', 'relaxation', 'shopping', 'nightlife', 'transport', 'arrival', 'departure', 'flight', 'hotel', 'sightseeing', 'museum', 'landmark', 'park', 'beach'. "
         "   If unsure, use 'experience'. "
-        "5. You have NO tools available. Do NOT output function calls, XML tags, or <function=...> syntax. "
-        "6. Use your own extensive knowledge of the destination. Begin your response with '{' immediately."
+        "5. UNIQUENESS IS MANDATORY: Every activity title across ALL days must be completely unique. "
+        "   NEVER repeat the same activity, place, restaurant, or attraction on different days. "
+        "   Before writing each new activity, mentally verify it has not appeared on any previous day. "
+        "6. You have NO tools available. Do NOT output function calls, XML tags, or <function=...> syntax. "
+        "7. Use your own extensive knowledge of the destination. Begin your response with '{' immediately."
     ),
 )
 
@@ -133,7 +136,10 @@ async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput
                 f"Origin: {user_input.origin}. "
                 f"Lifestyle: {user_input.lifestyle}, Budget tier: {user_input.budget}, "
                 f"Price range per person: {user_input.price_range_per_person or 'not specified'}, "
-                f"Vibe: {user_input.vacationType}.",
+                f"Vibe: {user_input.vacationType}. "
+                f"IMPORTANT: Each of the {user_input.trip_days} days MUST have completely different activities. "
+                f"Do NOT repeat any activity, venue, restaurant, or attraction across different days. "
+                f"Every day must explore a different area or theme within {user_input.destination}.",
                 deps=user_input
             ),
             timeout=180 # Increased timeout for tool-calling loops
@@ -177,6 +183,21 @@ async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput
                     data = inner
 
             parsed = AgentOneOutput(**data)
+
+        # --- DEDUPLICATION: remove activities whose title already appeared on a previous day ---
+        seen_titles: set[str] = set()
+        deduped_days = []
+        for day in parsed.itinerary:
+            unique_acts = []
+            for act in day.activities:
+                key = act.title.strip().lower()
+                if key not in seen_titles:
+                    seen_titles.add(key)
+                    unique_acts.append(act)
+                else:
+                    logger.warning(f"[dedup] Removed duplicate activity '{act.title}' on day {day.day_number}")
+            deduped_days.append(day.model_copy(update={"activities": unique_acts}))
+        parsed = parsed.model_copy(update={"itinerary": deduped_days})
 
         # --- IMAGE ENRICHMENT (DDGS ONLY) ---
         logger.info("Starting image enrichment (DDGS only)...")
