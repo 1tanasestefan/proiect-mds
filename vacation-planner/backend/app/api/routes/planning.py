@@ -1,9 +1,9 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from app.core.security import get_optional_user
-from app.services.planning import generate_trip_plan
+from app.services.planning import generate_trip_plan, search_locations
 from app.services.recommendations import recommend_destinations
 from models import FinalTripPlan, UserInput
 
@@ -25,3 +25,8 @@ async def generate_itinerary(
     user_id: Optional[str] = Depends(get_optional_user),
 ):
     return await generate_trip_plan(user_input, user_id)
+
+
+@router.get("/location-search")
+async def location_search(q: str = Query(..., min_length=2, max_length=80)):
+    return {"results": await search_locations(q)}

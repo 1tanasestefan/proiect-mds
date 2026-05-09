@@ -1,6 +1,7 @@
 import asyncio
 from typing import Optional
 
+import httpx
 from fastapi import HTTPException
 from loguru import logger
 
@@ -8,6 +9,61 @@ from agent_experience import generate_experience_itinerary
 from agent_logistics import generate_logistics
 from app.services.recommendations import recommend_dates_for, recommend_destination
 from models import FinalTripPlan, UserInput
+
+
+async def search_locations(term: str) -> list[dict]:
+    query = term.strip()
+    if len(query) < 2:
+        return []
+
+    params = {
+        "format": "jsonv2",
+        "q": query,
+        "addressdetails": 1,
+        "namedetails": 1,
+        "limit": 8,
+    }
+    headers = {
+        "User-Agent": "VibeTripsPlanner/1.0 (contact@vibetrips.test)",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get("https://nominatim.openstreetmap.org/search", params=params, headers=headers)
+            response.raise_for_status()
+            rows = response.json()
+    except Exception as exc:
+        logger.warning(f"[LocationSearch] Nominatim lookup failed for '{query}': {exc}")
+        return []
+
+    seen: set[str] = set()
+    results: list[dict] = []
+    for row in rows:
+        address = row.get("address") or {}
+        city = (
+            address.get("city")
+            or address.get("town")
+            or address.get("village")
+            or address.get("municipality")
+            or address.get("county")
+            or ""
+        )
+        country = address.get("country") or ""
+        display_name = f"{city}, {country}".strip(", ") if city and country else row.get("display_name", "")
+        if not display_name:
+            continue
+        key = display_name.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        results.append({
+            "place_id": row.get("place_id"),
+            "display_name": display_name,
+        })
+        if len(results) >= 5:
+            break
+    return results
 
 
 async def generate_trip_plan(user_input: UserInput, user_id: Optional[str]) -> FinalTripPlan:

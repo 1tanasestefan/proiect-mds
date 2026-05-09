@@ -36,7 +36,7 @@ interface FormData {
 }
 
 interface NominatimResult {
-  place_id: number;
+  place_id: number | string;
   display_name: string;
 }
 
@@ -95,29 +95,17 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
     setLoading: (b: boolean) => void,
     setHighlight: (n: number) => void,
   ) => {
-    if (term && term !== selected) {
+    if (term.trim().length >= 2 && term !== selected) {
       setLoading(true);
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&featuretype=city,settlement&limit=5`;
-        const response = await fetch(url, {
-          headers: {
-            'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'VacationPlannerApp/1.0'
-          }
-        });
-        if (!response.ok) throw new Error('Geocoding failed');
-        const data = await response.json() as NominatimResult[];
-        const parsed = data.map((item) => {
-          const parts = item.display_name.split(',').map((p: string) => p.trim());
-          const formatted = parts.length >= 3 
-            ? `${parts[0]}, ${parts[parts.length - 1]}`
-            : item.display_name;
-          return { place_id: item.place_id, display_name: formatted };
-        });
-        setSuggestions(parsed);
+        const response = await fetch(apiUrl(`/api/location-search?q=${encodeURIComponent(term)}`));
+        if (!response.ok) throw new Error("Location search failed");
+        const data = (await response.json()) as { results?: NominatimResult[] };
+        setSuggestions(data.results || []);
         setHighlight(-1);
       } catch (error) {
         console.error("Geocoding error", error);
+        setSuggestions([]);
       } finally {
         setLoading(false);
       }
@@ -361,7 +349,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   handleInputChange(config.field, selected.display_name);
                   config.setSuggestions([]);
                   config.setHighlightedIndex(-1);
-                } else if (formData[config.field].trim() && config.selectedLocation) {
+                } else if (formData[config.field].trim()) {
+                  config.setSelectedLocation(formData[config.field].trim());
                   setCurrentStep(config.nextStep);
                 }
               }
@@ -420,8 +409,11 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            disabled={!formData[config.field].trim() || !config.selectedLocation}
-            onClick={() => setCurrentStep(config.nextStep)}
+            disabled={!formData[config.field].trim()}
+            onClick={() => {
+              if (!config.selectedLocation) config.setSelectedLocation(formData[config.field].trim());
+              setCurrentStep(config.nextStep);
+            }}
             className="px-8 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-medium flex items-center gap-2 hover:bg-[#00F0FF]/20 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue
