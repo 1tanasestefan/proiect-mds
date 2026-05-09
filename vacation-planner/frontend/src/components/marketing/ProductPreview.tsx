@@ -60,12 +60,17 @@ function BentoCard({
 }) {
   return (
     <div
-      className={`rounded-[22px] bg-[#FFFBF3] border border-[rgba(255,107,90,0.12)] p-6 hover:border-[rgba(255,107,90,0.28)] transition-colors duration-300 ${className}`}
+      className={`rounded-[22px] bg-[#FFFBF3] border-2 border-[rgba(255,107,90,0.18)] p-6 shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.13)] hover:-translate-y-0.5 hover:border-[rgba(255,107,90,0.38)] transition-all duration-300 ${className}`}
     >
-      <div className="flex items-center gap-2">
-        <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
+      <div className="flex items-center gap-2.5 mb-1">
+        <div
+          className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: iconColor + "22" }}
+        >
+          <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
+        </div>
         <span
-          className="text-[#64748B] text-xs font-medium"
+          className="text-[#10223A]/70 text-xs font-semibold uppercase tracking-wide"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
           {label}

@@ -368,14 +368,14 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               }
             }}
             placeholder={config.placeholder}
-            className={`w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[20px] pl-16 pr-14 py-6 text-gray-900 dark:text-white text-xl placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[${config.focusColor}]/50 focus:shadow-[0_0_30px_rgba(0,240,255,0.2)] transition-all`}
+            className={`w-full bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] rounded-[20px] pl-16 pr-14 py-6 text-[#10223A] text-xl placeholder:text-[#64748B]/40 focus:outline-none focus:border-[#FF6B5A]/60 focus:shadow-[0_0_24px_rgba(255,107,90,0.15)] transition-all`}
             style={{ fontFamily: "'Inter', sans-serif" }}
             autoFocus
           />
 
           {config.isLoading && (
             <div className="absolute right-6 top-1/2 -translate-y-1/2">
-              <div className="h-6 w-6 rounded-full border-2 border-[#00F0FF]/20 border-t-[#00F0FF] animate-spin" />
+              <div className="h-6 w-6 rounded-full border-2 border-[#FF6B5A]/20 border-t-[#FF6B5A] animate-spin" />
             </div>
           )}
 
@@ -385,7 +385,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 right-0 mt-4 z-50 backdrop-blur-xl bg-white/80 dark:bg-[#1a1a2e]/80 border border-gray-200 dark:border-white/20 rounded-[20px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+                className="absolute top-full left-0 right-0 mt-4 z-50 bg-[#FFFBF3] border-2 border-[rgba(255,107,90,0.18)] rounded-[20px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.10)]"
               >
                 <ul className="py-2 max-h-[300px] overflow-y-auto custom-scrollbar">
                   {config.suggestions.map((suggestion, index) => (
@@ -399,8 +399,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                         config.setSuggestions([]);
                         config.setHighlightedIndex(-1);
                       }}
-                      className={`px-6 py-4 text-gray-800 dark:text-white/90 text-lg cursor-pointer transition-colors border-b border-gray-100 dark:border-white/5 last:border-0 ${
-                        index === config.highlightedIndex ? 'bg-[#00F0FF]/10 dark:bg-[#00F0FF]/20' : ''
+                      className={`px-6 py-4 text-[#10223A] text-lg cursor-pointer transition-colors border-b border-[rgba(255,107,90,0.08)] last:border-0 ${
+                        index === config.highlightedIndex ? 'bg-[rgba(255,107,90,0.08)]' : 'hover:bg-[rgba(255,107,90,0.05)]'
                       }`}
                       style={{ fontFamily: "'Inter', sans-serif" }}
                     >
@@ -437,8 +437,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
   return (
     <section className="min-h-screen pt-[120px] pb-24 px-8 relative overflow-hidden">
       {/* Background ambient lights */}
-      <div className="absolute top-1/4 left-10 h-96 w-96 rounded-full bg-[#00F0FF]/5 dark:bg-[#00F0FF]/10 blur-[150px]" />
-      <div className="absolute bottom-1/4 right-10 h-96 w-96 rounded-full bg-[#8A2BE2]/5 dark:bg-[#8A2BE2]/10 blur-[150px]" />
+      <div className="absolute top-1/4 left-10 h-96 w-96 rounded-full bg-[#FF6B5A]/8 blur-[150px]" />
+      <div className="absolute bottom-1/4 right-10 h-96 w-96 rounded-full bg-[#FF9F43]/8 blur-[150px]" />
 
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -449,12 +449,12 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           className="text-center mb-20"
         >
           <h2 
-            className="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-gray-900 dark:from-white to-gray-500 dark:to-white/60 bg-clip-text text-transparent"
+            className="text-6xl md:text-7xl font-black mb-6 text-[#10223A]"
             style={{ fontFamily: "'Archivo Black', sans-serif" }}
           >
             CRAFT YOUR JOURNEY
           </h2>
-          <p className="text-xl text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+          <p className="text-xl text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
             Answer a few questions and let our AI agents create your perfect itinerary
           </p>
         </motion.div>
@@ -469,8 +469,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
               transition={{ delay: index * 0.1 }}
               className={`h-2 rounded-full transition-all duration-500 ${
                 index <= activeStepIndex 
-                  ? "w-12 bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2]" 
-                  : "w-6 bg-white/10"
+                  ? "w-12 bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43]" 
+                  : "w-6 bg-[rgba(255,107,90,0.15)]"
               }`}
             />
           ))}
@@ -479,7 +479,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
         {/* Form Container - Glassmorphism */}
         <motion.div
           layout
-          className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[32px] p-12 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+          className="bg-[#FFFBF3] border-2 border-[rgba(255,107,90,0.18)] rounded-[32px] p-12 shadow-[0_8px_40px_rgba(0,0,0,0.09)]"
         >
           <motion.div
             key={currentStep}
@@ -489,13 +489,13 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
             transition={{ duration: 0.5 }}
           >
             <h3 
-              className="text-3xl font-bold text-gray-900 dark:text-white mb-8"
+              className="text-3xl font-bold text-[#10223A] mb-8"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               {steps[currentStep].title}
             </h3>
             {currentStep === 0 && (
-              <p className="mb-8 max-w-2xl text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <p className="mb-8 max-w-2xl text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
                 Choose your own city, or let VibeTrips recommend cities and dates from your travel needs, budget, and past likes.
               </p>
             )}
@@ -512,10 +512,10 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#00F0FF] to-[#8A2BE2] flex items-center justify-center mb-6 shadow-lg">
                     <MapPin className="h-8 w-8 text-white" />
                   </div>
-                  <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     I am flexible
                   </h4>
-                  <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
                     Tell us your budget, needs, origin, group size, and date flexibility. We will recommend cities and travel dates before generating a plan.
                   </p>
                 </motion.button>
@@ -524,15 +524,15 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   whileHover={{ scale: 1.03, y: -4 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleModeSelect(false)}
-                  className="text-left p-8 rounded-[24px] bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-[#8A2BE2]/50 transition-all"
+                  className="text-left p-8 rounded-[24px] bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] hover:border-[#FF9F43]/60 hover:shadow-[0_8px_32px_rgba(255,159,67,0.15)] hover:-translate-y-1 transition-all"
                 >
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mb-6 shadow-lg">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#FF9F43] to-[#FFD166] flex items-center justify-center mb-6 shadow-[0_6px_20px_rgba(255,159,67,0.4)]">
                     <Plane className="h-8 w-8 text-white" />
                   </div>
-                  <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     I know the destination
                   </h4>
-                  <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                  <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
                     Pick a city yourself, with either a price range or unlimited budget.
                   </p>
                 </motion.button>
@@ -549,19 +549,19 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                       whileHover={{ scale: 1.03, y: -4 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleSelect("budget", option.id)}
-                      className={`group relative p-8 rounded-[24px] border transition-all duration-300 ${
+                      className={`group relative p-8 rounded-[24px] border-2 transition-all duration-300 ${
                         formData.budget === option.id
-                          ? "bg-black/10 dark:bg-white/10 border-gray-400 dark:border-white/30 shadow-[0_0_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                          : "bg-black/5 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
+                          ? "bg-[#FFF6E8] border-[#FF6B5A] shadow-[0_8px_32px_rgba(255,107,90,0.18)]"
+                          : "bg-[#FFF6E8] border-[rgba(255,107,90,0.20)] hover:border-[rgba(255,107,90,0.45)] hover:-translate-y-1"
                       }`}
                     >
                       <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center mb-6 shadow-lg`}>
                         <option.icon className="h-8 w-8 text-white" />
                       </div>
-                      <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                      <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                         {option.label}
                       </h4>
-                      <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
                         {option.desc}
                       </p>
                     </motion.button>
@@ -578,12 +578,12 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     >
                       <div className="max-w-2xl ml-auto">
                         {formData.budget === "unlimited" ? (
-                          <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                          <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
                             Unlimited budget will prioritize the best season, hotels, flights, restaurants, and experiences instead of optimizing for price.
                           </p>
                         ) : (
                           <>
-                            <p className="text-sm font-medium text-gray-500 dark:text-white/50 mb-3 uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            <p className="text-sm font-medium text-[#64748B] mb-3 uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
                               Price range per person
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -593,7 +593,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                                 value={formData.priceMin}
                                 onChange={(e) => handleInputChange("priceMin", e.target.value)}
                                 placeholder="Min budget, e.g. 300"
-                                className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] px-5 py-4 text-gray-900 dark:text-white text-lg placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#00F0FF]/50 transition-all"
+                                className="w-full bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] rounded-[16px] px-5 py-4 text-[#10223A] text-lg placeholder:text-[#64748B]/40 focus:outline-none focus:border-[#FF6B5A]/60 transition-all"
                               />
                               <input
                                 type="number"
@@ -601,7 +601,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                                 value={formData.priceMax}
                                 onChange={(e) => handleInputChange("priceMax", e.target.value)}
                                 placeholder="Max budget, e.g. 700"
-                                className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] px-5 py-4 text-gray-900 dark:text-white text-lg placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#8A2BE2]/50 transition-all"
+                                className="w-full bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] rounded-[16px] px-5 py-4 text-[#10223A] text-lg placeholder:text-[#64748B]/40 focus:outline-none focus:border-[#FF9F43]/60 transition-all"
                               />
                             </div>
                             {!priceRangeValid && (formData.priceMin || formData.priceMax) && (
@@ -615,7 +615,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                         <button
                           onClick={() => setCurrentStep(2)}
                           disabled={!priceRangeValid}
-                          className="px-6 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-semibold flex items-center justify-center gap-2 hover:bg-[#00F0FF]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-6 py-4 rounded-full bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white font-semibold flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(255,107,90,0.35)] hover:shadow-[0_6px_28px_rgba(255,107,90,0.50)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Continue
                           <ArrowRight className="h-5 w-5" />
@@ -636,19 +636,20 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     whileHover={{ scale: 1.03, y: -4 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSelect("lifestyle", option.id)}
-                    className={`group relative p-8 rounded-[24px] border transition-all duration-300 ${
+                    className={`group relative p-8 rounded-[24px] border-2 transition-all duration-300 ${
                       formData.lifestyle === option.id
-                        ? "bg-black/10 dark:bg-white/10 border-gray-400 dark:border-white/30 shadow-[0_0_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                        : "bg-black/5 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
+                        ? "bg-[#FFF6E8] shadow-[0_8px_32px_rgba(0,0,0,0.10)]"
+                        : "bg-[#FFF6E8] border-[rgba(255,107,90,0.20)] hover:border-[rgba(255,107,90,0.45)] hover:-translate-y-1"
                     }`}
+                    style={{ borderColor: formData.lifestyle === option.id ? '#FF6B5A' : undefined }}
                   >
                     <div className={`h-16 w-16 rounded-2xl bg-gradient-to-br ${option.gradient} flex items-center justify-center mb-6 shadow-lg`}>
                       <option.icon className="h-8 w-8 text-white" />
                     </div>
-                    <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h4 className="text-2xl font-bold text-[#10223A] mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {option.label}
                     </h4>
-                    <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
                       {option.desc}
                     </p>
                   </motion.button>
@@ -741,20 +742,19 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Check-in */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-white/40 mb-3 uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    <label className="block text-sm font-medium text-[#64748B] mb-3 uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
                       Check-in
                     </label>
                     <div className="relative">
-                      <CalendarDays className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#00F0FF] pointer-events-none" />
+                      <CalendarDays className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#FF6B5A] pointer-events-none" />
                       <input
                         type="date"
                         value={formData.startDate}
                         min={today}
                         onChange={(e) => {
                           setFormData({ ...formData, flexibleDates: false, startDate: e.target.value, endDate: formData.endDate && e.target.value >= formData.endDate ? "" : formData.endDate });
-                          // Auto-clear end date if it becomes invalid
                         }}
-                        className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] pl-14 pr-6 py-5 text-gray-900 dark:text-white text-lg focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_20px_rgba(0,240,255,0.15)] transition-all appearance-none [color-scheme:dark]"
+                        className="w-full bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] rounded-[16px] pl-14 pr-6 py-5 text-[#10223A] text-lg focus:outline-none focus:border-[#FF6B5A]/60 transition-all appearance-none"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                         autoFocus
                       />
@@ -763,18 +763,18 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
 
                   {/* Check-out */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-400 dark:text-white/40 mb-3 uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    <label className="block text-sm font-medium text-[#64748B] mb-3 uppercase tracking-wider" style={{ fontFamily: "'Inter', sans-serif" }}>
                       Check-out
                     </label>
                     <div className="relative">
-                      <CalendarDays className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#8A2BE2] pointer-events-none" />
+                      <CalendarDays className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#FF9F43] pointer-events-none" />
                       <input
                         type="date"
                         value={formData.endDate}
                         min={formData.startDate || today}
                         onChange={(e) => setFormData({ ...formData, flexibleDates: false, endDate: e.target.value })}
                         disabled={!formData.startDate}
-                        className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[16px] pl-14 pr-6 py-5 text-gray-900 dark:text-white text-lg focus:outline-none focus:border-[#8A2BE2]/50 focus:shadow-[0_0_20px_rgba(138,43,226,0.15)] transition-all appearance-none [color-scheme:dark] disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="w-full bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] rounded-[16px] pl-14 pr-6 py-5 text-[#10223A] text-lg focus:outline-none focus:border-[#FF9F43]/60 transition-all appearance-none disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                       />
                     </div>
@@ -784,10 +784,10 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, flexibleDates: true, startDate: "", endDate: "" })}
-                  className={`w-full rounded-[18px] border px-5 py-4 text-left transition-all ${
+                  className={`w-full rounded-[18px] border-2 px-5 py-4 text-left transition-all ${
                     formData.flexibleDates
-                      ? "border-[#00F0FF]/50 bg-[#00F0FF]/10 text-[#00F0FF]"
-                      : "border-gray-200 dark:border-white/10 bg-black/5 dark:bg-white/5 text-gray-600 dark:text-white/60 hover:border-[#00F0FF]/30"
+                      ? "border-[#FF6B5A] bg-[rgba(255,107,90,0.08)] text-[#FF6B5A]"
+                      : "border-[rgba(255,107,90,0.20)] bg-[#FFF6E8] text-[#64748B] hover:border-[#FF6B5A]/40"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -808,7 +808,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center"
                   >
-                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#8A2BE2]/10 border border-[#8A2BE2]/20 text-[#8A2BE2] text-sm font-medium">
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(255,107,90,0.10)] border border-[rgba(255,107,90,0.25)] text-[#FF6B5A] text-sm font-medium">
                       <CalendarDays className="h-4 w-4" />
                       Dates will be recommended for your budget
                     </span>
@@ -821,7 +821,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center"
                   >
-                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#00F0FF]/10 border border-[#00F0FF]/20 text-[#00F0FF] text-sm font-medium">
+                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[rgba(255,107,90,0.08)] border border-[rgba(255,107,90,0.20)] text-[#FF6B5A] text-sm font-medium">
                       <CalendarDays className="h-4 w-4" />
                       {tripDays} {tripDays === 1 ? "day" : "days"} trip
                     </span>
@@ -851,7 +851,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     whileTap={{ scale: 0.95 }}
                     disabled={!datesValid}
                     onClick={() => setCurrentStep(7)}
-                    className="px-8 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-medium flex items-center gap-2 hover:bg-[#00F0FF]/20 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-8 py-4 rounded-full bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white font-medium flex items-center gap-2 shadow-[0_4px_20px_rgba(255,107,90,0.35)] hover:shadow-[0_6px_28px_rgba(255,107,90,0.50)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Continue
                     <ArrowRight className="h-5 w-5" />
@@ -864,7 +864,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
             {currentStep === 7 && (
               <div className="max-w-2xl mx-auto space-y-8">
                 <div className="relative">
-                  <Users className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-[#8A2BE2]" />
+                  <Users className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 text-[#FF9F43]" />
                   <input
                     type="number"
                     value={formData.travelers}
@@ -880,7 +880,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     }}
                     placeholder="Number of travelers"
                     min="1"
-                    className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[20px] pl-16 pr-6 py-6 text-gray-900 dark:text-white text-xl placeholder:text-gray-400 dark:placeholder:text-white/40 focus:outline-none focus:border-[#8A2BE2]/50 focus:shadow-[0_0_30px_rgba(138,43,226,0.2)] transition-all"
+                    className="w-full bg-[#FFF6E8] border-2 border-[rgba(255,107,90,0.20)] rounded-[20px] pl-16 pr-6 py-6 text-[#10223A] text-xl placeholder:text-[#64748B]/40 focus:outline-none focus:border-[#FF9F43]/60 transition-all"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                     autoFocus
                   />
@@ -891,7 +891,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                     whileTap={{ scale: 0.98 }}
                     onClick={formData.flexibleDestination ? handleGetRecommendations : handleSubmitForm}
                     disabled={recommendationLoading || (!formData.flexibleDestination && !formData.destination) || !formData.travelers || !formData.origin || !datesValid || !priceRangeValid}
-                    className="w-full py-6 rounded-[20px] bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] text-white text-xl font-bold flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(0,240,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-6 rounded-[20px] bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white text-xl font-bold flex items-center justify-center gap-3 shadow-[0_4px_32px_rgba(255,107,90,0.40)] disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                   >
                   {recommendationLoading ? "Finding Cities..." : formData.flexibleDestination ? "Show City Recommendations" : "Generate My Itinerary"}

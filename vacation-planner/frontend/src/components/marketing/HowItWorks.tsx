@@ -135,28 +135,34 @@ export function HowItWorks() {
 
           {STEPS.map((step, i) => (
             <FadeUp key={i} delay={0.1 * i}>
-              <div className="relative">
+              <div
+                className="relative rounded-[22px] bg-[#FFFBF3] border-2 p-7 shadow-[0_8px_40px_rgba(0,0,0,0.10)] hover:shadow-[0_16px_56px_rgba(0,0,0,0.15)] hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                style={{ borderColor: step.color + "55" }}
+              >
+                {/* Colored top accent bar */}
+                <div
+                  className="absolute top-0 left-0 right-0 h-1 rounded-t-[22px]"
+                  style={{ background: `linear-gradient(90deg, ${step.color}, ${step.color}88)` }}
+                />
+
                 {/* Step number + icon row */}
-                <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center justify-between mb-6">
                   <span
                     className="font-black leading-none select-none"
                     style={{
                       fontFamily: "'Archivo Black', sans-serif",
-                      fontSize: "3.2rem",
-                      WebkitTextStroke: `1.5px ${step.color}45`,
-                      color: "transparent",
+                      fontSize: "4rem",
+                      color: step.color,
+                      opacity: 0.18,
                     }}
                   >
                     {step.number}
                   </span>
                   <div
-                    className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: step.color + "18" }}
+                    className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md"
+                    style={{ backgroundColor: step.color, boxShadow: `0 6px 20px ${step.color}55` }}
                   >
-                    <step.icon
-                      className="h-5 w-5"
-                      style={{ color: step.color }}
-                    />
+                    <step.icon className="h-7 w-7 text-white" />
                   </div>
                 </div>
 

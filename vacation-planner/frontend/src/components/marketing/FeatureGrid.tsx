@@ -50,25 +50,34 @@ function FeatureCard({ icon: Icon, color, title, desc }: Feature) {
     <motion.div
       whileHover={{ y: -6, scale: 1.015 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="group relative rounded-[22px] bg-[#FFFBF3] border border-[rgba(255,107,90,0.12)] p-7 overflow-hidden hover:border-[rgba(255,107,90,0.30)] transition-colors duration-300 cursor-default"
+      className="group relative rounded-[22px] bg-[#FFFBF3] border-2 p-7 overflow-hidden shadow-[0_6px_28px_rgba(0,0,0,0.08)] hover:shadow-[0_14px_44px_rgba(0,0,0,0.13)] transition-all duration-300 cursor-default"
+      style={{ borderColor: color + "40" }}
     >
+      {/* Colored top accent bar */}
+      <div
+        className="absolute top-0 left-0 right-0 h-1 rounded-t-[22px]"
+        style={{ background: `linear-gradient(90deg, ${color}, ${color}66)` }}
+      />
+
       {/* Hover radial glow */}
       <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{
-          background: `radial-gradient(circle at 50% 0%, ${color}0a 0%, transparent 68%)`,
+          background: `radial-gradient(circle at 50% 0%, ${color}12 0%, transparent 68%)`,
         }}
       />
 
       {/* Icon */}
       <div
-        className="h-12 w-12 rounded-xl flex items-center justify-center mb-5"
+        className="h-13 w-13 rounded-xl flex items-center justify-center mb-5 shadow-md"
         style={{
-          backgroundColor: color + "16",
-          boxShadow: `0 0 28px ${color}20`,
+          backgroundColor: color,
+          boxShadow: `0 6px 20px ${color}55`,
+          height: "52px",
+          width: "52px",
         }}
       >
-        <Icon className="h-6 w-6" style={{ color }} />
+        <Icon className="h-6 w-6 text-white" />
       </div>
 
       <h3

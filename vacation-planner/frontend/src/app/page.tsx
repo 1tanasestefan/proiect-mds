@@ -1,5 +1,25 @@
-import { redirect } from "next/navigation";
+import { MarketingHero } from "@/components/marketing/MarketingHero";
+import { FeatureGrid } from "@/components/marketing/FeatureGrid";
+import { HowItWorks } from "@/components/marketing/HowItWorks";
+import { ProductPreview } from "@/components/marketing/ProductPreview";
+import { DestinationGrid } from "@/components/marketing/DestinationGrid";
+import { CollaborationSection } from "@/components/marketing/CollaborationSection";
+import { SocialProof } from "@/components/marketing/SocialProof";
+import { MarketingCTA } from "@/components/marketing/MarketingCTA";
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 
 export default function Home() {
-  redirect("/plan");
+  return (
+    <main>
+      <MarketingHero />
+      <FeatureGrid />
+      <HowItWorks />
+      <ProductPreview />
+      <DestinationGrid />
+      <CollaborationSection />
+      <SocialProof />
+      <MarketingCTA />
+      <MarketingFooter />
+    </main>
+  );
 }

@@ -43,7 +43,7 @@ const SOCIALS = [
 
 export function MarketingFooter() {
   return (
-    <footer className="relative bg-[#10223A] border-t border-[rgba(255,107,90,0.12)] px-6 md:px-12 pt-16 pb-10 overflow-hidden">
+    <footer className="relative bg-[#FFFBF3] border-t border-[rgba(255,107,90,0.15)] px-6 md:px-12 pt-16 pb-10 overflow-hidden">
       {/* Ambient */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[300px] w-[800px] rounded-full bg-[#FF9F43]/6 blur-[210px] pointer-events-none" />
 
@@ -55,14 +55,14 @@ export function MarketingFooter() {
             <div className="flex items-center gap-2 mb-5">
               <Sparkles className="h-5 w-5 text-[#FF6B5A]" />
               <span
-                className="text-[1.25rem] font-bold text-white"
+                className="text-[1.25rem] font-bold text-[#10223A]"
                 style={{ fontFamily: "'Archivo Black', sans-serif" }}
               >
                 VibeTrips
               </span>
             </div>
             <p
-              className="text-white/28 text-sm leading-relaxed mb-7 max-w-[210px]"
+              className="text-[#64748B] text-sm leading-relaxed mb-7 max-w-[210px]"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               AI-powered travel planning for modern explorers.
@@ -75,7 +75,7 @@ export function MarketingFooter() {
                   aria-label={s.label}
                   whileHover={{ scale: 1.15 }}
                   whileTap={{ scale: 0.9 }}
-                  className="h-9 w-9 rounded-xl bg-white/[0.04] border border-white/8 flex items-center justify-center text-white/38 hover:text-white/65 hover:border-white/15 transition-colors duration-200"
+                  className="h-9 w-9 rounded-xl bg-[rgba(255,107,90,0.08)] border border-[rgba(255,107,90,0.18)] flex items-center justify-center text-[#64748B] hover:text-[#FF6B5A] hover:border-[rgba(255,107,90,0.40)] transition-colors duration-200"
                 >
                   <s.icon className="h-4 w-4" />
                 </motion.a>
@@ -87,7 +87,7 @@ export function MarketingFooter() {
           {NAV_COLS.map((col, ci) => (
             <div key={ci}>
               <p
-                className="text-white/55 text-[0.65rem] font-semibold uppercase tracking-widest mb-5"
+                className="text-[#10223A] text-[0.65rem] font-semibold uppercase tracking-widest mb-5"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 {col.title}
@@ -97,7 +97,7 @@ export function MarketingFooter() {
                   <li key={li}>
                     <Link
                       href={link.href}
-                      className="text-white/32 text-sm hover:text-white/62 transition-colors duration-200"
+                      className="text-[#64748B] text-sm hover:text-[#FF6B5A] transition-colors duration-200"
                       style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                       {link.label}
@@ -110,15 +110,15 @@ export function MarketingFooter() {
         </div>
 
         {/* Bottom row */}
-        <div className="pt-8 border-t border-white/[0.05] flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="pt-8 border-t border-[rgba(255,107,90,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
           <p
-            className="text-white/18 text-sm"
+              className="text-[#64748B] text-sm"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
             © {new Date().getFullYear()} VibeTrips. All rights reserved.
           </p>
           <p
-            className="text-white/14 text-sm"
+              className="text-[#64748B]/70 text-sm"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
             Made with ♥ for travelers everywhere

@@ -5,7 +5,6 @@ import { useAuth } from '@/context/AuthContext';
 import { Sparkles, User as UserIcon, Map, LayoutDashboard, LogIn, LogOut } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { motion } from 'motion/react';
-import { ThemeToggle } from '@/components/ThemeToggle';
 
 const MARKETING_LINKS = [
   { label: 'Features',     href: '#features' },
@@ -84,7 +83,6 @@ export default function Navbar() {
 
             {/* Right: Auth CTAs */}
             <div className="flex items-center gap-3">
-              <ThemeToggle />
               <Link
                 href="/login"
                 className="hidden sm:flex items-center px-5 py-2 rounded-full text-sm font-medium text-[#10223A]/60 hover:text-[#FF6B5A] border border-[rgba(255,107,90,0.22)] hover:border-[#FF6B5A]/50 hover:bg-[#FF6B5A]/6 transition-all duration-200"
@@ -209,12 +207,6 @@ export default function Navbar() {
                 </Link>
               );
             })}
-
-            {/* Divider */}
-            <div className="w-px h-5 bg-[#FF6B5A]/20 mx-1" />
-
-            {/* Theme Toggle */}
-            <ThemeToggle />
 
             {/* User profile + Logout */}
             {isAuthenticated && (

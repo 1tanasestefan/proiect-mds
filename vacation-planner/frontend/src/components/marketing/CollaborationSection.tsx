@@ -109,18 +109,18 @@ export function CollaborationSection() {
 
           {/* ── Right: Collaboration UI mockup ── */}
           <FadeUp delay={0.15}>
-            <div className="rounded-[24px] bg-[#08080f] border border-white/8 overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.65)]">
+            <div className="rounded-[24px] bg-[#FFFBF3] border border-[rgba(255,107,90,0.18)] overflow-hidden shadow-[0_32px_80px_rgba(16,34,58,0.10)]">
               {/* Header */}
-              <div className="px-6 py-5 border-b border-white/[0.06] flex items-center justify-between">
+              <div className="px-6 py-5 border-b border-[rgba(255,107,90,0.10)] flex items-center justify-between">
                 <div>
                   <p
-                    className="text-white font-semibold text-sm"
+                    className="text-[#10223A] font-semibold text-sm"
                     style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                   >
                     Paris Trip · Spring 2025
                   </p>
                   <p
-                    className="text-white/28 text-xs mt-0.5"
+                    className="text-[#64748B] text-xs mt-0.5"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     3 collaborators · shared edit access
@@ -137,7 +137,7 @@ export function CollaborationSection() {
                       className="h-8 w-8 rounded-full border-2 flex items-center justify-center text-[10px] font-bold"
                       style={{
                         backgroundColor: c + "25",
-                        borderColor: "#08080f",
+                        borderColor: "#FFFBF3",
                         color: c,
                       }}
                     >
@@ -166,18 +166,18 @@ export function CollaborationSection() {
                     >
                       {act.char}
                     </div>
-                    <div className="flex-1 bg-white/[0.03] rounded-xl px-4 py-3 border border-white/[0.06]">
+                    <div className="flex-1 bg-[rgba(255,107,90,0.05)] rounded-xl px-4 py-3 border border-[rgba(255,107,90,0.10)]">
                       <p
-                        className="text-white/72 text-sm"
+                        className="text-[#64748B] text-sm"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                       >
-                        <span className="font-semibold text-white/88">
+                        <span className="font-semibold text-[#10223A]">
                           {act.name}
                         </span>{" "}
                         {act.action}
                       </p>
                       <p
-                        className="text-white/22 text-xs mt-1"
+                        className="text-[#64748B]/50 text-xs mt-1"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                       >
                         {act.time}
@@ -189,10 +189,10 @@ export function CollaborationSection() {
 
               {/* Comment input */}
               <div className="px-6 pb-6">
-                <div className="flex items-center gap-3 bg-white/[0.03] rounded-xl px-4 py-3 border border-white/8">
-                  <MessageCircle className="h-4 w-4 text-white/18 flex-shrink-0" />
+                <div className="flex items-center gap-3 bg-[rgba(255,107,90,0.05)] rounded-xl px-4 py-3 border border-[rgba(255,107,90,0.14)]">
+                  <MessageCircle className="h-4 w-4 text-[#64748B]/40 flex-shrink-0" />
                   <span
-                    className="text-white/22 text-sm flex-1"
+                    className="text-[#64748B]/50 text-sm flex-1"
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
                     Add a comment...

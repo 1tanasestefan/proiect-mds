@@ -10,42 +10,42 @@ const DESTINATIONS = [
     label: "Beach Escapes",
     sub: "Sun, sand & turquoise water",
     image:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=800&auto=format&fit=crop&q=80",
     color: "#FF6B5A",
   },
   {
     label: "City Breaks",
     sub: "Urban culture & vibrant nightlife",
     image:
-      "https://images.unsplash.com/photo-1514565131-fce0801e6b2e?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800&auto=format&fit=crop&q=80",
     color: "#FF9F43",
   },
   {
     label: "Mountain Retreats",
     sub: "Fresh air & breathtaking vistas",
     image:
-      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&auto=format&fit=crop&q=80",
     color: "#FF6B5A",
   },
   {
     label: "Romantic Getaways",
     sub: "Unforgettable moments for two",
     image:
-      "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=800&auto=format&fit=crop&q=80",
     color: "#EF4444",
   },
   {
     label: "Family Adventures",
     sub: "Memories that last a lifetime",
     image:
-      "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1682687982501-1e58ab814714?w=800&auto=format&fit=crop&q=80",
     color: "#F59E0B",
   },
   {
     label: "Food & Culture",
     sub: "Eat, explore, and discover",
     image:
-      "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80",
     color: "#10B981",
   },
 ];
