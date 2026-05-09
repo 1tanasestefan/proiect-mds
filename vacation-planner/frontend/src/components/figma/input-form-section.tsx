@@ -97,13 +97,8 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
     if (term && term !== selected) {
       setLoading(true);
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&featuretype=city,settlement&limit=5`;
-        const response = await fetch(url, {
-          headers: {
-            'Accept-Language': 'en-US,en;q=0.9',
-            'User-Agent': 'VacationPlannerApp/1.0'
-          }
-        });
+        const url = `http://localhost:8000/api/geocoding/search?q=${encodeURIComponent(term)}`;
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Geocoding failed');
         const data = await response.json() as NominatimResult[];
         const parsed = data.map((item) => {
@@ -421,8 +416,15 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
-            disabled={!formData[config.field].trim() || !config.selectedLocation}
-            onClick={() => setCurrentStep(config.nextStep)}
+            disabled={!config.inputValue.trim()}
+            onClick={() => {
+              // If user typed but didn't pick from dropdown, use the typed value
+              if (!config.selectedLocation && config.inputValue.trim()) {
+                config.setSelectedLocation(config.inputValue.trim());
+                handleInputChange(config.field, config.inputValue.trim());
+              }
+              setCurrentStep(config.nextStep);
+            }}
             className="px-8 py-4 rounded-full bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white font-medium flex items-center gap-2 shadow-[0_4px_18px_rgba(255,107,90,0.30)] hover:shadow-[0_6px_24px_rgba(255,107,90,0.45)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continue
