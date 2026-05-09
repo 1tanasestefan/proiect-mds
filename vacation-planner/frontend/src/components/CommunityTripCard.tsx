@@ -8,10 +8,19 @@ import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import { apiUrl } from "@/lib/backend";
 
+interface CommunityActivity {
+  image_url?: string;
+  title?: string;
+}
+
+interface CommunityDay {
+  activities?: CommunityActivity[];
+}
+
 interface CommunityAiData {
   experience?: {
     vibe_summary?: string;
-    itinerary?: unknown[];
+    itinerary?: CommunityDay[];
   };
 }
 
@@ -100,6 +109,16 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
 
   const durationDays = itinerary.ai_data?.experience?.itinerary?.length || 0;
 
+  // Skip transport activities by type or by title keywords
+  const SKIP_TYPES = new Set(["flight", "hotel", "departure", "arrival", "transfer"]);
+  const SKIP_TITLE_KEYWORDS = /\b(flight|transfer|airport|check-in|check in|departure|arrival)\b/i;
+  const allActivities = itinerary.ai_data?.experience?.itinerary?.flatMap((day) => day.activities ?? []) ?? [];
+  const coverImage =
+    allActivities.find((act) => act.image_url && (!act.type || !SKIP_TYPES.has(act.type)) && !SKIP_TITLE_KEYWORDS.test(act.title ?? ""))
+      ?.image_url ??
+    allActivities.find((act) => act.image_url)?.image_url ??
+    `https://images.unsplash.com/photo-1488085061387-422e29b40080?q=80&w=800&auto=format&fit=crop`;
+
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -108,10 +127,11 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
       {/* Cover Image Section */}
       <div className="relative h-56 w-full overflow-hidden">
         <Image
-          src={`https://images.unsplash.com/photo-1544013501-5717a0ce4b9a?q=80&w=800&auto=format&fit=crop`} // Placeholder logic
+          src={coverImage}
           alt={itinerary.destination}
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-110"
+          unoptimized={coverImage.includes('pexels.com')}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         

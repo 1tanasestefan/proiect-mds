@@ -20,7 +20,7 @@ interface CommunityItinerary {
   ai_data: {
     experience?: {
       vibe_summary?: string;
-      itinerary?: unknown[];
+      itinerary?: { activities?: { image_url?: string; title?: string }[] }[];
     };
   };
   is_liked_by_me?: boolean;
