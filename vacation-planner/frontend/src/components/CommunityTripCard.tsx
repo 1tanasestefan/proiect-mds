@@ -11,6 +11,7 @@ import { apiUrl } from "@/lib/backend";
 interface CommunityActivity {
   image_url?: string;
   title?: string;
+  type?: string;
 }
 
 interface CommunityDay {
