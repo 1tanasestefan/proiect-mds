@@ -1,6 +1,7 @@
 import httpx
 from loguru import logger
 from models import Coordinate, TransportLeg, ConsolidatedLogistics
+from typing import Optional
 import json
 
 async def geocode_nominatim(query: str) -> Coordinate:
@@ -48,7 +49,7 @@ async def get_multimodal_options(
     origin_name: str,
     destination_name: str,
     flight_price_est: float,
-    hotel_name: str | None = None,
+    hotel_name: Optional[str] = None,
 ) -> dict:
     """
     Build budget / balanced / premium transit options from the airport to the hotel.
@@ -87,7 +88,7 @@ async def get_multimodal_options(
             raise
 
     # ── 3. Geocode the HOTEL (or city centre as fallback) ────────────────────
-    dest_coord: Coordinate | None = None
+    dest_coord: Optional[Coordinate] = None
     if hotel_name:
         # Try "<hotel name>, <city>" for maximum precision
         hotel_query = f"{hotel_name}, {city_only}"

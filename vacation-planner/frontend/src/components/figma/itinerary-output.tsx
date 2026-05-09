@@ -139,10 +139,10 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
     `https://placehold.co/600x400/1a1a2e/8A2BE2?text=${encodeURIComponent(query.slice(0, 60))}&font=raleway`;
 
   return (
-    <section className="min-h-screen bg-gray-100 dark:bg-[#0A0A0A] py-24 px-8 relative overflow-hidden">
+    <section className="min-h-screen bg-[#FFF6E8] py-24 px-8 relative overflow-hidden">
       {/* Background effects */}
-      <div className="absolute top-20 right-20 h-96 w-96 rounded-full bg-[#00F0FF]/5 dark:bg-[#00F0FF]/10 blur-[150px]" />
-      <div className="absolute bottom-20 left-20 h-96 w-96 rounded-full bg-[#8A2BE2]/5 dark:bg-[#8A2BE2]/10 blur-[150px]" />
+      <div className="absolute top-20 right-20 h-96 w-96 rounded-full bg-[#FF6B5A]/8 blur-[150px]" />
+      <div className="absolute bottom-20 left-20 h-96 w-96 rounded-full bg-[#FF9F43]/6 blur-[150px]" />
 
       <div className="max-w-[1800px] mx-auto">
         {/* Header */}
@@ -152,33 +152,33 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
           className="text-center mb-16"
         >
           <h2 
-            className="text-6xl md:text-7xl font-black mb-6 bg-gradient-to-r from-gray-900 dark:from-white to-gray-500 dark:to-white/60 bg-clip-text text-transparent"
-            style={{ fontFamily: "'Archivo Black', sans-serif" }}
+            className="text-5xl md:text-6xl font-bold mb-6 text-[#10223A]"
+            style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontSize: "clamp(2.4rem, 5vw, 4rem)" }}
           >
-            {experience.trip_title.toUpperCase()}
+            {experience.trip_title}
           </h2>
-          <p className="text-xl text-gray-500 dark:text-white/60 mb-8 max-w-2xl mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
+          <p className="text-xl text-[#64748B] mb-8 max-w-2xl mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
             {experience.vibe_summary}
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#8A2BE2]/10 border border-[#8A2BE2]/30">
-              <Sparkles className="h-4 w-4 text-[#8A2BE2]" />
-              <span className="text-[#8A2BE2] text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF6B5A]/10 border border-[#FF6B5A]/25">
+              <Sparkles className="h-4 w-4 text-[#FF6B5A]" />
+              <span className="text-[#FF6B5A] text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                 Experience Agent
               </span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#00F0FF]/10 border border-[#00F0FF]/30">
-              <Plane className="h-4 w-4 text-[#00F0FF]" />
-              <span className="text-[#00F0FF] text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF9F43]/10 border border-[#FF9F43]/25">
+              <Plane className="h-4 w-4 text-[#FF9F43]" />
+              <span className="text-[#FF9F43] text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                 Logistics Agent
               </span>
             </div>
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
               onClick={onReset}
-              className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white transition-colors text-sm font-semibold"
+              className="px-4 py-2 rounded-full bg-[#FFF6E8] border border-[rgba(255,107,90,0.18)] text-[#64748B] hover:text-[#FF6B5A] transition-colors text-sm font-semibold"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               Plan Another Trip
@@ -196,32 +196,32 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
             className="lg:sticky lg:top-8 h-fit space-y-6"
           >
             {/* Trip Summary Card */}
-            <div className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[24px] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+            <div className="bg-[#FFFBF3] border border-[rgba(255,107,90,0.14)] rounded-[24px] p-8 shadow-[0_2px_16px_rgba(255,107,90,0.08)]">
               <h3 
-                className="text-2xl font-bold text-gray-900 dark:text-white mb-6"
-                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                className="text-2xl font-bold text-[#10223A] mb-6"
+                style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
               >
                 Trip Summary
               </h3>
               
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#00F0FF] to-[#0080FF] flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#FF6B5A] to-[#FF9F43] flex items-center justify-center">
                     <MapPin className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-gray-400 dark:text-white/60 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Destination</p>
-                    <p className="text-gray-900 dark:text-white font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{experience.destination || formData?.destination}</p>
+                    <p className="text-[#64748B] text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Destination</p>
+                    <p className="text-[#10223A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{experience.destination || formData?.destination}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#8A2BE2] to-[#FF1493] flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-white" />
+                  <div className="h-10 w-10 rounded-xl bg-[#FFF6E8] border border-[rgba(255,107,90,0.2)] flex items-center justify-center">
+                    <Calendar className="h-5 w-5 text-[#FF6B5A]" />
                   </div>
                   <div>
-                    <p className="text-gray-400 dark:text-white/60 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Duration</p>
-                    <p className="text-gray-900 dark:text-white font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{itineraryItems.length} Days</p>
+                    <p className="text-[#64748B] text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Duration</p>
+                    <p className="text-[#10223A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{itineraryItems.length} Days</p>
                   </div>
                 </div>
 
@@ -230,20 +230,20 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                     <Users className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-gray-400 dark:text-white/60 text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Travelers</p>
-                    <p className="text-gray-900 dark:text-white font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{experience.travelers || formData?.travelers} People</p>
+                    <p className="text-[#64748B] text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Travelers</p>
+                    <p className="text-[#10223A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{experience.travelers || formData?.travelers} People</p>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-white/10">
+              <div className="mt-6 pt-6 border-t border-[rgba(255,107,90,0.12)]">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>Estimated Budget</span>
-                  <span className="text-3xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <span className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>Estimated Budget</span>
+                  <span className="text-3xl font-bold text-[#10223A]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                     ${logistics.total_estimated_budget_usd.toLocaleString()}
                   </span>
                 </div>
-                <p className="text-[10px] text-gray-400 italic text-center uppercase tracking-widest mb-6 border-b border-gray-100 dark:border-white/5 pb-6">
+                <p className="text-[10px] text-[#64748B]/60 italic text-center uppercase tracking-widest mb-6 border-b border-[rgba(255,107,90,0.10)] pb-6">
                   Per person · calculated by Logistics Agent
                 </p>
 
@@ -254,10 +254,10 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                     whileTap={{ scale: saveSuccess ? 1 : 0.98 }}
                     onClick={handleSaveToMyTrips}
                     disabled={isSaving || saveSuccess}
-                    className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all shadow-lg ${
+                    className={`w-full py-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all shadow-sm ${
                       saveSuccess 
-                        ? "bg-emerald-500 text-white shadow-emerald-500/20" 
-                        : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 shadow-gray-900/10 dark:shadow-white/10"
+                        ? "bg-emerald-500 text-white" 
+                        : "bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white hover:shadow-[0_4px_18px_rgba(255,107,90,0.35)]"
                     }`}
                     style={{ fontFamily: "'Inter', sans-serif" }}
                   >
@@ -276,9 +276,9 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                     )}
                   </motion.button>
                 ) : (
-                  <div className="text-center p-4 rounded-xl bg-[#00F0FF]/5 border border-[#00F0FF]/20">
-                    <p className="text-sm text-[#00F0FF]" style={{ fontFamily: "'Inter', sans-serif" }}>
-                      <a href="/login" className="font-bold underline hover:text-[#00F0FF]/80">Log in</a> to save this itinerary to your collections.
+                  <div className="text-center p-4 rounded-xl bg-[#FFF6E8] border border-[rgba(255,107,90,0.18)]">
+                    <p className="text-sm text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
+                      <a href="/login" className="font-bold text-[#FF6B5A] underline hover:text-[#FF6B5A]/80">Log in</a> to save this itinerary to your collections.
                     </p>
                   </div>
                 )}
@@ -297,12 +297,12 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
               >
                 {/* Day Header */}
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#00F0FF] to-[#8A2BE2] flex items-center justify-center">
+                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#FF6B5A] to-[#FF9F43] flex items-center justify-center">
                     <span className="text-white font-bold text-lg" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {dayItem.day_number}
                     </span>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  <h3 className="text-2xl font-bold text-[#10223A]" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                     Day {dayItem.day_number}
                   </h3>
                 </div>
@@ -313,11 +313,11 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                   {dayItem.activities.map((activity, actIndex) => (
                     <motion.div
                       key={actIndex}
-                      whileHover={{ y: -4 }}
-                      className={`group backdrop-blur-xl bg-white/80 dark:bg-white/5 border rounded-[24px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 ${
+                      whileHover={{ y: -3 }}
+                      className={`group bg-[#FFFBF3] border rounded-[24px] overflow-hidden shadow-[0_2px_12px_rgba(255,107,90,0.07)] transition-all duration-300 ${
                         activity.agent === "logistics" 
-                          ? "border-[#00F0FF]/20" 
-                          : "border-[#8A2BE2]/20"
+                          ? "border-[#FF9F43]/25" 
+                          : "border-[rgba(255,107,90,0.18)]"
                       } ${
                         activity.type !== "flight" && activity.type !== "hotel" && (activity.image_url || activity.image)
                           ? "md:col-span-2 min-h-[320px]"
@@ -341,11 +341,11 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                                   referrerPolicy="no-referrer"
                                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/10 dark:to-[#0A0A0A]/20" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#FFFBF3]/10" />
                               </>
                             ) : (
-                              <div className="absolute inset-0 bg-gradient-to-br from-[#00F0FF]/20 to-[#8A2BE2]/20 flex items-center justify-center">
-                                <Sparkles className="h-12 w-12 text-white/20 animate-pulse" />
+                              <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B5A]/10 to-[#FF9F43]/10 flex items-center justify-center">
+                                <Sparkles className="h-12 w-12 text-[#FF6B5A]/30 animate-pulse" />
                               </div>
                             )}
                           </div>
@@ -353,37 +353,37 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                           {/* Content Section */}
                           <div className={`flex flex-col p-8 ${(activity.image_url || activity.image) ? "md:w-3/5" : "w-full"}`}>
                             <div className="flex items-center gap-2 mb-3">
-                              <div className="px-3 py-1 rounded-full bg-[#8A2BE2]/10 dark:bg-[#8A2BE2]/20 backdrop-blur-sm border border-[#8A2BE2]/30">
-                                <Sparkles className="h-3 w-3 text-[#8A2BE2] inline mr-1" />
-                                <span className="text-[#8A2BE2] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
+                              <div className="px-3 py-1 rounded-full bg-[#FF6B5A]/10 border border-[#FF6B5A]/25">
+                                <Sparkles className="h-3 w-3 text-[#FF6B5A] inline mr-1" />
+                                <span className="text-[#FF6B5A] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                                   {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
                                 </span>
                               </div>
                             </div>
                             
-                            <h4 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-[#8A2BE2] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            <h4 className="text-2xl font-bold text-[#10223A] mb-3 group-hover:text-[#FF6B5A] transition-colors" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                               {activity.title}
                             </h4>
                             
-                            <p className="text-gray-500 dark:text-white/70 mb-6 line-clamp-3 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            <p className="text-[#64748B] mb-6 line-clamp-3 leading-relaxed" style={{ fontFamily: "'Inter', sans-serif" }}>
                               {activity.description}
                             </p>
                             
                             <div className="mt-auto flex items-center justify-between">
                               <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2 text-gray-400 dark:text-white/40">
+                                <div className="flex items-center gap-2 text-[#64748B]/60">
                                   <Clock className="h-3.5 w-3.5" />
                                   <span className="text-xs uppercase tracking-wider font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{activity.time}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-gray-400 dark:text-white/40">
+                                <div className="flex items-center gap-2 text-[#64748B]/60">
                                   <MapPin className="h-3.5 w-3.5" />
                                   <span className="text-xs truncate max-w-[150px]" style={{ fontFamily: "'Inter', sans-serif" }}>{activity.location}</span>
                                 </div>
                               </div>
                               
                               {activity.cost && (
-                                <div className="text-right text-gray-900 dark:text-white">
-                                  <p className="text-[10px] uppercase tracking-tighter text-gray-400">Est. Cost</p>
+                                <div className="text-right text-[#10223A]">
+                                  <p className="text-[10px] uppercase tracking-tighter text-[#64748B]/60">Est. Cost</p>
                                   <span className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                                     {activity.cost}
                                   </span>
@@ -395,8 +395,8 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                       ) : (
                         // Logistics Card Placeholder
                         <div className="p-6 h-full flex flex-col items-center justify-center opacity-40 grayscale group">
-                          <Plane className="h-12 w-12 text-[#00F0FF] mb-4 group-hover:animate-pulse" />
-                          <p className="text-[#00F0FF] font-bold uppercase tracking-[0.2em] text-xs">Waiting for Logistics Agent</p>
+                          <Plane className="h-12 w-12 text-[#FF9F43] mb-4 group-hover:animate-pulse" />
+                          <p className="text-[#FF9F43] font-bold uppercase tracking-[0.2em] text-xs">Waiting for Logistics Agent</p>
                           <p className="text-white/20 text-[10px] mt-2 italic">Phase 3 Integration Pending</p>
                         </div>
                       )}
@@ -408,24 +408,24 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-[#00F0FF]/20 rounded-[24px] p-6 h-fit"
+                      className="bg-[#FFFBF3] border border-[rgba(255,159,67,0.2)] rounded-[24px] p-6 h-fit shadow-[0_2px_12px_rgba(255,107,90,0.06)]"
                     >
                       <div className="flex items-center gap-2 mb-4">
-                        <div className="px-3 py-1 rounded-full bg-[#00F0FF]/10 dark:bg-[#00F0FF]/20 border border-[#00F0FF]/30">
-                          <Plane className="h-3 w-3 text-[#00F0FF] inline mr-1" />
-                          <span className="text-[#00F0FF] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>Flights</span>
+                        <div className="px-3 py-1 rounded-full bg-[#FF9F43]/10 border border-[#FF9F43]/25">
+                          <Plane className="h-3 w-3 text-[#FF9F43] inline mr-1" />
+                          <span className="text-[#FF9F43] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>Flights</span>
                         </div>
                       </div>
                       <div className="space-y-3">
                         {logistics.flights.map((flight, fi) => (
-                          <div key={fi} className="flex items-center justify-between p-3 rounded-xl bg-black/5 dark:bg-white/5">
+                          <div key={fi} className="flex items-center justify-between p-3 rounded-xl bg-[#FFF6E8]">
                             <div>
-                              <p className="text-sm font-semibold text-gray-900 dark:text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{flight.airline_type}</p>
-                              <p className="text-xs text-gray-400 dark:text-white/40">{flight.description}</p>
+                              <p className="text-sm font-semibold text-[#10223A]" style={{ fontFamily: "'Inter', sans-serif" }}>{flight.airline_type}</p>
+                              <p className="text-xs text-[#64748B]">{flight.description}</p>
                             </div>
                             <div className="text-right flex items-center gap-3">
-                              <span className="text-lg font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${flight.estimated_price_usd}</span>
-                              <a href={flight.booking_link} target="_blank" rel="noopener noreferrer" className="text-[#00F0FF] hover:text-[#00F0FF]/80 transition-colors">
+                              <span className="text-lg font-bold text-[#10223A]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${flight.estimated_price_usd}</span>
+                              <a href={flight.booking_link} target="_blank" rel="noopener noreferrer" className="text-[#FF9F43] hover:text-[#FF9F43]/80 transition-colors">
                                 <ExternalLink className="h-4 w-4" />
                               </a>
                             </div>
@@ -439,27 +439,27 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-[#00F0FF]/20 rounded-[24px] p-6 h-fit"
+                      className="bg-[#FFFBF3] border border-[rgba(255,107,90,0.18)] rounded-[24px] p-6 h-fit shadow-[0_2px_12px_rgba(255,107,90,0.06)]"
                     >
                       <div className="flex items-center gap-2 mb-4">
-                        <div className="px-3 py-1 rounded-full bg-[#00F0FF]/10 dark:bg-[#00F0FF]/20 border border-[#00F0FF]/30">
-                          <Bed className="h-3 w-3 text-[#00F0FF] inline mr-1" />
-                          <span className="text-[#00F0FF] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>Accommodations</span>
+                        <div className="px-3 py-1 rounded-full bg-[#FF6B5A]/10 border border-[#FF6B5A]/25">
+                          <Bed className="h-3 w-3 text-[#FF6B5A] inline mr-1" />
+                          <span className="text-[#FF6B5A] text-xs font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>Accommodations</span>
                         </div>
                       </div>
                       <div className="space-y-3">
                         {logistics.accommodations.map((accom, ai) => (
-                          <div key={ai} className="flex items-center justify-between p-3 rounded-xl bg-black/5 dark:bg-white/5">
+                          <div key={ai} className="flex items-center justify-between p-3 rounded-xl bg-[#FFF6E8]">
                             <div>
-                              <p className="text-sm font-semibold text-gray-900 dark:text-white" style={{ fontFamily: "'Inter', sans-serif" }}>{accom.type}</p>
-                              <p className="text-xs text-gray-400 dark:text-white/40">{accom.neighborhood}</p>
+                              <p className="text-sm font-semibold text-[#10223A]" style={{ fontFamily: "'Inter', sans-serif" }}>{accom.type}</p>
+                              <p className="text-xs text-[#64748B]">{accom.neighborhood}</p>
                             </div>
                             <div className="text-right flex items-center gap-3">
                               <div>
-                                <span className="text-lg font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${accom.estimated_price_per_night_usd}</span>
-                                <span className="text-[10px] text-gray-400 dark:text-white/40 block">/night</span>
+                                <span className="text-lg font-bold text-[#10223A]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>${accom.estimated_price_per_night_usd}</span>
+                                <span className="text-[10px] text-[#64748B]/60 block">/night</span>
                               </div>
-                              <a href={accom.booking_link} target="_blank" rel="noopener noreferrer" className="text-[#00F0FF] hover:text-[#00F0FF]/80 transition-colors">
+                              <a href={accom.booking_link} target="_blank" rel="noopener noreferrer" className="text-[#FF6B5A] hover:text-[#FF6B5A]/80 transition-colors">
                                 <ExternalLink className="h-4 w-4" />
                               </a>
                             </div>
@@ -477,28 +477,28 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="backdrop-blur-xl bg-gradient-to-r from-[#00F0FF]/5 dark:from-[#00F0FF]/10 to-[#8A2BE2]/5 dark:to-[#8A2BE2]/10 border border-gray-200 dark:border-white/10 rounded-[24px] p-12 text-center"
+              className="bg-gradient-to-r from-[#FF6B5A]/5 to-[#FF9F43]/5 border border-[rgba(255,107,90,0.14)] rounded-[24px] p-12 text-center"
             >
-              <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <h3 className="text-3xl font-bold text-[#10223A] mb-4" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                 Ready to book this adventure?
               </h3>
-              <p className="text-gray-500 dark:text-white/60 mb-8" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <p className="text-[#64748B] mb-8" style={{ fontFamily: "'Inter', sans-serif" }}>
                 Save this itinerary or customize it further
               </p>
               <div className="flex gap-4 justify-center">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-8 py-4 rounded-[16px] bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] text-white font-bold shadow-[0_0_30px_rgba(0,240,255,0.3)] flex items-center gap-2"
+                  className="px-8 py-4 rounded-[16px] bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white font-bold shadow-[0_4px_18px_rgba(255,107,90,0.3)] flex items-center gap-2"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                 >
                   Book Now
                   <ArrowRight className="h-5 w-5" />
                 </motion.button>
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
-                  className="px-8 py-4 rounded-[16px] bg-black/5 dark:bg-white/5 border border-gray-300 dark:border-white/20 text-gray-900 dark:text-white font-bold"
+                  className="px-8 py-4 rounded-[16px] bg-[#FFF6E8] border border-[rgba(255,107,90,0.18)] text-[#10223A] font-bold"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                 >
                   Customize

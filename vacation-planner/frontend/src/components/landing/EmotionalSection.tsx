@@ -4,17 +4,17 @@ import { FadeUp } from "./FadeUp";
 
 export function EmotionalSection() {
   return (
-    <section className="relative bg-[#020202] overflow-hidden py-40 px-6 md:px-12">
+    <section className="relative bg-[#FFF6E8] overflow-hidden py-40 px-6 md:px-12">
       {/* Subtle orb — very faint */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="h-[600px] w-[600px] rounded-full bg-[#00F0FF]/3 blur-[260px]" />
+        <div className="h-[600px] w-[600px] rounded-full bg-[#FF6B5A]/6 blur-[260px]" />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto text-center">
 
         <FadeUp duration={1.1}>
           <p
-            className="text-white/15 text-[0.6rem] uppercase tracking-[0.4em] mb-12"
+            className="text-[#64748B]/40 text-[0.6rem] uppercase tracking-[0.4em] mb-12"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
             The VibeTrips Difference
@@ -24,7 +24,7 @@ export function EmotionalSection() {
         {/* Main statement */}
         <FadeUp delay={0.1} duration={1.2}>
           <h2
-            className="text-[clamp(2.6rem,7vw,7rem)] font-black leading-[0.88] tracking-tight text-white mb-6"
+            className="text-[clamp(2.6rem,7vw,7rem)] font-black leading-[0.88] tracking-tight text-[#10223A] mb-6"
             style={{ fontFamily: "'Archivo Black', sans-serif" }}
           >
             The best trips aren&apos;t
@@ -38,7 +38,7 @@ export function EmotionalSection() {
 
         {/* Divider line */}
         <FadeUp delay={0.3} duration={1.0}>
-          <div className="w-24 h-px mx-auto my-10 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <div className="w-24 h-px mx-auto my-10 bg-gradient-to-r from-transparent via-[rgba(255,107,90,0.3)] to-transparent" />
         </FadeUp>
 
         {/* Secondary headline */}
@@ -55,7 +55,7 @@ export function EmotionalSection() {
         {/* Body copy */}
         <FadeUp delay={0.55} duration={1.0}>
           <p
-            className="text-white/38 text-xl md:text-2xl leading-relaxed max-w-2xl mx-auto"
+            className="text-[#64748B] text-xl md:text-2xl leading-relaxed max-w-2xl mx-auto"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
             VibeTrips gives you the structure
@@ -66,7 +66,7 @@ export function EmotionalSection() {
 
         {/* Stats row */}
         <FadeUp delay={0.7} duration={1.0}>
-          <div className="mt-20 grid grid-cols-3 divide-x divide-white/8 max-w-xl mx-auto">
+          <div className="mt-20 grid grid-cols-3 divide-x divide-[rgba(255,107,90,0.12)] max-w-xl mx-auto">
             {[
               { stat: "AI-crafted", label: "Itineraries" },
               { stat: "Vibe-first", label: "Approach" },
@@ -74,13 +74,13 @@ export function EmotionalSection() {
             ].map(({ stat, label }) => (
               <div key={label} className="px-6 py-2 text-center">
                 <p
-                  className="text-white/85 text-lg font-semibold"
+                  className="text-[#10223A]/85 text-lg font-semibold"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}
                 >
                   {stat}
                 </p>
                 <p
-                  className="text-white/25 text-xs mt-0.5 uppercase tracking-wider"
+                  className="text-[#64748B]/50 text-xs mt-0.5 uppercase tracking-wider"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   {label}

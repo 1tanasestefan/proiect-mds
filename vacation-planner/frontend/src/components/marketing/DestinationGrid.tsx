@@ -10,42 +10,42 @@ const DESTINATIONS = [
     label: "Beach Escapes",
     sub: "Sun, sand & turquoise water",
     image:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80",
-    color: "#00F0FF",
+      "https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=800&auto=format&fit=crop&q=80",
+    color: "#FF6B5A",
   },
   {
     label: "City Breaks",
     sub: "Urban culture & vibrant nightlife",
     image:
-      "https://images.unsplash.com/photo-1514565131-fce0801e6b2e?w=800&auto=format&fit=crop&q=80",
-    color: "#8A2BE2",
+      "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800&auto=format&fit=crop&q=80",
+    color: "#FF9F43",
   },
   {
     label: "Mountain Retreats",
     sub: "Fresh air & breathtaking vistas",
     image:
-      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80",
-    color: "#00F0FF",
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&auto=format&fit=crop&q=80",
+    color: "#FF6B5A",
   },
   {
     label: "Romantic Getaways",
     sub: "Unforgettable moments for two",
     image:
-      "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=800&auto=format&fit=crop&q=80",
     color: "#EF4444",
   },
   {
     label: "Family Adventures",
     sub: "Memories that last a lifetime",
     image:
-      "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1682687982501-1e58ab814714?w=800&auto=format&fit=crop&q=80",
     color: "#F59E0B",
   },
   {
     label: "Food & Culture",
     sub: "Eat, explore, and discover",
     image:
-      "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&auto=format&fit=crop&q=80",
     color: "#10B981",
   },
 ];
@@ -55,8 +55,8 @@ type Destination = (typeof DESTINATIONS)[0];
 function DestCard({ label, sub, image, color }: Destination) {
   return (
     <motion.div
-      whileHover={{ scale: 1.025, y: -5 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
       className="relative aspect-[4/3] rounded-[20px] overflow-hidden group cursor-pointer"
     >
       <Image
@@ -112,11 +112,11 @@ export function DestinationGrid() {
   return (
     <section
       id="destinations"
-      className="relative bg-[#020204] overflow-hidden py-32 px-6 md:px-12"
+      className="relative bg-[#FFF6E8] overflow-hidden py-32 px-6 md:px-12"
     >
       {/* Ambient */}
-      <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-[#8A2BE2]/5 blur-[230px] pointer-events-none" />
-      <div className="absolute top-0 left-0 h-[400px] w-[400px] rounded-full bg-[#00F0FF]/4 blur-[200px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-[#FF9F43]/6 blur-[230px] pointer-events-none" />
+      <div className="absolute top-0 left-0 h-[400px] w-[400px] rounded-full bg-[#FF6B5A]/6 blur-[200px] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header row */}
@@ -124,7 +124,7 @@ export function DestinationGrid() {
           <div>
             <FadeUp>
               <p
-                className="text-[#8A2BE2]/50 text-[0.65rem] uppercase tracking-[0.35em] mb-5 font-medium"
+                className="text-[#FF9F43]/60 text-[0.65rem] uppercase tracking-[0.35em] mb-5 font-medium"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 Inspiration awaits
@@ -132,16 +132,16 @@ export function DestinationGrid() {
             </FadeUp>
             <FadeUp delay={0.1}>
               <h2
-                className="font-black text-white leading-[1.0]"
+                className="font-bold text-[#10223A] leading-[1.08]"
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontSize: "clamp(2rem, 4.5vw, 4.2rem)",
+                  fontFamily: "var(--font-playfair), Georgia, serif",
+                  fontSize: "clamp(2rem, 4.5vw, 3.8rem)",
                 }}
               >
                 Discover where
                 <br />
                 you want to{" "}
-                <span className="bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] bg-clip-text text-transparent">
                   go next.
                 </span>
               </h2>
@@ -149,7 +149,7 @@ export function DestinationGrid() {
           </div>
           <FadeUp delay={0.2}>
             <p
-              className="text-white/32 text-base max-w-xs leading-relaxed"
+              className="text-[#64748B] text-base max-w-xs leading-relaxed"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               Browse by travel style. Our AI knows the best spots in every

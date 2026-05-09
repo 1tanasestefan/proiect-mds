@@ -82,13 +82,13 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
   }, [currentPhase, progress]);
 
   return (
-    <section className="min-h-screen bg-gray-50 dark:bg-[#050505] flex items-center justify-center px-8 relative overflow-hidden">
-      {/* Animated background grid */}
-      <div className="absolute inset-0 opacity-10 dark:opacity-20">
+    <section className="min-h-screen bg-[#FFF6E8] flex items-center justify-center px-8 relative overflow-hidden">
+      {/* Subtle warm background grid */}
+      <div className="absolute inset-0 opacity-[0.04]">
         <div className="absolute inset-0" style={{
           backgroundImage: `
-            linear-gradient(rgba(0,240,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,240,255,0.1) 1px, transparent 1px)
+            linear-gradient(rgba(255,107,90,0.4) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,107,90,0.4) 1px, transparent 1px)
           `,
           backgroundSize: "50px 50px",
         }} />
@@ -101,7 +101,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
           opacity: [0.3, 0.5, 0.3],
         }}
         transition={{ duration: 3, repeat: Infinity }}
-        className="absolute top-1/3 left-1/4 h-96 w-96 rounded-full bg-[#00F0FF]/20 blur-[150px]"
+        className="absolute top-1/3 left-1/4 h-96 w-96 rounded-full bg-[#FF6B5A]/12 blur-[150px]"
       />
       <motion.div
         animate={{
@@ -109,7 +109,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
           opacity: [0.3, 0.5, 0.3],
         }}
         transition={{ duration: 3, repeat: Infinity, delay: 1.5 }}
-        className="absolute bottom-1/3 right-1/4 h-96 w-96 rounded-full bg-[#8A2BE2]/20 blur-[150px]"
+        className="absolute bottom-1/3 right-1/4 h-96 w-96 rounded-full bg-[#FF9F43]/12 blur-[150px]"
       />
 
       <div className="relative z-10 max-w-4xl w-full">
@@ -128,25 +128,25 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             className="absolute left-1/4 -translate-x-1/2"
           >
             <div className="relative">
-              <div className="h-32 w-32 rounded-full bg-gradient-to-br from-[#8A2BE2] to-[#FF1493] shadow-[0_0_60px_rgba(138,43,226,0.6)] flex items-center justify-center">
+              <div className="h-32 w-32 rounded-full bg-gradient-to-br from-[#FF6B5A] to-[#FF8FA3] shadow-[0_0_60px_rgba(255,107,90,0.5)] flex items-center justify-center">
                 <Sparkles className="h-12 w-12 text-white" />
               </div>
               {/* Pulsing rings */}
               <motion.div
                 animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 rounded-full border-2 border-[#8A2BE2]"
+                className="absolute inset-0 rounded-full border-2 border-[#FF6B5A]"
               />
               <motion.div
                 animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
                 transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                className="absolute inset-0 rounded-full border-2 border-[#8A2BE2]"
+                className="absolute inset-0 rounded-full border-2 border-[#FF6B5A]"
               />
             </div>
             <motion.p 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-[#8A2BE2] text-sm text-center mt-4 font-semibold"
+              className="text-[#FF6B5A] text-sm text-center mt-4 font-semibold"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               Experience Agent
@@ -166,25 +166,25 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             className="absolute right-1/4 translate-x-1/2"
           >
             <div className="relative">
-              <div className="h-32 w-32 rounded-full bg-gradient-to-br from-[#00F0FF] to-[#0080FF] shadow-[0_0_60px_rgba(0,240,255,0.6)] flex items-center justify-center">
+              <div className="h-32 w-32 rounded-full bg-gradient-to-br from-[#FF9F43] to-[#FFD166] shadow-[0_0_60px_rgba(255,159,67,0.5)] flex items-center justify-center">
                 <Plane className="h-12 w-12 text-white" />
               </div>
               {/* Pulsing rings */}
               <motion.div
                 animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 rounded-full border-2 border-[#00F0FF]"
+                className="absolute inset-0 rounded-full border-2 border-[#FF9F43]"
               />
               <motion.div
                 animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
                 transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                className="absolute inset-0 rounded-full border-2 border-[#00F0FF]"
+                className="absolute inset-0 rounded-full border-2 border-[#FF9F43]"
               />
             </div>
             <motion.p 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-[#00F0FF] text-sm text-center mt-4 font-semibold"
+              className="text-[#FF9F43] text-sm text-center mt-4 font-semibold"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               Logistics Agent
@@ -213,12 +213,12 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             />
             <defs>
               <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#8A2BE2" />
-                <stop offset="100%" stopColor="#00F0FF" />
+                <stop offset="0%" stopColor="#FF6B5A" />
+                <stop offset="100%" stopColor="#FF9F43" />
               </linearGradient>
               <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#00F0FF" />
-                <stop offset="100%" stopColor="#8A2BE2" />
+                <stop offset="0%" stopColor="#FF9F43" />
+                <stop offset="100%" stopColor="#FF6B5A" />
               </linearGradient>
             </defs>
           </svg>
@@ -232,9 +232,9 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             transition={{ duration: 4, repeat: Infinity }}
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
           >
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#8A2BE2] via-white to-[#00F0FF] p-[2px]">
-              <div className="h-full w-full bg-gray-50 dark:bg-[#050505] rounded-2xl flex items-center justify-center">
-                <Brain className="h-8 w-8 text-gray-800 dark:text-white" />
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#FF6B5A] via-white to-[#FF9F43] p-[2px]">
+              <div className="h-full w-full bg-[#FFF6E8] rounded-2xl flex items-center justify-center">
+                <Brain className="h-8 w-8 text-[#10223A]" />
               </div>
             </div>
           </motion.div>
@@ -243,7 +243,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
         {/* Status Container */}
         <motion.div
           layout
-          className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[32px] p-12 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+          className="bg-[#FFFBF3] border border-[rgba(255,107,90,0.14)] rounded-[32px] p-12 shadow-[0_2px_24px_rgba(255,107,90,0.08)]"
         >
           {/* Current Phase */}
           <motion.div
@@ -253,26 +253,26 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             className="text-center mb-12"
           >
             <h3 
-              className="text-4xl font-bold text-gray-900 dark:text-white mb-4"
+              className="text-4xl font-bold text-[#10223A] mb-4"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               {PHASES[currentPhase].label}
             </h3>
             <div className="flex items-center justify-center gap-2">
               {PHASES[currentPhase].agent === "experience" && (
-                <span className="text-[#8A2BE2] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <span className="text-[#FF6B5A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                   <Sparkles className="inline h-4 w-4 mr-1" />
                   Experience Agent
                 </span>
               )}
               {PHASES[currentPhase].agent === "logistics" && (
-                <span className="text-[#00F0FF] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <span className="text-[#FF9F43] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                   <Plane className="inline h-4 w-4 mr-1" />
                   Logistics Agent
                 </span>
               )}
               {PHASES[currentPhase].agent === "both" && (
-                <span className="text-gray-500 dark:text-white/60 font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <span className="text-[#64748B] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                   <Brain className="inline h-4 w-4 mr-1" />
                   Dual AI Processing
                 </span>
@@ -281,18 +281,18 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
           </motion.div>
 
           {/* Progress Bar */}
-          <div className="relative h-3 bg-black/10 dark:bg-white/5 rounded-full overflow-hidden">
+          <div className="relative h-3 bg-[#FF6B5A]/10 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.3 }}
-              className="h-full bg-gradient-to-r from-[#8A2BE2] via-white to-[#00F0FF] rounded-full shadow-[0_0_20px_rgba(138,43,226,0.5)]"
+              className="h-full bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] rounded-full shadow-[0_0_12px_rgba(255,107,90,0.4)]"
             />
           </div>
 
           {/* Progress Percentage */}
           <motion.p 
-            className="text-center text-gray-600 dark:text-white/80 mt-6 text-xl"
+            className="text-center text-[#64748B] mt-6 text-xl"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {Math.floor(progress)}%
@@ -303,7 +303,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center text-[#8A2BE2] mt-4 text-sm font-medium animate-pulse"
+              className="text-center text-[#FF6B5A] mt-4 text-sm font-medium animate-pulse"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               Local models can take a little longer. Still working, not frozen.
@@ -324,7 +324,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
                   repeat: Infinity,
                   delay: i * 0.2,
                 }}
-                className="h-2 w-2 rounded-full bg-gray-400 dark:bg-white"
+                className="h-2 w-2 rounded-full bg-[#FF9F43]"
               />
             ))}
           </div>

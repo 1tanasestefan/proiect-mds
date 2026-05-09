@@ -102,8 +102,8 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
 
   return (
     <motion.div
-      whileHover={{ y: -8 }}
-      className="group relative backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[32px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-500 hover:border-[#00F0FF]/40"
+      whileHover={{ y: -4 }}
+      className="group relative backdrop-blur-xl bg-[#FFFBF3] border border-[rgba(255,107,90,0.14)] rounded-[32px] overflow-hidden shadow-[0_8px_32px_rgba(255,107,90,0.10)] transition-all duration-500 hover:border-[#FF6B5A]/40"
     >
       {/* Cover Image Section */}
       <div className="relative h-56 w-full overflow-hidden">
@@ -119,7 +119,7 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
         <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-white">
           <div className="flex items-center gap-2">
             <div className="flex -space-x-2">
-              <div className="h-8 w-8 rounded-full border-2 border-white/20 bg-[#8A2BE2] flex items-center justify-center text-[10px] font-bold">
+              <div className="h-8 w-8 rounded-full border-2 border-white/20 bg-gradient-to-br from-[#FF6B5A] to-[#FF9F43] flex items-center justify-center text-[10px] font-bold text-white">
                 {itinerary.author_name.charAt(0).toUpperCase()}
               </div>
             </div>
@@ -129,7 +129,7 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
           </div>
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-1.5 backdrop-blur-md bg-black/30 px-2 py-1 rounded-lg border border-white/10 text-[10px] font-semibold uppercase tracking-widest">
-                <Clock className="h-3 w-3 text-[#00F0FF]" />
+                <Clock className="h-3 w-3 text-[#FF6B5A]" />
                 {durationDays} Days
              </div>
           </div>
@@ -140,22 +140,22 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
       <div className="p-6">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1 group-hover:text-[#00F0FF] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <h3 className="text-xl font-bold text-[#10223A] mb-1 group-hover:text-[#FF6B5A] transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               {itinerary.title}
             </h3>
-            <div className="flex items-center gap-1.5 text-gray-500 dark:text-white/40 text-sm">
-              <MapPin className="h-3.5 w-3.5 text-[#00F0FF]" />
+            <div className="flex items-center gap-1.5 text-[#64748B]/60 text-sm">
+              <MapPin className="h-3.5 w-3.5 text-[#FF6B5A]" />
               {itinerary.destination}
             </div>
           </div>
         </div>
 
-        <p className="text-sm text-gray-500 dark:text-white/60 line-clamp-2 mb-6" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <p className="text-sm text-[#64748B] line-clamp-2 mb-6" style={{ fontFamily: "'Inter', sans-serif" }}>
           {itinerary.ai_data?.experience?.vibe_summary || "Explore a personalized journey crafted by AI."}
         </p>
 
         {/* Action Bar */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
+          <div className="flex items-center justify-between pt-4 border-t border-[rgba(255,107,90,0.10)]">
           <div className="flex items-center gap-4">
             <button 
               onClick={handleLike}
@@ -173,7 +173,7 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
           <button
             onClick={handleFork}
             disabled={isForking}
-            className="group/btn relative px-4 py-2 rounded-xl bg-gray-900 dark:bg-white/10 text-white dark:text-white font-bold text-xs overflow-hidden transition-all hover:bg-[#8A2BE2] hover:text-white active:scale-95"
+            className="group/btn relative px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white font-bold text-xs overflow-hidden transition-all hover:shadow-[0_4px_14px_rgba(255,107,90,0.4)] active:scale-95"
           >
             <span className="relative z-10 flex items-center gap-2">
               <Bookmark className="h-3.5 w-3.5" />

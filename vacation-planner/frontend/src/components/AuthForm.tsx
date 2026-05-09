@@ -60,16 +60,16 @@ export default function AuthForm({ mode }: AuthFormProps) {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md p-10 backdrop-blur-xl bg-white/80 dark:bg-[#1a1a2e]/80 rounded-[32px] shadow-[0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-white/10"
+      className="w-full max-w-md p-10 backdrop-blur-xl bg-[#FFFBF3] rounded-[32px] shadow-[0_8px_40px_rgba(255,107,90,0.12)] border border-[rgba(255,107,90,0.18)]"
     >
       <div className="text-center mb-10">
         <h2 
-          className="text-4xl font-bold bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] bg-clip-text text-transparent mb-3"
-          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          className="text-4xl font-bold bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] bg-clip-text text-transparent mb-3"
+          style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
         >
           {mode === 'login' ? 'Welcome Back' : 'Create Account'}
         </h2>
-        <p className="text-gray-500 dark:text-white/60" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <p className="text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
           {mode === 'login' ? 'Enter your details to access your trips' : 'Join VibeTrips to save and share itineraries'}
         </p>
       </div>
@@ -88,7 +88,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {mode === 'register' && (
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Display Name</label>
+            <label className="block text-sm font-medium text-[#10223A]/70">Display Name</label>
             <div className="relative">
               <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
@@ -96,7 +96,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 required
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 border border-gray-200 dark:border-white/10 rounded-2xl bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all"
+                className="w-full pl-12 pr-4 py-4 border border-[rgba(255,107,90,0.20)] rounded-2xl bg-[#FFFBF3] text-[#10223A] placeholder:text-[#64748B]/50 focus:outline-none focus:border-[#FF6B5A]/60 focus:shadow-[0_0_16px_rgba(255,107,90,0.14)] transition-all"
                 placeholder="How should we call you?"
               />
             </div>
@@ -104,7 +104,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         )}
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
+          <label className="block text-sm font-medium text-[#10223A]/70">Email Address</label>
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
@@ -112,14 +112,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 border border-gray-200 dark:border-white/10 rounded-2xl bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#00F0FF]/50 focus:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all"
+              className="w-full pl-12 pr-4 py-4 border border-[rgba(255,107,90,0.20)] rounded-2xl bg-[#FFFBF3] text-[#10223A] placeholder:text-[#64748B]/50 focus:outline-none focus:border-[#FF6B5A]/60 focus:shadow-[0_0_16px_rgba(255,107,90,0.14)] transition-all"
               placeholder="you@example.com"
             />
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+          <label className="block text-sm font-medium text-[#10223A]/70">Password</label>
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
@@ -127,36 +127,36 @@ export default function AuthForm({ mode }: AuthFormProps) {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 border border-gray-200 dark:border-white/10 rounded-2xl bg-black/5 dark:bg-white/5 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-[#8A2BE2]/50 focus:shadow-[0_0_20px_rgba(138,43,226,0.1)] transition-all"
+              className="w-full pl-12 pr-4 py-4 border border-[rgba(255,107,90,0.20)] rounded-2xl bg-[#FFFBF3] text-[#10223A] placeholder:text-[#64748B]/50 focus:outline-none focus:border-[#FF6B5A]/60 focus:shadow-[0_0_16px_rgba(255,107,90,0.14)] transition-all"
               placeholder="••••••••"
             />
           </div>
         </div>
 
         <motion.button
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
           type="submit"
           disabled={loading || !supabase}
-          className="w-full py-4 mt-4 bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(0,240,255,0.3)] disabled:opacity-50 transition-all cursor-pointer"
+          className="w-full py-4 mt-4 bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-[0_4px_24px_rgba(255,107,90,0.35)] disabled:opacity-50 transition-all cursor-pointer"
         >
           {loading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Create Account')}
           {!loading && <ArrowRight className="h-5 w-5" />}
         </motion.button>
       </form>
 
-      <div className="mt-8 text-center text-gray-600 dark:text-gray-400">
+      <div className="mt-8 text-center text-[#64748B]">
         {mode === 'login' ? (
           <p>
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="font-medium text-[#00F0FF] hover:text-[#00F0FF]/80 transition-colors">
+            <Link href="/register" className="font-medium text-[#FF6B5A] hover:text-[#FF6B5A]/80 transition-colors">
               Sign up
             </Link>
           </p>
         ) : (
           <p>
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-[#8A2BE2] hover:text-[#8A2BE2]/80 transition-colors">
+            <Link href="/login" className="font-medium text-[#FF9F43] hover:text-[#FF9F43]/80 transition-colors">
               Log in
             </Link>
           </p>

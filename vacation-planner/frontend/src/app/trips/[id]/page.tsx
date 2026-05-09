@@ -137,11 +137,11 @@ function ActivityCard({
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: i * 0.06, duration: 0.4 }}
       onClick={isRegenerating ? undefined : onClick}
-      className={`flex gap-4 p-4 rounded-2xl bg-white/[0.03] transition-all relative overflow-hidden ${
-        isRegenerating ? "border-[#22C55E]/40 shadow-[0_0_20px_rgba(34,197,94,0.2)] bg-black/40 cursor-wait" :
+      className={`flex gap-4 p-4 rounded-2xl bg-[#FFFBF3] border transition-all relative overflow-hidden ${
+        isRegenerating ? "border-[#22C55E]/30 shadow-[0_0_20px_rgba(34,197,94,0.1)] cursor-wait" :
         isHighlighted 
-          ? "border-[#00F0FF] shadow-[0_0_15px_rgba(0,240,255,0.4)] bg-[#00F0FF]/10 scale-[1.02] cursor-pointer" 
-          : "border-white/8 hover:border-white/20 cursor-pointer"
+          ? "border-[#FF6B5A] shadow-[0_0_15px_rgba(255,107,90,0.2)] bg-[#FF6B5A]/5 scale-[1.02] cursor-pointer" 
+          : "border-[rgba(255,107,90,0.14)] hover:border-[rgba(255,107,90,0.35)] cursor-pointer"
       }`}
     >
       {isRegenerating && (
@@ -156,10 +156,10 @@ function ActivityCard({
       {isHighlighted && !isRegenerating && (
         <div className="absolute top-2 right-3 flex items-center gap-1.5 opacity-80 z-10">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00F0FF] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00F0FF]"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF6B5A] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF6B5A]"></span>
           </span>
-          <span className="text-[10px] text-[#00F0FF] font-medium tracking-wide">Someone is viewing</span>
+          <span className="text-[10px] text-[#FF6B5A] font-medium tracking-wide">Someone is viewing</span>
         </div>
       )}
 
@@ -175,37 +175,42 @@ function ActivityCard({
       </div>
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         <div className="flex justify-between items-start gap-2">
-          <p className="text-white/90 font-semibold text-sm leading-snug line-clamp-2"
+          <p className="text-[#10223A] font-semibold text-sm leading-snug line-clamp-2"
              style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
             {act.title}
           </p>
           <button 
              onClick={(e) => { e.stopPropagation(); onVote(); }}
+<<<<<<< HEAD
              disabled={!canVote}
              className="text-white/20 hover:text-white/60 disabled:opacity-20 disabled:hover:text-white/20 transition-colors shrink-0 z-10"
              title={canVote ? "Vote to change this activity" : "Join this trip to vote"}
+=======
+             className="text-[#64748B]/30 hover:text-[#FF6B5A]/60 transition-colors shrink-0 z-10"
+             title="Vote to change this activity"
+>>>>>>> DEV-17-Change-frontend-color-theme
           >
              <RefreshCcw className="h-4 w-4" />
           </button>
         </div>
         {act.description && (
-          <p className="text-white/45 text-xs leading-relaxed line-clamp-3">
+          <p className="text-[#64748B] text-xs leading-relaxed line-clamp-3">
             {act.description}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3 mt-1">
           {act.time && (
-            <span className="flex items-center gap-1 text-[10px] text-[#00F0FF]/60">
+              <span className="flex items-center gap-1 text-[10px] text-[#FF9F43]/70">
               <Clock className="h-3 w-3" />{act.time}
             </span>
           )}
           {act.cost && (
-            <span className="flex items-center gap-1 text-[10px] text-[#8A2BE2]/70">
+              <span className="flex items-center gap-1 text-[10px] text-emerald-600/70">
               <DollarSign className="h-3 w-3" />{act.cost}
             </span>
           )}
           {act.location && (
-            <span className="flex items-center gap-1 text-[10px] text-white/35">
+              <span className="flex items-center gap-1 text-[10px] text-[#64748B]/50">
               <MapPin className="h-3 w-3" />{act.location}
             </span>
           )}
@@ -213,7 +218,7 @@ function ActivityCard({
         
         {/* Voting UI */}
         {votes.length > 0 && !isRegenerating && (
-           <div className="flex items-center gap-3 mt-2 pt-2 border-t border-white/5">
+           <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[rgba(255,107,90,0.10)]">
               <div className="flex -space-x-1">
                  {votes.map((v, idx) => (
                     <div key={v.id} className="h-5 w-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-black z-10"
@@ -222,10 +227,17 @@ function ActivityCard({
                     </div>
                  ))}
               </div>
+<<<<<<< HEAD
               <span className="text-[10px] text-white/50">
                  {needsMoreVotes 
                     ? <span className="text-orange-400/80">{votes.length}/{threshold} votes to regenerate</span> 
                     : <span className="text-yellow-400/80">{votes.length}/{eligibleVoters} collaborators voted</span>}
+=======
+              <span className="text-[10px] text-[#64748B]/60">
+                 {isDraw 
+                    ? <span className="text-orange-400/80">Activity will not be changed ({votes.length}/{totalOnline} votes)</span> 
+                    : <span className="text-yellow-400/80">{votes.length}/{totalOnline} want to change</span>}
+>>>>>>> DEV-17-Change-frontend-color-theme
               </span>
            </div>
         )}
@@ -364,18 +376,18 @@ export default function TripDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0A0A0A]">
-        <Loader2 className="h-8 w-8 text-[#00F0FF] animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-[#FFF6E8]">
+        <Loader2 className="h-8 w-8 text-[#FF6B5A] animate-spin" />
       </div>
     );
   }
 
   if (error || !trip) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0A0A0A] gap-4">
-        <p className="text-red-400">{error || "Trip not found."}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#FFF6E8] gap-4">
+        <p className="text-red-500">{error || "Trip not found."}</p>
         <button onClick={() => router.push("/dashboard")}
-                className="text-[#00F0FF]/70 hover:text-[#00F0FF] text-sm transition-colors">
+                className="text-[#FF6B5A]/70 hover:text-[#FF6B5A] text-sm transition-colors">
           ← Back to My Trips
         </button>
       </div>
@@ -525,11 +537,11 @@ export default function TripDetailPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A] text-white pb-24">
+    <main className="min-h-screen bg-[#FFF6E8] text-[#10223A] pb-24">
       {/* Ambient */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-[#00F0FF]/4 blur-[160px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-[#8A2BE2]/4 blur-[160px]" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] rounded-full bg-[#FF6B5A]/6 blur-[160px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-[#FF9F43]/5 blur-[160px]" />
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto px-6">
@@ -540,7 +552,7 @@ export default function TripDetailPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             onClick={() => router.push("/dashboard")}
-            className="flex items-center gap-2 text-white/40 hover:text-white/80 text-sm transition-colors"
+            className="flex items-center gap-2 text-[#64748B]/60 hover:text-[#10223A] text-sm transition-colors"
           >
             <ArrowLeft className="h-4 w-4" /> Back to My Trips
           </motion.button>
@@ -549,9 +561,9 @@ export default function TripDetailPage() {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-4 py-2"
+              className="flex items-center gap-3 bg-[#FFFBF3] border border-[rgba(255,107,90,0.18)] rounded-full px-4 py-2 shadow-sm"
             >
-              <div className="flex items-center gap-2 text-xs text-white/70">
+              <div className="flex items-center gap-2 text-xs text-[#64748B]">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#22C55E]"></span>
@@ -588,7 +600,7 @@ export default function TripDetailPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
-          className="rounded-3xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 p-8 mb-10 relative group"
+          className="rounded-3xl bg-[#FFFBF3] border border-[rgba(255,107,90,0.14)] p-8 mb-10 relative group shadow-[0_2px_16px_rgba(255,107,90,0.08)]"
         >
           {(canEditTrip || canInvite) && (
             <div className="absolute top-6 right-6 flex items-center gap-3">
@@ -651,55 +663,55 @@ export default function TripDetailPage() {
 
           {isEditing ? (
             <input 
-              className="bg-transparent border-b border-white/20 text-[#00F0FF]/60 uppercase tracking-widest text-xs mb-3 outline-none focus:border-[#00F0FF]/60 w-full md:w-1/2"
+              className="bg-transparent border-b border-[rgba(255,107,90,0.2)] text-[#FF6B5A]/70 uppercase tracking-widest text-xs mb-3 outline-none focus:border-[#FF6B5A]/60 w-full md:w-1/2"
               value={editDestination}
               onChange={(e) => setEditDestination(e.target.value)}
               placeholder="Destination"
             />
           ) : (
-            <p className="text-xs text-[#00F0FF]/60 uppercase tracking-widest mb-3">
+            <p className="text-xs text-[#FF6B5A]/70 uppercase tracking-widest mb-3">
               {trip.destination}
             </p>
           )}
 
           {isEditing ? (
             <input 
-              className="bg-transparent border-b border-white/20 text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight outline-none focus:border-white/50 w-full block"
-              style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+              className="bg-transparent border-b border-[rgba(255,107,90,0.2)] text-3xl sm:text-4xl font-bold text-[#10223A] mb-3 leading-tight outline-none focus:border-[#FF6B5A]/50 w-full block"
+              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               placeholder="Trip Title"
             />
           ) : (
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight"
-                style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <h1 className="text-3xl sm:text-4xl font-bold text-[#10223A] mb-3 leading-tight"
+                style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
               {experience.trip_title || trip.title}
             </h1>
           )}
 
           {isEditing ? (
             <textarea 
-              className="bg-black/20 border border-white/10 text-white/70 text-sm leading-relaxed w-full min-h-[80px] p-3 rounded-xl outline-none focus:border-white/30 resize-none mt-2"
+              className="bg-[#FFF6E8] border border-[rgba(255,107,90,0.18)] text-[#64748B] text-sm leading-relaxed w-full min-h-[80px] p-3 rounded-xl outline-none focus:border-[#FF6B5A]/40 resize-none mt-2"
               value={editVibe}
               onChange={(e) => setEditVibe(e.target.value)}
               placeholder="Vibe Summary"
             />
           ) : experience.vibe_summary && (
-            <p className="text-white/50 text-sm leading-relaxed max-w-2xl">
+            <p className="text-[#64748B] text-sm leading-relaxed max-w-2xl">
               {experience.vibe_summary}
             </p>
           )}
 
-          <div className="flex flex-wrap gap-4 mt-5 text-sm text-white/40">
+          <div className="flex flex-wrap gap-4 mt-5 text-sm text-[#64748B]/60">
             {trip.start_date && (
               <span className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4 text-[#8A2BE2]/60" />
+                <Calendar className="h-4 w-4 text-[#FF9F43]/70" />
                 {trip.start_date}{trip.end_date ? ` → ${trip.end_date}` : ""}
               </span>
             )}
             {logistics?.total_estimated_budget_usd && (
               <span className="flex items-center gap-1.5">
-                <DollarSign className="h-4 w-4 text-[#00F0FF]/60" />
+                <DollarSign className="h-4 w-4 text-[#FF6B5A]/70" />
                 Est. ${logistics.total_estimated_budget_usd.toLocaleString()} total
               </span>
             )}
@@ -723,10 +735,10 @@ export default function TripDetailPage() {
           >
             <div className="flex items-center gap-3 mb-4">
               <span className="flex items-center justify-center h-8 w-8 rounded-xl text-xs font-bold"
-                    style={{ background: "linear-gradient(135deg, #00F0FF22, #8A2BE222)", border: "1px solid rgba(0,240,255,0.2)", color: "#00F0FF" }}>
+                    style={{ background: "linear-gradient(135deg, rgba(255,107,90,0.15), rgba(255,159,67,0.15))", border: "1px solid rgba(255,107,90,0.25)", color: "#FF6B5A" }}>
                 {day.day_number}
               </span>
-              <h2 className="text-white/70 font-semibold text-sm uppercase tracking-widest"
+              <h2 className="text-[#10223A]/70 font-semibold text-sm uppercase tracking-widest"
                   style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                 Day {day.day_number}
               </h2>
@@ -767,7 +779,7 @@ export default function TripDetailPage() {
             transition={{ delay: 0.6 }}
             className="mt-12"
           >
-            <h2 className="text-white/60 text-sm uppercase tracking-widest font-semibold mb-5"
+            <h2 className="text-[#64748B] text-sm uppercase tracking-widest font-semibold mb-5"
                 style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               Logistics
             </h2>
@@ -775,21 +787,21 @@ export default function TripDetailPage() {
             {/* Flights */}
             {logistics.flights?.length > 0 && (
               <div className="mb-6">
-                <p className="text-white/40 text-xs flex items-center gap-1.5 mb-3">
+                <p className="text-[#64748B]/60 text-xs flex items-center gap-1.5 mb-3">
                   <Plane className="h-3.5 w-3.5" /> Flights
                 </p>
                 <div className="flex flex-col gap-3">
                   {logistics.flights.map((f, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/8">
+                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-[#FFFBF3] border border-[rgba(255,107,90,0.12)]">
                       <div>
-                        <p className="text-white/80 text-sm font-medium">{f.airline_type}</p>
-                        <p className="text-white/40 text-xs mt-0.5">{f.description}</p>
+                        <p className="text-[#10223A] text-sm font-medium">{f.airline_type}</p>
+                        <p className="text-[#64748B] text-xs mt-0.5">{f.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[#00F0FF] font-bold text-sm">${f.estimated_price_usd}</p>
+                        <p className="text-[#FF9F43] font-bold text-sm">${f.estimated_price_usd}</p>
                         {f.booking_link && (
                           <a href={f.booking_link} target="_blank" rel="noopener noreferrer"
-                             className="text-[10px] text-white/30 hover:text-[#00F0FF]/60 transition-colors">
+                             className="text-[10px] text-[#64748B]/50 hover:text-[#FF9F43]/80 transition-colors">
                             Book →
                           </a>
                         )}
@@ -803,21 +815,21 @@ export default function TripDetailPage() {
             {/* Accommodations */}
             {logistics.accommodations?.length > 0 && (
               <div className="mb-6">
-                <p className="text-white/40 text-xs flex items-center gap-1.5 mb-3">
+                <p className="text-[#64748B]/60 text-xs flex items-center gap-1.5 mb-3">
                   <Hotel className="h-3.5 w-3.5" /> Accommodations
                 </p>
                 <div className="flex flex-col gap-3">
                   {logistics.accommodations.map((a, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/8">
+                    <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-[#FFFBF3] border border-[rgba(255,107,90,0.12)]">
                       <div>
-                        <p className="text-white/80 text-sm font-medium">{a.type}</p>
-                        <p className="text-white/40 text-xs mt-0.5">{a.neighborhood}</p>
+                        <p className="text-[#10223A] text-sm font-medium">{a.type}</p>
+                        <p className="text-[#64748B] text-xs mt-0.5">{a.neighborhood}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[#8A2BE2] font-bold text-sm">${a.estimated_price_per_night_usd}/night</p>
+                        <p className="text-[#FF6B5A] font-bold text-sm">${a.estimated_price_per_night_usd}/night</p>
                         {a.booking_link && (
                           <a href={a.booking_link} target="_blank" rel="noopener noreferrer"
-                             className="text-[10px] text-white/30 hover:text-[#8A2BE2]/60 transition-colors">
+                             className="text-[10px] text-[#64748B]/50 hover:text-[#FF6B5A]/70 transition-colors">
                             Book →
                           </a>
                         )}
