@@ -55,8 +55,8 @@ type Destination = (typeof DESTINATIONS)[0];
 function DestCard({ label, sub, image, color }: Destination) {
   return (
     <motion.div
-      whileHover={{ scale: 1.025, y: -5 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
       className="relative aspect-[4/3] rounded-[20px] overflow-hidden group cursor-pointer"
     >
       <Image
@@ -132,10 +132,10 @@ export function DestinationGrid() {
             </FadeUp>
             <FadeUp delay={0.1}>
               <h2
-                className="font-black text-[#10223A] leading-[1.0]"
+                className="font-bold text-[#10223A] leading-[1.08]"
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontSize: "clamp(2rem, 4.5vw, 4.2rem)",
+                  fontFamily: "var(--font-playfair), Georgia, serif",
+                  fontSize: "clamp(2rem, 4.5vw, 3.8rem)",
                 }}
               >
                 Discover where

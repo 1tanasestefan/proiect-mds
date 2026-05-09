@@ -103,10 +103,10 @@ export function ProductPreview() {
           </FadeUp>
           <FadeUp delay={0.1}>
             <h2
-              className="font-black text-[#10223A] leading-[1.0]"
+              className="font-bold text-[#10223A] leading-[1.08]"
               style={{
-                fontFamily: "'Archivo Black', sans-serif",
-                fontSize: "clamp(2rem, 4.5vw, 4.2rem)",
+                fontFamily: "var(--font-playfair), Georgia, serif",
+                fontSize: "clamp(2rem, 4.5vw, 3.8rem)",
               }}
             >
               Your entire trip,

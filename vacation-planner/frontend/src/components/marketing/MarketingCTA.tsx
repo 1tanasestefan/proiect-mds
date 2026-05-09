@@ -39,10 +39,10 @@ export function MarketingCTA({ onStartPlanning }: MarketingCTAProps) {
 
         <FadeUp delay={0.1} duration={1.1}>
           <h2
-            className="font-black text-[#10223A] leading-[0.92] tracking-tight mb-8"
+            className="font-bold text-[#10223A] leading-[0.96] tracking-tight mb-8"
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
-              fontSize: "clamp(2.8rem, 7vw, 7rem)",
+              fontFamily: "var(--font-playfair), Georgia, serif",
+              fontSize: "clamp(2.8rem, 7vw, 6rem)",
             }}
           >
             Your dream trip is

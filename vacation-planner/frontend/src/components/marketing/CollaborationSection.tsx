@@ -56,10 +56,10 @@ export function CollaborationSection() {
 
             <FadeUp delay={0.1}>
               <h2
-                className="font-black text-[#10223A] leading-[1.0] mb-6"
+                className="font-bold text-[#10223A] leading-[1.08] mb-6"
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontSize: "clamp(2rem, 4vw, 4rem)",
+                  fontFamily: "var(--font-playfair), Georgia, serif",
+                  fontSize: "clamp(2rem, 4vw, 3.6rem)",
                 }}
               >
                 Plan as a team,

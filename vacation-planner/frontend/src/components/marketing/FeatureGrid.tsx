@@ -48,8 +48,8 @@ type Feature = (typeof FEATURES)[0];
 function FeatureCard({ icon: Icon, color, title, desc }: Feature) {
   return (
     <motion.div
-      whileHover={{ y: -6, scale: 1.015 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
       className="group relative rounded-[22px] bg-[#FFFBF3] border-2 p-7 overflow-hidden shadow-[0_6px_28px_rgba(0,0,0,0.08)] hover:shadow-[0_14px_44px_rgba(0,0,0,0.13)] transition-all duration-300 cursor-default"
       style={{ borderColor: color + "40" }}
     >
@@ -118,10 +118,10 @@ export function FeatureGrid() {
           </FadeUp>
           <FadeUp delay={0.1}>
             <h2
-              className="font-black text-[#10223A] leading-[1.0] tracking-tight"
+              className="font-serif-display font-bold text-[#10223A] leading-[1.08] tracking-tight"
               style={{
-                fontFamily: "'Archivo Black', sans-serif",
-                fontSize: "clamp(2.2rem, 5vw, 4.5rem)",
+                fontFamily: "var(--font-playfair), Georgia, serif",
+                fontSize: "clamp(2.2rem, 5vw, 4rem)",
               }}
             >
               One platform.

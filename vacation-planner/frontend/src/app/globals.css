@@ -6,6 +6,11 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ── Serif utility for editorial headings ─────────────────────────────────── */
+.font-serif-display {
+  font-family: var(--font-playfair), 'Georgia', serif;
+}
+
 @keyframes reveal-up {
   from {
     opacity: 0;

@@ -78,8 +78,9 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
             <h1
               className="reveal-up font-black text-[#10223A] mb-7 leading-[1.02]"
               style={{
-                fontFamily: "'Archivo Black', sans-serif",
+                fontFamily: "var(--font-playfair), Georgia, serif",
                 fontSize: "clamp(2.6rem, 5vw, 5.2rem)",
+                fontWeight: 700,
                 "--reveal-delay": "80ms",
                 "--reveal-duration": "1000ms",
                 "--reveal-y": "28px",
@@ -121,9 +122,9 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
             >
               <motion.button
                 onClick={onStartPlanning}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
                 className="relative group overflow-hidden rounded-full px-8 py-4 font-bold text-white text-base flex items-center gap-2.5 shadow-[0_4px_24px_rgba(255,107,90,0.35)]"
                 style={{ fontFamily: "'Space Grotesk', sans-serif" }}
               >
