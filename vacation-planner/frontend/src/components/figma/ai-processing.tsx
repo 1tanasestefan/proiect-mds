@@ -83,13 +83,13 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
   }, [currentPhase, progress]);
 
   return (
-    <section className="min-h-screen bg-gray-50 dark:bg-[#050505] flex items-center justify-center px-8 relative overflow-hidden">
-      {/* Animated background grid */}
-      <div className="absolute inset-0 opacity-10 dark:opacity-20">
+    <section className="min-h-screen bg-[#FFF6E8] flex items-center justify-center px-8 relative overflow-hidden">
+      {/* Subtle warm background grid */}
+      <div className="absolute inset-0 opacity-[0.04]">
         <div className="absolute inset-0" style={{
           backgroundImage: `
-            linear-gradient(rgba(0,240,255,0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,240,255,0.1) 1px, transparent 1px)
+            linear-gradient(rgba(255,107,90,0.4) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,107,90,0.4) 1px, transparent 1px)
           `,
           backgroundSize: "50px 50px",
         }} />
@@ -234,8 +234,8 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
           >
             <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#FF6B5A] via-white to-[#FF9F43] p-[2px]">
-              <div className="h-full w-full bg-gray-50 dark:bg-[#050505] rounded-2xl flex items-center justify-center">
-                <Brain className="h-8 w-8 text-gray-800 dark:text-white" />
+              <div className="h-full w-full bg-[#FFF6E8] rounded-2xl flex items-center justify-center">
+                <Brain className="h-8 w-8 text-[#10223A]" />
               </div>
             </div>
           </motion.div>
@@ -244,7 +244,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
         {/* Status Container */}
         <motion.div
           layout
-          className="backdrop-blur-xl bg-white/80 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-[32px] p-12 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+          className="bg-[#FFFBF3] border border-[rgba(255,107,90,0.14)] rounded-[32px] p-12 shadow-[0_2px_24px_rgba(255,107,90,0.08)]"
         >
           {/* Current Phase */}
           <motion.div
@@ -254,7 +254,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             className="text-center mb-12"
           >
             <h3 
-              className="text-4xl font-bold text-gray-900 dark:text-white mb-4"
+              className="text-4xl font-bold text-[#10223A] mb-4"
               style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
               {PHASES[currentPhase].label}
@@ -273,7 +273,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
                 </span>
               )}
               {PHASES[currentPhase].agent === "both" && (
-                <span className="text-gray-500 dark:text-white/60 font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
+                <span className="text-[#64748B] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>
                   <Brain className="inline h-4 w-4 mr-1" />
                   Dual AI Processing
                 </span>
@@ -282,18 +282,18 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
           </motion.div>
 
           {/* Progress Bar */}
-          <div className="relative h-3 bg-black/10 dark:bg-white/5 rounded-full overflow-hidden">
+          <div className="relative h-3 bg-[#FF6B5A]/10 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.3 }}
-              className="h-full bg-gradient-to-r from-[#8A2BE2] via-white to-[#00F0FF] rounded-full shadow-[0_0_20px_rgba(138,43,226,0.5)]"
+              className="h-full bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] rounded-full shadow-[0_0_12px_rgba(255,107,90,0.4)]"
             />
           </div>
 
           {/* Progress Percentage */}
           <motion.p 
-            className="text-center text-gray-600 dark:text-white/80 mt-6 text-xl"
+            className="text-center text-[#64748B] mt-6 text-xl"
             style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {Math.floor(progress)}%
@@ -304,7 +304,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center text-[#8A2BE2] mt-4 text-sm font-medium animate-pulse"
+              className="text-center text-[#FF6B5A] mt-4 text-sm font-medium animate-pulse"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               Our agents are finding the best hidden gems... almost there!
@@ -325,7 +325,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
                   repeat: Infinity,
                   delay: i * 0.2,
                 }}
-                className="h-2 w-2 rounded-full bg-gray-400 dark:bg-white"
+                className="h-2 w-2 rounded-full bg-[#FF9F43]"
               />
             ))}
           </div>

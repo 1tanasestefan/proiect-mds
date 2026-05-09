@@ -132,7 +132,7 @@ function SpotlightSlideshow() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
-              <h2 className="text-5xl font-bold text-white mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <h2 className="text-5xl font-bold text-white mb-3" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
                 {slide.label}
               </h2>
               <div className="flex flex-wrap gap-3 text-white/90 font-medium mb-5" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -180,7 +180,7 @@ const container = {
 
 const item = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
+  show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: "easeOut" } }
 };
 
 interface SavedItinerary {
@@ -260,7 +260,7 @@ export default function DashboardPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
           >
-            <h1 className="text-4xl md:text-5xl font-black mb-4 text-[#10223A]" style={{ fontFamily: "'Archivo Black', sans-serif" }}>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 text-[#10223A]" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
               Welcome back, {displayName}
             </h1>
             <p className="text-lg text-[#64748B]" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -325,7 +325,7 @@ export default function DashboardPage() {
                   {itineraries.map((trip) => (
                     <motion.div 
                       key={trip.id}
-                      whileHover={{ y: -5 }}
+                      whileHover={{ y: -4 }}
                       className="group flex flex-col bg-[#FFFBF3] border border-[rgba(255,107,90,0.14)] rounded-2xl overflow-hidden hover:border-[#FF6B5A]/40 transition-all duration-300 shadow-sm hover:shadow-[0_10px_30px_rgba(255,107,90,0.12)]"
                     >
                       <div className="p-6 flex-1 flex flex-col">

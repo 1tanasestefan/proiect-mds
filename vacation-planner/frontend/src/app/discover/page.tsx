@@ -75,7 +75,7 @@ export default function DiscoverPage() {
               <Compass className="h-3 w-3" />
               Community Discover
             </div>
-            <h1 className="text-5xl md:text-6xl font-black mb-4 text-[#10223A]" style={{ fontFamily: "'Archivo Black', sans-serif" }}>
+            <h1 className="text-5xl md:text-6xl font-bold mb-4 text-[#10223A]" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
               EXPLORE THE WORLD
             </h1>
             <p className="text-lg text-[#64748B] max-w-xl" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -146,9 +146,9 @@ export default function DiscoverPage() {
                 animate={{ opacity: 1 }}
                 className="text-center py-32"
               >
-                <Sparkles className="h-16 w-16 text-gray-300 dark:text-white/10 mx-auto mb-6" />
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No itineraries found</h3>
-                <p className="text-gray-500 dark:text-white/40">The community is still packing. Be the first to share a trip!</p>
+                <Sparkles className="h-16 w-16 text-[#64748B]/20 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-[#10223A] mb-2">No itineraries found</h3>
+                <p className="text-[#64748B]">The community is still packing. Be the first to share a trip!</p>
               </motion.div>
             )}
           </AnimatePresence>

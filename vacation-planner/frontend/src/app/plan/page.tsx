@@ -104,7 +104,7 @@ export default function PlanTripPage() {
         <div className="relative">
           {error && (
             <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-xl px-4">
-              <div className="backdrop-blur-xl bg-red-500/10 border border-red-500/20 text-red-200 px-6 py-4 rounded-2xl shadow-2xl flex items-center justify-between">
+              <div className="backdrop-blur-xl bg-red-500/8 border border-red-500/20 text-red-600 px-6 py-4 rounded-2xl shadow-lg flex items-center justify-between">
                 <span>{error}</span>
                 <button onClick={() => setError(null)} className="opacity-50 hover:opacity-100 italic transition-opacity">dismiss</button>
               </div>

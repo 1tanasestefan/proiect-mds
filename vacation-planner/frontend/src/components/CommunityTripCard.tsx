@@ -101,7 +101,7 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
 
   return (
     <motion.div
-      whileHover={{ y: -8 }}
+      whileHover={{ y: -4 }}
       className="group relative backdrop-blur-xl bg-[#FFFBF3] border border-[rgba(255,107,90,0.14)] rounded-[32px] overflow-hidden shadow-[0_8px_32px_rgba(255,107,90,0.10)] transition-all duration-500 hover:border-[#FF6B5A]/40"
     >
       {/* Cover Image Section */}

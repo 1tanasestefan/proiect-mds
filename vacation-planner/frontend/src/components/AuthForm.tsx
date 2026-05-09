@@ -65,7 +65,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       <div className="text-center mb-10">
         <h2 
           className="text-4xl font-bold bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] bg-clip-text text-transparent mb-3"
-          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+          style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
         >
           {mode === 'login' ? 'Welcome Back' : 'Create Account'}
         </h2>
@@ -134,7 +134,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         </div>
 
         <motion.button
-          whileHover={{ scale: 1.02 }}
+          whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
           type="submit"
           disabled={loading || !supabase}
