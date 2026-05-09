@@ -3,6 +3,7 @@ import os
 import asyncio
 import json
 import re
+import random
 import httpx
 from dotenv import load_dotenv
 from pydantic_ai import Agent
@@ -89,7 +90,7 @@ async def fetch_image_for_activity(activity_name: str, destination: str) -> str:
     
     # Primary strict query
     query = f"{activity_name} {destination}"
-    params = {"query": query, "per_page": 1, "orientation": "landscape"}
+    params = {"query": query, "per_page": 10, "orientation": "landscape"}
     
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -98,19 +99,21 @@ async def fetch_image_for_activity(activity_name: str, destination: str) -> str:
             if response.status_code == 200:
                 data = response.json()
                 if data.get("photos"):
-                    img_url = data["photos"][0]["src"]["large"]
+                    photo = random.choice(data["photos"])
+                    img_url = photo["src"]["large"]
                     logger.info(f"[img] ✅ Found via Pexels (Primary): '{query}' -> {img_url[:60]}")
                     return img_url
             
             # Fallback query
             logger.debug(f"[img] No results for '{query}', trying fallback query: '{destination}'")
-            params_fallback = {"query": destination, "per_page": 1, "orientation": "landscape"}
+            params_fallback = {"query": destination, "per_page": 10, "orientation": "landscape"}
             response_fallback = await client.get(url, headers=headers, params=params_fallback)
             
             if response_fallback.status_code == 200:
                 data_fw = response_fallback.json()
                 if data_fw.get("photos"):
-                    img_url = data_fw["photos"][0]["src"]["large"]
+                    photo = random.choice(data_fw["photos"])
+                    img_url = photo["src"]["large"]
                     logger.info(f"[img] ✅ Found via Pexels (Fallback): '{destination}' -> {img_url[:60]}")
                     return img_url
 

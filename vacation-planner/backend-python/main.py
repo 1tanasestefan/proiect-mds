@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from models import UserInput, FinalTripPlan, ItineraryUpdate, VoteRequest, CommunityItinerary
@@ -7,6 +8,7 @@ from agent_experience import generate_experience_itinerary
 from agent_regenerate import regenerate_single_activity
 import math
 import json
+import httpx
 from fastapi import BackgroundTasks
 from agent_logistics import generate_logistics
 from auth_middleware import get_current_user, get_optional_user
@@ -35,6 +37,40 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": "AI Travel Planner - Zero-Cost API Backend is running"}
+
+
+@app.get("/api/geocoding/search")
+async def geocoding_search(q: str = Query(..., min_length=2)):
+    """Proxy to Photon geocoder — returns [{place_id, display_name}]."""
+    url = "https://photon.komoot.io/api/"
+    params = {"q": q, "limit": 5, "lang": "en"}
+    headers = {"User-Agent": "VibeTrips/1.0"}
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            resp = await client.get(url, params=params, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            results = []
+            for i, feature in enumerate(data.get("features", [])):
+                props = feature.get("properties", {})
+                city = props.get("city") or props.get("name", "")
+                country = props.get("country", "")
+                if city and country:
+                    display = f"{city}, {country}"
+                elif props.get("name") and country:
+                    display = f"{props['name']}, {country}"
+                else:
+                    display = props.get("name", q)
+                results.append({"place_id": i, "display_name": display})
+            seen = set()
+            unique = []
+            for r in results:
+                if r["display_name"] not in seen:
+                    seen.add(r["display_name"])
+                    unique.append(r)
+            return JSONResponse(content=unique)
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Geocoding service error: {e}")
 
 
 DESTINATION_CATALOG = [
