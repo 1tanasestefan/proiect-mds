@@ -40,7 +40,7 @@ export default function PlanTripPage() {
     setViewState('PROCESSING');
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 100000); // 100s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
 
     try {
       const payload = {
