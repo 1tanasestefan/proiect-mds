@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useDebounce } from "@/hooks/useDebounce";
 import { supabase } from "@/lib/supabase";
-import { apiUrl } from "@/lib/backend";
 import { 
   Wallet, 
   Heart, 
@@ -36,7 +35,7 @@ interface FormData {
 }
 
 interface NominatimResult {
-  place_id: number | string;
+  place_id: number;
   display_name: string;
 }
 
@@ -95,17 +94,29 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
     setLoading: (b: boolean) => void,
     setHighlight: (n: number) => void,
   ) => {
-    if (term.trim().length >= 2 && term !== selected) {
+    if (term && term !== selected) {
       setLoading(true);
       try {
-        const response = await fetch(apiUrl(`/api/location-search?q=${encodeURIComponent(term)}`));
-        if (!response.ok) throw new Error("Location search failed");
-        const data = (await response.json()) as { results?: NominatimResult[] };
-        setSuggestions(data.results || []);
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(term)}&featuretype=city,settlement&limit=5`;
+        const response = await fetch(url, {
+          headers: {
+            'Accept-Language': 'en-US,en;q=0.9',
+            'User-Agent': 'VacationPlannerApp/1.0'
+          }
+        });
+        if (!response.ok) throw new Error('Geocoding failed');
+        const data = await response.json() as NominatimResult[];
+        const parsed = data.map((item) => {
+          const parts = item.display_name.split(',').map((p: string) => p.trim());
+          const formatted = parts.length >= 3 
+            ? `${parts[0]}, ${parts[parts.length - 1]}`
+            : item.display_name;
+          return { place_id: item.place_id, display_name: formatted };
+        });
+        setSuggestions(parsed);
         setHighlight(-1);
       } catch (error) {
         console.error("Geocoding error", error);
-        setSuggestions([]);
       } finally {
         setLoading(false);
       }
@@ -264,9 +275,11 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
     setRecommendations([]);
 
     try {
+      const baseUrl = (process.env.NEXT_PUBLIC_ITINERARY_API_URL || "http://127.0.0.1:8000/api/generate-itinerary")
+        .replace(/\/api\/generate-itinerary$/, "");
       const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
 
-      const response = await fetch(apiUrl("/api/recommend-destinations"), {
+      const response = await fetch(`${baseUrl}/api/recommend-destinations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -349,8 +362,7 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
                   handleInputChange(config.field, selected.display_name);
                   config.setSuggestions([]);
                   config.setHighlightedIndex(-1);
-                } else if (formData[config.field].trim()) {
-                  config.setSelectedLocation(formData[config.field].trim());
+                } else if (formData[config.field].trim() && config.selectedLocation) {
                   setCurrentStep(config.nextStep);
                 }
               }
@@ -407,22 +419,11 @@ export function InputFormSection({ onSubmit }: { onSubmit: (data: FormData) => v
           className="mt-8 flex justify-end"
         >
           <motion.button
-<<<<<<< HEAD
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            disabled={!formData[config.field].trim()}
-            onClick={() => {
-              if (!config.selectedLocation) config.setSelectedLocation(formData[config.field].trim());
-              setCurrentStep(config.nextStep);
-            }}
-            className="px-8 py-4 rounded-full bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 font-medium flex items-center gap-2 hover:bg-[#00F0FF]/20 transition-all shadow-[0_0_20px_rgba(0,240,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
-=======
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             disabled={!formData[config.field].trim() || !config.selectedLocation}
             onClick={() => setCurrentStep(config.nextStep)}
             className="px-8 py-4 rounded-full bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white font-medium flex items-center gap-2 shadow-[0_4px_18px_rgba(255,107,90,0.30)] hover:shadow-[0_6px_24px_rgba(255,107,90,0.45)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
->>>>>>> DEV-17-Change-frontend-color-theme
           >
             Continue
             <ArrowRight className="h-5 w-5" />
