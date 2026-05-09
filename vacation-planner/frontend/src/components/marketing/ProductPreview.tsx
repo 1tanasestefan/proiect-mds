@@ -23,10 +23,10 @@ const DAYS = [
 ];
 
 const BUDGET = [
-  { label: "Flights",     pct: 40, color: "#00F0FF" },
-  { label: "Hotels",      pct: 30, color: "#8A2BE2" },
-  { label: "Food",        pct: 20, color: "#F59E0B" },
-  { label: "Activities",  pct: 10, color: "#10B981" },
+  { label: "Flights",     pct: 40, color: "#FF6B5A" },
+  { label: "Hotels",      pct: 30, color: "#FF9F43" },
+  { label: "Food",        pct: 20, color: "#FFD166" },
+  { label: "Activities",  pct: 10, color: "#2EC4B6" },
 ];
 
 const PACKING = [
@@ -60,12 +60,12 @@ function BentoCard({
 }) {
   return (
     <div
-      className={`rounded-[22px] bg-white/[0.03] border border-white/8 p-6 hover:border-white/[0.13] transition-colors duration-300 ${className}`}
+      className={`rounded-[22px] bg-[#FFFBF3] border border-[rgba(255,107,90,0.12)] p-6 hover:border-[rgba(255,107,90,0.28)] transition-colors duration-300 ${className}`}
     >
       <div className="flex items-center gap-2">
         <Icon className="h-3.5 w-3.5" style={{ color: iconColor }} />
         <span
-          className="text-white/38 text-xs font-medium"
+          className="text-[#64748B] text-xs font-medium"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
           {label}
@@ -80,17 +80,17 @@ function BentoCard({
 
 export function ProductPreview() {
   return (
-    <section className="relative bg-[#030305] overflow-hidden py-32 px-6 md:px-12">
+    <section className="relative bg-[#FFF6E8] overflow-hidden py-32 px-6 md:px-12">
       {/* Ambient */}
-      <div className="absolute top-0 right-1/4 h-[600px] w-[600px] rounded-full bg-[#8A2BE2]/5 blur-[220px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 h-[400px] w-[400px] rounded-full bg-[#00F0FF]/5 blur-[200px] pointer-events-none" />
+      <div className="absolute top-0 right-1/4 h-[600px] w-[600px] rounded-full bg-[#FF9F43]/6 blur-[220px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 h-[400px] w-[400px] rounded-full bg-[#FF6B5A]/6 blur-[200px] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16">
           <FadeUp>
             <p
-              className="text-[#8A2BE2]/50 text-[0.65rem] uppercase tracking-[0.35em] mb-5 font-medium"
+              className="text-[#FF9F43]/80 text-[0.65rem] uppercase tracking-[0.35em] mb-5 font-medium"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               Product preview
@@ -98,7 +98,7 @@ export function ProductPreview() {
           </FadeUp>
           <FadeUp delay={0.1}>
             <h2
-              className="font-black text-white leading-[1.0]"
+              className="font-black text-[#10223A] leading-[1.0]"
               style={{
                 fontFamily: "'Archivo Black', sans-serif",
                 fontSize: "clamp(2rem, 4.5vw, 4.2rem)",
@@ -106,7 +106,7 @@ export function ProductPreview() {
             >
               Your entire trip,
               <br />
-              <span className="bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] bg-clip-text text-transparent">
                 beautifully organized.
               </span>
             </h2>
@@ -121,14 +121,14 @@ export function ProductPreview() {
             <BentoCard
               label="Day-by-Day Plan"
               icon={CalendarDays}
-              iconColor="#00F0FF"
+              iconColor="#FF6B5A"
               className="h-full min-h-[340px]"
             >
               <div className="mt-4 space-y-4">
                 {DAYS.map((d, di) => (
                   <div key={di}>
                     <p
-                      className="text-[10px] text-[#00F0FF]/50 uppercase tracking-widest mb-2 font-medium"
+                      className="text-[10px] text-[#FF6B5A]/60 uppercase tracking-widest mb-2 font-medium"
                       style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                       {d.label}
@@ -136,9 +136,9 @@ export function ProductPreview() {
                     <div className="space-y-2">
                       {d.items.map((item, ii) => (
                         <div key={ii} className="flex items-center gap-2.5">
-                          <div className="h-1.5 w-1.5 rounded-full bg-[#00F0FF]/35 flex-shrink-0" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-[#FF6B5A]/35 flex-shrink-0" />
                           <span
-                            className="text-white/60 text-sm"
+                            className="text-[#64748B] text-sm"
                             style={{ fontFamily: "'Inter', sans-serif" }}
                           >
                             {item}
@@ -147,7 +147,7 @@ export function ProductPreview() {
                       ))}
                     </div>
                     {di < DAYS.length - 1 && (
-                      <div className="mt-3.5 h-px bg-white/[0.05]" />
+                      <div className="mt-3.5 h-px bg-[rgba(255,107,90,0.1)]" />
                     )}
                   </div>
                 ))}
@@ -160,12 +160,12 @@ export function ProductPreview() {
             <BentoCard
               label="Budget Overview"
               icon={Wallet}
-              iconColor="#8A2BE2"
+              iconColor="#FF9F43"
               className="min-h-[340px]"
             >
               <div className="mt-4">
                 <p
-                  className="font-black text-white leading-none mb-0.5"
+                  className="font-black text-[#10223A] leading-none mb-0.5"
                   style={{
                     fontFamily: "'Archivo Black', sans-serif",
                     fontSize: "2rem",
@@ -174,7 +174,7 @@ export function ProductPreview() {
                   $1,840
                 </p>
                 <p
-                  className="text-white/28 text-xs mb-5"
+                  className="text-[#64748B]/70 text-xs mb-5"
                   style={{ fontFamily: "'Inter', sans-serif" }}
                 >
                   total · 2 travelers · 5 days
@@ -184,19 +184,19 @@ export function ProductPreview() {
                     <div key={i}>
                       <div className="flex justify-between mb-1.5">
                         <span
-                          className="text-white/45 text-xs"
+                          className="text-[#64748B] text-xs"
                           style={{ fontFamily: "'Inter', sans-serif" }}
                         >
                           {item.label}
                         </span>
                         <span
-                          className="text-white/35 text-xs font-medium"
+                          className="text-[#64748B]/70 text-xs font-medium"
                           style={{ fontFamily: "'Inter', sans-serif" }}
                         >
                           {item.pct}%
                         </span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                      <div className="h-1.5 rounded-full bg-[rgba(255,107,90,0.12)] overflow-hidden">
                         <motion.div
                           className="h-full rounded-full"
                           style={{ backgroundColor: item.color }}
@@ -221,16 +221,16 @@ export function ProductPreview() {
             <BentoCard
               label="Route Map"
               icon={MapPin}
-              iconColor="#00F0FF"
+              iconColor="#FF6B5A"
               className="min-h-[240px]"
             >
-              <div className="mt-4 relative h-36 rounded-xl overflow-hidden bg-[#0a1520] border border-white/5">
+              <div className="mt-4 relative h-36 rounded-xl overflow-hidden bg-[#FFE6D6]/60 border border-[rgba(255,107,90,0.15)]">
                 {/* Grid texture */}
                 <div
                   className="absolute inset-0 opacity-[0.18]"
                   style={{
                     backgroundImage:
-                      "linear-gradient(rgba(0,240,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(0,240,255,0.4) 1px, transparent 1px)",
+                      "linear-gradient(rgba(255,107,90,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,107,90,0.4) 1px, transparent 1px)",
                     backgroundSize: "20px 20px",
                   }}
                 />
@@ -242,7 +242,7 @@ export function ProductPreview() {
                 >
                   <path
                     d="M20,25 Q35,35 50,45 Q62,55 75,65"
-                    stroke="#00F0FF"
+                    stroke="#FF6B5A"
                     strokeWidth="1"
                     fill="none"
                     strokeDasharray="3,3"
@@ -260,9 +260,9 @@ export function ProductPreview() {
                     className="absolute flex flex-col items-center"
                     style={{ top: dot.top, left: dot.left }}
                   >
-                    <div className="h-3 w-3 rounded-full bg-[#00F0FF] border-2 border-[#0a1520] shadow-[0_0_10px_rgba(0,240,255,0.9)]" />
+                    <div className="h-3 w-3 rounded-full bg-[#FF6B5A] border-2 border-[#FFE6D6] shadow-[0_0_10px_rgba(255,107,90,0.7)]" />
                     <span
-                      className="text-[8px] text-[#00F0FF]/75 mt-0.5 whitespace-nowrap"
+                      className="text-[8px] text-[#FF6B5A]/80 mt-0.5 whitespace-nowrap"
                       style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                       {dot.name}
@@ -278,7 +278,7 @@ export function ProductPreview() {
             <BentoCard
               label="Packing List"
               icon={Package}
-              iconColor="#8A2BE2"
+              iconColor="#FF9F43"
               className="min-h-[240px]"
             >
               <div className="mt-4 space-y-2.5">
@@ -288,7 +288,7 @@ export function ProductPreview() {
                       className={`h-4 w-4 rounded-md border flex-shrink-0 flex items-center justify-center ${
                         item.done
                           ? "bg-[#10B981]/20 border-[#10B981]/40"
-                          : "bg-white/[0.03] border-white/10"
+                          : "bg-[rgba(255,107,90,0.06)] border-[rgba(255,107,90,0.20)]"
                       }`}
                     >
                       {item.done && (
@@ -298,8 +298,8 @@ export function ProductPreview() {
                     <span
                       className={`text-sm ${
                         item.done
-                          ? "text-white/40 line-through"
-                          : "text-white/72"
+                          ? "text-[#64748B]/50 line-through"
+                          : "text-[#10223A]/80"
                       }`}
                       style={{ fontFamily: "'Inter', sans-serif" }}
                     >
@@ -316,14 +316,14 @@ export function ProductPreview() {
             <BentoCard
               label="Weather Ahead"
               icon={Cloud}
-              iconColor="#00F0FF"
+              iconColor="#FF6B5A"
               className="min-h-[240px]"
             >
               <div className="mt-4">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <p
-                      className="font-black text-white leading-none"
+                      className="font-black text-[#10223A] leading-none"
                       style={{
                         fontFamily: "'Archivo Black', sans-serif",
                         fontSize: "2.4rem",
@@ -332,7 +332,7 @@ export function ProductPreview() {
                       21°
                     </p>
                     <p
-                      className="text-white/35 text-xs mt-1"
+                      className="text-[#64748B]/60 text-xs mt-1"
                       style={{ fontFamily: "'Inter', sans-serif" }}
                     >
                       Paris · Apr 15
@@ -344,17 +344,17 @@ export function ProductPreview() {
                   {FORECAST.map((w, i) => (
                     <div
                       key={i}
-                      className="rounded-xl bg-white/[0.04] border border-white/5 p-2.5 text-center"
+                      className="rounded-xl bg-[#FFFBF3] border border-[rgba(255,107,90,0.12)] p-2.5 text-center"
                     >
                       <p
-                        className="text-white/35 text-[10px] mb-1"
+                        className="text-[#64748B]/60 text-[10px] mb-1"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                       >
                         {w.day}
                       </p>
                       <p className="text-xl">{w.icon}</p>
                       <p
-                        className="text-white/65 text-xs font-medium mt-0.5"
+                        className="text-[#10223A]/70 text-xs font-medium mt-0.5"
                         style={{ fontFamily: "'Inter', sans-serif" }}
                       >
                         {w.temp}

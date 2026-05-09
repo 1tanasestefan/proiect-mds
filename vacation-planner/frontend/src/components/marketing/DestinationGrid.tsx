@@ -11,21 +11,21 @@ const DESTINATIONS = [
     sub: "Sun, sand & turquoise water",
     image:
       "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80",
-    color: "#00F0FF",
+    color: "#FF6B5A",
   },
   {
     label: "City Breaks",
     sub: "Urban culture & vibrant nightlife",
     image:
       "https://images.unsplash.com/photo-1514565131-fce0801e6b2e?w=800&auto=format&fit=crop&q=80",
-    color: "#8A2BE2",
+    color: "#FF9F43",
   },
   {
     label: "Mountain Retreats",
     sub: "Fresh air & breathtaking vistas",
     image:
       "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&auto=format&fit=crop&q=80",
-    color: "#00F0FF",
+    color: "#FF6B5A",
   },
   {
     label: "Romantic Getaways",
@@ -112,11 +112,11 @@ export function DestinationGrid() {
   return (
     <section
       id="destinations"
-      className="relative bg-[#020204] overflow-hidden py-32 px-6 md:px-12"
+      className="relative bg-[#FFF6E8] overflow-hidden py-32 px-6 md:px-12"
     >
       {/* Ambient */}
-      <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-[#8A2BE2]/5 blur-[230px] pointer-events-none" />
-      <div className="absolute top-0 left-0 h-[400px] w-[400px] rounded-full bg-[#00F0FF]/4 blur-[200px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 h-[600px] w-[600px] rounded-full bg-[#FF9F43]/6 blur-[230px] pointer-events-none" />
+      <div className="absolute top-0 left-0 h-[400px] w-[400px] rounded-full bg-[#FF6B5A]/6 blur-[200px] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header row */}
@@ -124,7 +124,7 @@ export function DestinationGrid() {
           <div>
             <FadeUp>
               <p
-                className="text-[#8A2BE2]/50 text-[0.65rem] uppercase tracking-[0.35em] mb-5 font-medium"
+                className="text-[#FF9F43]/60 text-[0.65rem] uppercase tracking-[0.35em] mb-5 font-medium"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 Inspiration awaits
@@ -132,7 +132,7 @@ export function DestinationGrid() {
             </FadeUp>
             <FadeUp delay={0.1}>
               <h2
-                className="font-black text-white leading-[1.0]"
+                className="font-black text-[#10223A] leading-[1.0]"
                 style={{
                   fontFamily: "'Archivo Black', sans-serif",
                   fontSize: "clamp(2rem, 4.5vw, 4.2rem)",
@@ -141,7 +141,7 @@ export function DestinationGrid() {
                 Discover where
                 <br />
                 you want to{" "}
-                <span className="bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] bg-clip-text text-transparent">
                   go next.
                 </span>
               </h2>
@@ -149,7 +149,7 @@ export function DestinationGrid() {
           </div>
           <FadeUp delay={0.2}>
             <p
-              className="text-white/32 text-base max-w-xs leading-relaxed"
+              className="text-[#64748B] text-base max-w-xs leading-relaxed"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
               Browse by travel style. Our AI knows the best spots in every

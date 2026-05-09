@@ -15,37 +15,37 @@ interface MarketingHeroProps {
 }
 
 const ITINERARY = [
-  { time: "9:00 am",  place: "Eiffel Tower",        dot: "#00F0FF" },
-  { time: "12:30 pm", place: "Le Jules Verne",       dot: "#F59E0B" },
-  { time: "3:00 pm",  place: "Musée d'Orsay",        dot: "#8A2BE2" },
-  { time: "7:30 pm",  place: "Montmartre Wine Bar",  dot: "#F59E0B" },
+  { time: "9:00 am",  place: "Eiffel Tower",        dot: "#FF6B5A" },
+  { time: "12:30 pm", place: "Le Jules Verne",       dot: "#FF9F43" },
+  { time: "3:00 pm",  place: "Musée d'Orsay",        dot: "#FF8FA3" },
+  { time: "7:30 pm",  place: "Montmartre Wine Bar",  dot: "#FF9F43" },
 ];
 
 const AVATARS = [
-  { char: "A", color: "#00F0FF" },
-  { char: "S", color: "#8A2BE2" },
-  { char: "M", color: "#F59E0B" },
-  { char: "R", color: "#EF4444" },
-  { char: "T", color: "#10B981" },
+  { char: "A", color: "#FF6B5A" },
+  { char: "S", color: "#FF9F43" },
+  { char: "M", color: "#FF8FA3" },
+  { char: "R", color: "#FFC1A1" },
+  { char: "T", color: "#2EC4B6" },
 ];
 
 export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
   return (
     <section
       id="hero"
-      className="relative min-h-screen flex items-center overflow-hidden bg-[#020204]"
+      className="relative min-h-screen flex items-center overflow-hidden bg-[#FFF6E8]"
     >
       {/* ── Ambient background ── */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[20%] left-[28%] h-[700px] w-[700px] rounded-full bg-[#00F0FF]/7 blur-[200px]" />
-        <div className="absolute bottom-[20%] right-[18%] h-[550px] w-[550px] rounded-full bg-[#8A2BE2]/9 blur-[180px]" />
-        <div className="absolute top-0 right-0 h-[320px] w-[320px] rounded-full bg-[#00F0FF]/4 blur-[130px]" />
+        <div className="absolute top-[20%] left-[28%] h-[700px] w-[700px] rounded-full bg-[#FF6B5A]/8 blur-[200px]" />
+        <div className="absolute bottom-[20%] right-[18%] h-[550px] w-[550px] rounded-full bg-[#FF9F43]/8 blur-[180px]" />
+        <div className="absolute top-0 right-0 h-[320px] w-[320px] rounded-full bg-[#FFC1A1]/6 blur-[130px]" />
         {/* Grid texture */}
         <div
           className="absolute inset-0 opacity-[0.022]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
+              "linear-gradient(rgba(16,34,58,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(16,34,58,0.06) 1px, transparent 1px)",
             backgroundSize: "72px 72px",
           }}
         />
@@ -66,17 +66,17 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
               } as React.CSSProperties}
             >
               <span
-                className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[#00F0FF]/25 bg-[#00F0FF]/6 text-[#00F0FF] text-xs font-semibold tracking-widest uppercase"
+                className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[#FF6B5A]/25 bg-[#FF6B5A]/8 text-[#FF6B5A] text-xs font-semibold tracking-widest uppercase"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-[#00F0FF] animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#FF6B5A] animate-pulse" />
                 AI-Powered Travel Planning
               </span>
             </div>
 
             {/* Headline */}
             <h1
-              className="reveal-up font-black text-white mb-7 leading-[1.02]"
+              className="reveal-up font-black text-[#10223A] mb-7 leading-[1.02]"
               style={{
                 fontFamily: "'Archivo Black', sans-serif",
                 fontSize: "clamp(2.6rem, 5vw, 5.2rem)",
@@ -88,7 +88,7 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
               Plan unforgettable
               <br />
               trips,{" "}
-              <span className="bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] bg-clip-text text-transparent">
                 without
               </span>
               <br />
@@ -97,7 +97,7 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
 
             {/* Subtext */}
             <p
-              className="reveal-up text-lg md:text-xl text-white/50 leading-relaxed mb-10 max-w-[490px]"
+              className="reveal-up text-lg md:text-xl text-[#64748B] leading-relaxed mb-10 max-w-[490px]"
               style={{
                 fontFamily: "'Inter', sans-serif",
                 "--reveal-delay": "200ms",
@@ -124,11 +124,11 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                className="relative group overflow-hidden rounded-full px-8 py-4 font-bold text-white text-base flex items-center gap-2.5 shadow-[0_0_40px_rgba(0,240,255,0.35)]"
+                className="relative group overflow-hidden rounded-full px-8 py-4 font-bold text-white text-base flex items-center gap-2.5 shadow-[0_4px_24px_rgba(255,107,90,0.35)]"
                 style={{ fontFamily: "'Space Grotesk', sans-serif" }}
               >
-                <span className="absolute inset-0 bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2]" />
-                <span className="absolute inset-0 bg-gradient-to-r from-[#8A2BE2] to-[#00F0FF] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <span className="absolute inset-0 bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43]" />
+                <span className="absolute inset-0 bg-gradient-to-r from-[#FF9F43] to-[#FF6B5A] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <span className="relative z-10 flex items-center gap-2.5">
                   <Sparkles className="h-4 w-4" />
                   Start Planning — Free
@@ -138,10 +138,10 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
               <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="flex items-center gap-3 px-6 py-4 rounded-full border border-white/10 bg-white/[0.03] text-white/60 hover:text-white/80 hover:border-white/20 hover:bg-white/[0.06] font-medium text-base transition-all duration-300"
+                className="flex items-center gap-3 px-6 py-4 rounded-full border border-[rgba(255,107,90,0.22)] bg-[#FF6B5A]/4 text-[#10223A]/60 hover:text-[#10223A]/80 hover:border-[#FF6B5A]/30 hover:bg-[#FF6B5A]/8 font-medium text-base transition-all duration-300"
                 style={{ fontFamily: "'Space Grotesk', sans-serif" }}
               >
-                <span className="flex items-center justify-center h-7 w-7 rounded-full bg-white/10">
+                <span className="flex items-center justify-center h-7 w-7 rounded-full bg-[#FF6B5A]/12">
                   <Play className="h-3 w-3 ml-0.5 fill-current" />
                 </span>
                 See how it works
@@ -164,7 +164,7 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
                     className="h-8 w-8 rounded-full border-2 flex items-center justify-center text-[10px] font-bold"
                     style={{
                       backgroundColor: av.color + "25",
-                      borderColor: "#020204",
+                      borderColor: "#FFF6E8",
                       color: av.color,
                     }}
                   >
@@ -173,10 +173,10 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
                 ))}
               </div>
               <p
-                className="text-white/35 text-sm"
+                className="text-[#64748B]/60 text-sm"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
-                <span className="text-white/55 font-semibold">50,000+</span>{" "}
+                <span className="text-[#10223A]/70 font-semibold">50,000+</span>{" "}
                 trips planned this year
               </p>
             </div>
@@ -197,7 +197,7 @@ export function MarketingHero({ onStartPlanning }: MarketingHeroProps) {
       </div>
 
       {/* Bottom fade */}
-      <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-[#020204] to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-[#FFF6E8] to-transparent pointer-events-none" />
     </section>
   );
 }

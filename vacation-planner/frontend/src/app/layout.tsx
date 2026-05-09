@@ -19,11 +19,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen text-gray-900 dark:text-white selection:bg-cyan-500/30 selection:text-cyan-200 relative bg-[#f8f9fa] dark:bg-[#050505] transition-colors duration-300`}>
-        {/* Global Cinematic Background & Orbs */}
-        <div className="fixed inset-0 pointer-events-none z-[-1] bg-[#f8f9fa] dark:bg-[#050505] transition-colors duration-300">
-          <div className="absolute top-20 right-20 h-96 w-96 rounded-full bg-[#00F0FF]/10 dark:bg-[#00F0FF]/20 blur-[120px]" />
-          <div className="absolute bottom-20 left-20 h-96 w-96 rounded-full bg-[#8A2BE2]/10 dark:bg-[#8A2BE2]/20 blur-[120px]" />
+      <body className={`${inter.className} min-h-screen text-[#10223A] selection:bg-[#FF6B5A]/30 selection:text-[#FF6B5A] relative bg-[#FFF6E8]`}>
+        {/* Global Warm Background & Orbs */}
+        <div className="fixed inset-0 pointer-events-none z-[-1] bg-[#FFF6E8]">
+          <div className="absolute top-20 right-20 h-96 w-96 rounded-full bg-[#FF6B5A]/12 blur-[130px]" />
+          <div className="absolute bottom-20 left-20 h-96 w-96 rounded-full bg-[#FF9F43]/10 blur-[130px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-[#FFC1A1]/8 blur-[180px]" />
         </div>
         
         <ThemeProvider>

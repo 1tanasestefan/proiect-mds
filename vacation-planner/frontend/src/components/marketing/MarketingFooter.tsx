@@ -43,9 +43,9 @@ const SOCIALS = [
 
 export function MarketingFooter() {
   return (
-    <footer className="relative bg-[#010103] border-t border-white/[0.05] px-6 md:px-12 pt-16 pb-10 overflow-hidden">
+    <footer className="relative bg-[#10223A] border-t border-[rgba(255,107,90,0.12)] px-6 md:px-12 pt-16 pb-10 overflow-hidden">
       {/* Ambient */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[300px] w-[800px] rounded-full bg-[#8A2BE2]/4 blur-[210px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[300px] w-[800px] rounded-full bg-[#FF9F43]/6 blur-[210px] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-14">
@@ -53,7 +53,7 @@ export function MarketingFooter() {
           {/* Logo + tagline column */}
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-5">
-              <Sparkles className="h-5 w-5 text-[#00F0FF]" />
+              <Sparkles className="h-5 w-5 text-[#FF6B5A]" />
               <span
                 className="text-[1.25rem] font-bold text-white"
                 style={{ fontFamily: "'Archivo Black', sans-serif" }}

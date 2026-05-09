@@ -62,10 +62,10 @@ export function DiscoverSection() {
   const current = destinations[index];
 
   return (
-    <section className="relative bg-[#060606] overflow-hidden py-36 px-6 md:px-12">
+    <section className="relative bg-[#FFF6E8] overflow-hidden py-36 px-6 md:px-12">
       {/* Background orbs */}
-      <div className="absolute top-1/2 right-0 -translate-y-1/2 h-[700px] w-[400px] rounded-full bg-[#00F0FF]/4 blur-[220px] pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 h-[400px] w-[400px] rounded-full bg-[#8A2BE2]/4 blur-[200px] pointer-events-none" />
+      <div className="absolute top-1/2 right-0 -translate-y-1/2 h-[700px] w-[400px] rounded-full bg-[#FF6B5A]/8 blur-[220px] pointer-events-none" />
+      <div className="absolute bottom-0 left-1/4 h-[400px] w-[400px] rounded-full bg-[#FF9F43]/6 blur-[200px] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24 items-center">
@@ -73,18 +73,18 @@ export function DiscoverSection() {
           {/* ── Left: Text ──────────────────────────────────────── */}
           <div>
             <FadeUp>
-              <p className="text-[#8A2BE2]/60 text-[0.65rem] uppercase tracking-[0.3em] mb-6 font-medium"
+              <p className="text-[#FF9F43]/60 text-[0.65rem] uppercase tracking-[0.3em] mb-6 font-medium"
                  style={{ fontFamily: "'Inter', sans-serif" }}>
                 Curated by AI
               </p>
             </FadeUp>
 
             <FadeUp delay={0.1}>
-              <h2 className="text-[clamp(2.8rem,6vw,5.5rem)] font-black leading-[0.9] mb-10 text-white"
+              <h2 className="text-[clamp(2.8rem,6vw,5.5rem)] font-black leading-[0.9] mb-10 text-[#10223A]"
                   style={{ fontFamily: "'Archivo Black', sans-serif" }}>
                 Discover places<br />
                 you didn&apos;t know{" "}
-                <span className="bg-gradient-to-r from-[#8A2BE2] to-[#00F0FF] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#FF9F43] to-[#FF6B5A] bg-clip-text text-transparent">
                   existed
                 </span>
               </h2>
@@ -94,8 +94,8 @@ export function DiscoverSection() {
               {bullets.map((line, i) => (
                 <FadeUp key={i} delay={0.2 + i * 0.1}>
                   <div className="flex items-start gap-3">
-                    <span className="mt-[9px] h-[2px] w-5 flex-shrink-0 rounded-full bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2]" />
-                    <p className="text-white/55 text-lg leading-snug" style={{ fontFamily: "'Inter', sans-serif" }}>
+                    <span className="mt-[9px] h-[2px] w-5 flex-shrink-0 rounded-full bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43]" />
+                    <p className="text-[#64748B] text-lg leading-snug" style={{ fontFamily: "'Inter', sans-serif" }}>
                       {line}
                     </p>
                   </div>
@@ -104,7 +104,7 @@ export function DiscoverSection() {
             </div>
 
             <FadeUp delay={0.65}>
-              <p className="text-white/25 text-base leading-relaxed max-w-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
+              <p className="text-[#64748B]/50 text-base leading-relaxed max-w-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
                 Your next favorite place might be somewhere<br />
                 you&apos;ve never even searched for.
               </p>
@@ -191,7 +191,7 @@ export function DiscoverSection() {
                     style={{
                       width: i === index ? 24 : 8,
                       height: 8,
-                      background: i === index ? current.accent : "rgba(255,255,255,0.2)",
+                      background: i === index ? current.accent : "rgba(255,107,90,0.2)",
                     }}
                     aria-label={`Go to ${destinations[i].label}`}
                   />
@@ -202,15 +202,13 @@ export function DiscoverSection() {
               <div className="flex gap-2">
                 <button
                   onClick={() => go(-1)}
-                  className="flex items-center justify-center h-10 w-10 rounded-2xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
-                  aria-label="Previous"
+                  className="flex items-center justify-center h-10 w-10 rounded-2xl bg-[#FF6B5A]/8 border border-[rgba(255,107,90,0.18)] text-[#10223A]/50 hover:text-[#FF6B5A] hover:bg-[#FF6B5A]/12 hover:border-[#FF6B5A]/30 transition-all"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => go(1)}
-                  className="flex items-center justify-center h-10 w-10 rounded-2xl bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all"
-                  aria-label="Next"
+                  className="flex items-center justify-center h-10 w-10 rounded-2xl bg-[#FF6B5A]/8 border border-[rgba(255,107,90,0.18)] text-[#10223A]/50 hover:text-[#FF6B5A] hover:bg-[#FF6B5A]/12 hover:border-[#FF6B5A]/30 transition-all"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>

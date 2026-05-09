@@ -59,10 +59,10 @@ export default function DiscoverPage() {
   }, [fetchFeed]);
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] dark:bg-[#050505] pt-32 pb-24 px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-[#FFF6E8] pt-32 pb-24 px-8 relative overflow-hidden">
       {/* Background Decor */}
-      <div className="absolute top-0 right-0 h-[600px] w-[600px] rounded-full bg-[#00F0FF]/5 dark:bg-[#00F0FF]/10 blur-[150px] -z-10" />
-      <div className="absolute bottom-0 left-0 h-[600px] w-[600px] rounded-full bg-[#8A2BE2]/5 dark:bg-[#8A2BE2]/10 blur-[150px] -z-10" />
+      <div className="absolute top-0 right-0 h-[600px] w-[600px] rounded-full bg-[#FF6B5A]/8 blur-[150px] -z-10" />
+      <div className="absolute bottom-0 left-0 h-[600px] w-[600px] rounded-full bg-[#FF9F43]/6 blur-[150px] -z-10" />
 
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
@@ -71,14 +71,14 @@ export default function DiscoverPage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00F0FF]/10 border border-[#00F0FF]/20 text-[#00F0FF] text-xs font-bold uppercase tracking-widest mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF6B5A]/10 border border-[#FF6B5A]/20 text-[#FF6B5A] text-xs font-bold uppercase tracking-widest mb-4">
               <Compass className="h-3 w-3" />
               Community Discover
             </div>
-            <h1 className="text-5xl md:text-6xl font-black mb-4 bg-gradient-to-r from-gray-900 dark:from-white to-gray-500 dark:to-white/60 bg-clip-text text-transparent" style={{ fontFamily: "'Archivo Black', sans-serif" }}>
+            <h1 className="text-5xl md:text-6xl font-black mb-4 text-[#10223A]" style={{ fontFamily: "'Archivo Black', sans-serif" }}>
               EXPLORE THE WORLD
             </h1>
-            <p className="text-lg text-gray-500 dark:text-white/60 max-w-xl" style={{ fontFamily: "'Inter', sans-serif" }}>
+            <p className="text-lg text-[#64748B] max-w-xl" style={{ fontFamily: "'Inter', sans-serif" }}>
               Unlock hand-crafted itineraries from fellow explorers or showcase your own adventures to the community.
             </p>
           </motion.div>
@@ -87,14 +87,14 @@ export default function DiscoverPage() {
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 p-1.5 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl backdrop-blur-xl shadow-lg self-center md:self-auto"
+            className="flex items-center gap-2 p-1.5 bg-[#FFFBF3] border border-[rgba(255,107,90,0.18)] rounded-2xl backdrop-blur-xl shadow-lg self-center md:self-auto"
           >
             <button
               onClick={() => setSortBy("likes")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 sortBy === "likes" 
-                  ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md" 
-                  : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"
+                  ? "bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white shadow-md" 
+                  : "text-[#64748B]/60 hover:text-[#10223A] hover:bg-[#FF6B5A]/8"
               }`}
             >
               <TrendingUp className="h-4 w-4" />
@@ -104,8 +104,8 @@ export default function DiscoverPage() {
               onClick={() => setSortBy("newest")}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
                 sortBy === "newest" 
-                  ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md" 
-                  : "text-gray-500 dark:text-white/40 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"
+                  ? "bg-gradient-to-r from-[#FF6B5A] to-[#FF9F43] text-white shadow-md" 
+                  : "text-[#64748B]/60 hover:text-[#10223A] hover:bg-[#FF6B5A]/8"
               }`}
             >
               <Clock className="h-4 w-4" />
@@ -125,7 +125,7 @@ export default function DiscoverPage() {
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 flex flex-col items-center justify-center pt-20"
               >
-                <Loader2 className="h-10 w-10 text-[#00F0FF] animate-spin mb-4" />
+                <Loader2 className="h-10 w-10 text-[#FF6B5A] animate-spin mb-4" />
                 <p className="text-gray-400 font-medium animate-pulse">Scanning the globe...</p>
               </motion.div>
             ) : itineraries.length > 0 ? (
