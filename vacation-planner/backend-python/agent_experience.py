@@ -75,10 +75,19 @@ def _is_valid_image(url: str) -> bool:
     return any(ext in low for ext in VALID_EXTENSIONS)
 
 
-async def fetch_image_for_activity(activity_name: str, destination: str) -> str:
+def _pick_photo(photos: list) -> str:
+    """Pick from top 3 results for relevance, with slight variety."""
+    pool = photos[:3] if len(photos) >= 3 else photos
+    return random.choice(pool)["src"]["large"]
+
+
+async def fetch_image_for_activity(activity_name: str, destination: str, activity_type: str = "") -> str:
     """
-    Fetches high-quality, relevant images instantly using the free Pexels API.
-    Replaces rate-limited DuckDuckGo logic.
+    3-tier query strategy for accurate, activity-specific images:
+      1. "{activity_name} {destination}"  — most specific
+      2. "{activity_name}"                — activity without location
+      3. "{activity_type} {destination}"  — type-based fallback
+    Picks from top 3 results to balance relevance and variety.
     """
     pexels_key = os.getenv("PEXELS_API_KEY")
     if not pexels_key:
@@ -87,35 +96,47 @@ async def fetch_image_for_activity(activity_name: str, destination: str) -> str:
 
     url = "https://api.pexels.com/v1/search"
     headers = {"Authorization": pexels_key}
-    
-    # Primary strict query
-    query = f"{activity_name} {destination}"
-    params = {"query": query, "per_page": 10, "orientation": "landscape"}
-    
+
+    # Map activity types to better search terms
+    TYPE_SEARCH_MAP = {
+        "dining": "restaurant food dining",
+        "nightlife": "nightlife bar cocktails",
+        "tour": "city tour sightseeing",
+        "cruise": "boat cruise sea",
+        "cookingclass": "cooking class food",
+        "festival": "festival celebration crowd",
+        "adventure": "adventure outdoor sport",
+        "culture": "culture museum art",
+        "relaxation": "spa relaxation wellness",
+        "shopping": "shopping market street",
+        "beach": "beach sea waves",
+        "museum": "museum art gallery",
+        "landmark": "landmark monument famous",
+        "park": "nature park garden",
+        "sightseeing": "sightseeing tourist attraction",
+    }
+    type_term = TYPE_SEARCH_MAP.get(activity_type.lower(), activity_type)
+
+    queries = [
+        f"{activity_name} {destination}",
+        activity_name,
+        f"{type_term} {destination}" if type_term else None,
+    ]
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(url, headers=headers, params=params)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("photos"):
-                    photo = random.choice(data["photos"])
-                    img_url = photo["src"]["large"]
-                    logger.info(f"[img] ✅ Found via Pexels (Primary): '{query}' -> {img_url[:60]}")
-                    return img_url
-            
-            # Fallback query
-            logger.debug(f"[img] No results for '{query}', trying fallback query: '{destination}'")
-            params_fallback = {"query": destination, "per_page": 10, "orientation": "landscape"}
-            response_fallback = await client.get(url, headers=headers, params=params_fallback)
-            
-            if response_fallback.status_code == 200:
-                data_fw = response_fallback.json()
-                if data_fw.get("photos"):
-                    photo = random.choice(data_fw["photos"])
-                    img_url = photo["src"]["large"]
-                    logger.info(f"[img] ✅ Found via Pexels (Fallback): '{destination}' -> {img_url[:60]}")
-                    return img_url
+            for query in queries:
+                if not query:
+                    continue
+                params = {"query": query, "per_page": 5, "orientation": "landscape"}
+                response = await client.get(url, headers=headers, params=params)
+                if response.status_code == 200:
+                    photos = response.json().get("photos", [])
+                    if photos:
+                        img_url = _pick_photo(photos)
+                        logger.info(f"[img] ✅ Pexels '{query}' -> {img_url[:60]}")
+                        return img_url
+                logger.debug(f"[img] No results for query: '{query}'")
 
     except Exception as e:
         logger.error(f"[img] Pexels API request failed: {e}")
@@ -210,7 +231,8 @@ async def generate_experience_itinerary(user_input: UserInput) -> AgentOneOutput
             for act in day.activities:
                 img_url = await fetch_image_for_activity(
                     activity_name=act.title,
-                    destination=user_input.destination
+                    destination=user_input.destination,
+                    activity_type=getattr(act, "type", "")
                 )
                 normalized_acts.append(
                     act.model_copy(update={"image_url": img_url})
