@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Sparkles } from "lucide-react";
 import Image from "next/image";
 
-export function HeroSection({ onStartPlanning }: { onStartPlanning: () => void }) {
+export function HeroSection({ onStartPlanning }: { onStartPlanning?: () => void }) {
+  const router = useRouter();
+  const handleStartPlanning = onStartPlanning ?? (() => router.push("/plan"));
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -78,7 +81,7 @@ export function HeroSection({ onStartPlanning }: { onStartPlanning: () => void }
               initial={false}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
-              onClick={onStartPlanning}
+              onClick={handleStartPlanning}
               className="reveal-up group relative px-12 py-6 text-xl rounded-[20px] overflow-hidden bg-gradient-to-r from-[#00F0FF] to-[#8A2BE2] shadow-[0_0_40px_rgba(0,240,255,0.4),0_0_60px_rgba(138,43,226,0.3)]"
               style={{
                 fontFamily: "'Space Grotesk', sans-serif",

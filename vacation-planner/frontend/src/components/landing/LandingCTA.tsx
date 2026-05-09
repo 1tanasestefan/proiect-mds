@@ -1,13 +1,16 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { FadeUp } from "./FadeUp";
 
 interface LandingCTAProps {
-  onStartPlanning: () => void;
+  onStartPlanning?: () => void;
 }
 
 export function LandingCTA({ onStartPlanning }: LandingCTAProps) {
+  const router = useRouter();
+  const handleStartPlanning = onStartPlanning ?? (() => router.push("/plan"));
   return (
     <section className="relative bg-[#FFF6E8] overflow-hidden py-44 px-6 md:px-12">
       {/* Top separator gradient */}
@@ -62,7 +65,7 @@ export function LandingCTA({ onStartPlanning }: LandingCTAProps) {
         <FadeUp delay={0.4} duration={1.0}>
           <div className="flex justify-center">
             <motion.button
-              onClick={onStartPlanning}
+              onClick={handleStartPlanning}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
               transition={{ type: "spring", stiffness: 400, damping: 28 }}
