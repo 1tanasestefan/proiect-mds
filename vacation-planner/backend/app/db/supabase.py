@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import HTTPException
 from loguru import logger
 from supabase import Client, create_client

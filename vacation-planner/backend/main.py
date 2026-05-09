@@ -1,3 +1,4 @@
+from __future__ import annotations
 from agent_experience import generate_experience_itinerary
 from agent_logistics import generate_logistics
 from app.db.supabase import supabase
