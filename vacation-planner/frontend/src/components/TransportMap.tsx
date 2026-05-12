@@ -89,12 +89,12 @@ const createCustomIcon = (color: string, emoji: string) => {
   });
 };
 
-// OriginIcon  – green, departure city (✈ taking off)
-const OriginIcon  = createCustomIcon("#22C55E", "🛫");
-// AirportIcon – purple, arrival airport
-const AirportIcon = createCustomIcon("#8A2BE2", "🛬");
-// HotelIcon   – cyan, destination hotel / city centre
-const HotelIcon   = createCustomIcon("#00F0FF", "🏨");
+// OriginIcon  – coral, departure city (✈ taking off)
+const OriginIcon  = createCustomIcon("#FF6B5A", "🛫");
+// AirportIcon – orange, arrival airport
+const AirportIcon = createCustomIcon("#FF9F43", "🛬");
+// HotelIcon   – navy, destination hotel / city centre
+const HotelIcon   = createCustomIcon("#10223A", "🏨");
 
 interface Props {
   currentOption: ConsolidatedLogistics;
@@ -131,7 +131,7 @@ export default function TransportMap({ currentOption }: Props) {
           polylinesToDraw.push({
             key: `${leg.mode}-${index}`,
             positions: latLngs,
-            color: leg.mode === "uber" ? "#8A2BE2" : "#00F0FF",
+            color: leg.mode === "uber" ? "#FF9F43" : "#FF6B5A",
             dashed: leg.mode === "bus" || leg.mode === "train",
           });
         }
@@ -173,28 +173,25 @@ export default function TransportMap({ currentOption }: Props) {
   return (
     <>
       <style>{`
-        /* Global Leaflet Dark Mode Inversion */
         .glass-tiles {
-          filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+          filter: none;
         }
         .leaflet-container {
-          background: #0A0A0A;
+          background: #f5f0e8;
           font-family: 'Inter', sans-serif;
         }
-        /* Fix the attribution link colors in dark mode */
         .leaflet-control-attribution a {
-          color: #00F0FF !important;
+          color: #FF6B5A !important;
         }
-        /* Custom map tooltips */
         .leaflet-popup-content-wrapper {
-          background: rgba(10, 10, 10, 0.9);
+          background: rgba(255, 246, 232, 0.97);
           backdrop-filter: blur(10px);
-          border: 1px solid rgba(255,255,255,0.1);
-          color: white;
+          border: 1px solid rgba(255, 107, 90, 0.2);
+          color: #10223A;
           border-radius: 12px;
         }
         .leaflet-popup-tip {
-          background: rgba(10, 10, 10, 0.9);
+          background: rgba(255, 246, 232, 0.97);
         }
       `}</style>
 
@@ -206,8 +203,7 @@ export default function TransportMap({ currentOption }: Props) {
         className="absolute inset-0 z-0"
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          className="glass-tiles"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
 
         {/* Re-fits the map bounds whenever the selected transport tier changes */}

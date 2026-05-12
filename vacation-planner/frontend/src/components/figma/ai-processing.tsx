@@ -114,129 +114,101 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
 
       <div className="relative z-10 max-w-4xl w-full">
         {/* Main AI Visualization */}
-        <div className="flex items-center justify-center mb-16 relative h-64">
-          {/* Experience Agent Orb - Left */}
+        <div className="flex items-center justify-center mb-16 relative">
+
+          {/* Experience Agent Orb */}
           <motion.div
-            animate={{
-              y: [0, -20, 0],
-              rotate: [0, 360],
-            }}
-            transition={{ 
-              y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-              rotate: { duration: 20, repeat: Infinity, ease: "linear" }
-            }}
-            className="absolute left-1/4 -translate-x-1/2"
+            animate={{ y: [0, -16, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            className="flex flex-col items-center z-10"
           >
             <div className="relative">
-              <div className="h-32 w-32 rounded-full bg-gradient-to-br from-[#FF6B5A] to-[#FF8FA3] shadow-[0_0_60px_rgba(255,107,90,0.5)] flex items-center justify-center">
-                <Sparkles className="h-12 w-12 text-white" />
+              <div className="h-28 w-28 rounded-full bg-gradient-to-br from-[#FF6B5A] to-[#FF8FA3] shadow-[0_0_50px_rgba(255,107,90,0.45)] flex items-center justify-center">
+                <Sparkles className="h-10 w-10 text-white" />
               </div>
-              {/* Pulsing rings */}
-              <motion.div
-                animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 rounded-full border-2 border-[#FF6B5A]"
-              />
-              <motion.div
-                animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                className="absolute inset-0 rounded-full border-2 border-[#FF6B5A]"
-              />
+              <motion.div animate={{ scale: [1, 1.6], opacity: [0.5, 0] }} transition={{ duration: 2, repeat: Infinity }} className="absolute inset-0 rounded-full border-2 border-[#FF6B5A]" />
+              <motion.div animate={{ scale: [1, 1.6], opacity: [0.5, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 1 }} className="absolute inset-0 rounded-full border-2 border-[#FF6B5A]" />
             </div>
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-[#FF6B5A] text-sm text-center mt-4 font-semibold"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              Experience Agent
-            </motion.p>
+            <p className="text-[#FF6B5A] text-sm text-center mt-4 font-semibold">Experience Agent</p>
           </motion.div>
 
-          {/* Logistics Agent Orb - Right */}
+          {/* Connecting SVG curves + brain */}
+          <div className="flex-1 relative mx-4 min-w-[160px] h-28">
+            {/* SVG curved paths */}
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 200 112"
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="coralGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="transparent" />
+                  <stop offset="50%" stopColor="#FF6B5A" />
+                  <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
+                <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="transparent" />
+                  <stop offset="50%" stopColor="#FF9F43" />
+                  <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
+              </defs>
+              {/* Top curve track */}
+              <path d="M 0 56 C 55 12, 145 12, 200 56" fill="none" stroke="rgba(255,107,90,0.12)" strokeWidth="2" strokeLinecap="round" />
+              {/* Top curve animated glow */}
+              <motion.path
+                d="M 0 56 C 55 12, 145 12, 200 56"
+                fill="none"
+                stroke="url(#coralGrad)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="60 280"
+                animate={{ strokeDashoffset: [340, -340] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
+              />
+              {/* Bottom curve track */}
+              <path d="M 0 56 C 55 100, 145 100, 200 56" fill="none" stroke="rgba(255,159,67,0.12)" strokeWidth="2" strokeLinecap="round" />
+              {/* Bottom curve animated glow */}
+              <motion.path
+                d="M 0 56 C 55 100, 145 100, 200 56"
+                fill="none"
+                stroke="url(#orangeGrad)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="60 280"
+                animate={{ strokeDashoffset: [0, -340] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "linear", delay: 0.9 }}
+              />
+            </svg>
+
+            {/* Brain centered */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              >
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#FF6B5A] via-white to-[#FF9F43] p-[2px] shadow-lg">
+                  <div className="h-full w-full bg-[#FFF6E8] rounded-2xl flex items-center justify-center">
+                    <Brain className="h-7 w-7 text-[#10223A]" />
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Logistics Agent Orb */}
           <motion.div
-            animate={{
-              y: [0, 20, 0],
-              rotate: [360, 0],
-            }}
-            transition={{ 
-              y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-              rotate: { duration: 20, repeat: Infinity, ease: "linear" }
-            }}
-            className="absolute right-1/4 translate-x-1/2"
+            animate={{ y: [0, 16, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            className="flex flex-col items-center z-10"
           >
             <div className="relative">
-              <div className="h-32 w-32 rounded-full bg-gradient-to-br from-[#FF9F43] to-[#FFD166] shadow-[0_0_60px_rgba(255,159,67,0.5)] flex items-center justify-center">
-                <Plane className="h-12 w-12 text-white" />
+              <div className="h-28 w-28 rounded-full bg-gradient-to-br from-[#FF9F43] to-[#FFD166] shadow-[0_0_50px_rgba(255,159,67,0.45)] flex items-center justify-center">
+                <Plane className="h-10 w-10 text-white" />
               </div>
-              {/* Pulsing rings */}
-              <motion.div
-                animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute inset-0 rounded-full border-2 border-[#FF9F43]"
-              />
-              <motion.div
-                animate={{ scale: [1, 1.5], opacity: [0.5, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                className="absolute inset-0 rounded-full border-2 border-[#FF9F43]"
-              />
+              <motion.div animate={{ scale: [1, 1.6], opacity: [0.5, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 0.5 }} className="absolute inset-0 rounded-full border-2 border-[#FF9F43]" />
+              <motion.div animate={{ scale: [1, 1.6], opacity: [0.5, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 1.5 }} className="absolute inset-0 rounded-full border-2 border-[#FF9F43]" />
             </div>
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-[#FF9F43] text-sm text-center mt-4 font-semibold"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              Logistics Agent
-            </motion.p>
-          </motion.div>
-
-          {/* Connecting energy streams */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none">
-            <motion.path
-              d="M 0 128 Q 200 100, 400 128"
-              stroke="url(#gradient1)"
-              strokeWidth="2"
-              fill="none"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 0.6 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-            />
-            <motion.path
-              d="M 0 128 Q 200 156, 400 128"
-              stroke="url(#gradient2)"
-              strokeWidth="2"
-              fill="none"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 0.6 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear", delay: 1 }}
-            />
-            <defs>
-              <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#FF6B5A" />
-                <stop offset="100%" stopColor="#FF9F43" />
-              </linearGradient>
-              <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#FF9F43" />
-                <stop offset="100%" stopColor="#FF6B5A" />
-              </linearGradient>
-            </defs>
-          </svg>
-
-          {/* Center brain icon */}
-          <motion.div
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0]
-            }}
-            transition={{ duration: 4, repeat: Infinity }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          >
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#FF6B5A] via-white to-[#FF9F43] p-[2px]">
-              <div className="h-full w-full bg-[#FFF6E8] rounded-2xl flex items-center justify-center">
-                <Brain className="h-8 w-8 text-[#10223A]" />
-              </div>
-            </div>
+            <p className="text-[#FF9F43] text-sm text-center mt-4 font-semibold">Logistics Agent</p>
           </motion.div>
         </div>
 
