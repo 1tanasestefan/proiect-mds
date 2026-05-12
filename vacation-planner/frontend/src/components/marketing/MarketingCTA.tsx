@@ -5,7 +5,7 @@ import { FadeUp } from "@/components/landing/FadeUp";
 import { Sparkles, CheckCircle2 } from "lucide-react";
 
 interface MarketingCTAProps {
-  onStartPlanning: () => void;
+  onStartPlanning?: () => void;
 }
 
 const TRUST_ITEMS = [

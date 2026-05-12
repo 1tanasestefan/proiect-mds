@@ -115,7 +115,7 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
 
       <div className="relative z-10 max-w-4xl w-full">
         {/* Main AI Visualization */}
-        <div className="flex items-center justify-center gap-0 mb-16 relative">
+        <div className="flex items-center justify-center mb-16 relative">
 
           {/* Experience Agent Orb */}
           <motion.div
@@ -133,37 +133,66 @@ export function AIProcessing({ onComplete }: { onComplete?: () => void }) {
             <p className="text-[#FF6B5A] text-sm text-center mt-4 font-semibold">Experience Agent</p>
           </motion.div>
 
-          {/* Connecting beam */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-2 mx-4 relative min-w-[120px]">
-            {/* Top beam */}
-            <div className="w-full h-[2px] relative overflow-hidden rounded-full bg-[#FF6B5A]/10">
-              <motion.div
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-[#FF6B5A] to-transparent"
-              />
-            </div>
-
-            {/* Center brain */}
-            <motion.div
-              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="my-1"
+          {/* Connecting SVG curves + brain */}
+          <div className="flex-1 relative mx-4 min-w-[160px] h-28">
+            {/* SVG curved paths */}
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 200 112"
+              preserveAspectRatio="none"
             >
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#FF6B5A] via-white to-[#FF9F43] p-[2px] shadow-lg">
-                <div className="h-full w-full bg-[#FFF6E8] rounded-2xl flex items-center justify-center">
-                  <Brain className="h-7 w-7 text-[#10223A]" />
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Bottom beam */}
-            <div className="w-full h-[2px] relative overflow-hidden rounded-full bg-[#FF9F43]/10">
-              <motion.div
-                animate={{ x: ["100%", "-100%"] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: 0.75 }}
-                className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-[#FF9F43] to-transparent"
+              <defs>
+                <linearGradient id="coralGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="transparent" />
+                  <stop offset="50%" stopColor="#FF6B5A" />
+                  <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
+                <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="transparent" />
+                  <stop offset="50%" stopColor="#FF9F43" />
+                  <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
+              </defs>
+              {/* Top curve track */}
+              <path d="M 0 56 C 55 12, 145 12, 200 56" fill="none" stroke="rgba(255,107,90,0.12)" strokeWidth="2" strokeLinecap="round" />
+              {/* Top curve animated glow */}
+              <motion.path
+                d="M 0 56 C 55 12, 145 12, 200 56"
+                fill="none"
+                stroke="url(#coralGrad)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="60 280"
+                animate={{ strokeDashoffset: [340, -340] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
               />
+              {/* Bottom curve track */}
+              <path d="M 0 56 C 55 100, 145 100, 200 56" fill="none" stroke="rgba(255,159,67,0.12)" strokeWidth="2" strokeLinecap="round" />
+              {/* Bottom curve animated glow */}
+              <motion.path
+                d="M 0 56 C 55 100, 145 100, 200 56"
+                fill="none"
+                stroke="url(#orangeGrad)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="60 280"
+                animate={{ strokeDashoffset: [0, -340] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: "linear", delay: 0.9 }}
+              />
+            </svg>
+
+            {/* Brain centered */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              >
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#FF6B5A] via-white to-[#FF9F43] p-[2px] shadow-lg">
+                  <div className="h-full w-full bg-[#FFF6E8] rounded-2xl flex items-center justify-center">
+                    <Brain className="h-7 w-7 text-[#10223A]" />
+                  </div>
+                </div>
+              </motion.div>
             </div>
           </div>
 

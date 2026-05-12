@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 interface MarketingHeroProps {
-  onStartPlanning: () => void;
+  onStartPlanning?: () => void;
 }
 
 const ITINERARY = [
