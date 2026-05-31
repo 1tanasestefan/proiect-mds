@@ -7,7 +7,16 @@ from pydantic import BaseModel
 from app.core.security import get_current_user
 from app.services import collaboration as collaboration_service
 from app.services import itineraries as itinerary_service
-from models import CollaborationState, CreateInviteRequest, InviteResponse, ItineraryUpdate, VoteRequest
+from app.services import reactions as reaction_service
+from models import (
+    ActivityReactionRequest,
+    ActivityReactionSummary,
+    CollaborationState,
+    CreateInviteRequest,
+    InviteResponse,
+    ItineraryUpdate,
+    VoteRequest,
+)
 
 router = APIRouter(prefix="/api/itineraries", tags=["itineraries"])
 
@@ -59,6 +68,23 @@ async def vote_regenerate(
     user_id: str = Depends(get_current_user),
 ):
     return await collaboration_service.vote_regenerate(itinerary_id, vote_req, bg_tasks, user_id)
+
+
+@router.get("/{itinerary_id}/reactions", response_model=list[ActivityReactionSummary])
+async def get_activity_reactions(
+    itinerary_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    return await reaction_service.get_activity_reactions(itinerary_id, user_id)
+
+
+@router.post("/{itinerary_id}/reactions/toggle")
+async def toggle_activity_reaction(
+    itinerary_id: str,
+    payload: ActivityReactionRequest,
+    user_id: str = Depends(get_current_user),
+):
+    return await reaction_service.toggle_activity_reaction(itinerary_id, payload, user_id)
 
 
 @router.delete("/{itinerary_id}")

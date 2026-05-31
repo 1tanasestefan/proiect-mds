@@ -184,10 +184,27 @@ class VoteUser(BaseModel):
     avatarId: Optional[int] = None
 
 class VoteRequest(BaseModel):
-    day_index: int
-    activity_index: int
+    day_index: int = Field(..., ge=0)
+    activity_index: int = Field(..., ge=0)
     total_online: Optional[int] = None
     voter: Optional[VoteUser] = None
+
+
+ActivityReactionType = Literal["heart", "fire", "wow", "down"]
+
+
+class ActivityReactionRequest(BaseModel):
+    day_index: int = Field(..., ge=0)
+    activity_index: int = Field(..., ge=0)
+    reaction_type: ActivityReactionType
+
+
+class ActivityReactionSummary(BaseModel):
+    day_index: int
+    activity_index: int
+    reaction_type: ActivityReactionType
+    count: int
+    reacted_by_me: bool = False
 
 
 class Collaborator(BaseModel):

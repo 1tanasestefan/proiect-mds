@@ -1,7 +1,7 @@
 import asyncio
 
 import agent_logistics
-from models import UserInput
+from models import ConsolidatedLogistics, Coordinate, TransportLeg, UserInput
 
 
 def user_input(**overrides):
@@ -46,3 +46,38 @@ def test_generate_logistics_injects_booking_links_without_external_ai(monkeypatc
     assert "bucharest" in result.flights[0].booking_link
     assert "lisbon" in result.flights[0].booking_link
     assert result.accommodations[0].booking_link.startswith("https://www.booking.com/searchresults.html")
+
+
+def test_fallback_logistics_uses_route_data_for_budget_and_confidence():
+    transit_options = {
+        "budget": ConsolidatedLogistics(
+            total_price=255,
+            currency="USD",
+            legs=[
+                TransportLeg(
+                    mode="flight",
+                    name="Flight to Lisbon Airport",
+                    origin_coords=Coordinate(lat=44.43, lng=26.1),
+                    destination_coords=Coordinate(lat=38.77, lng=-9.13),
+                    price=250,
+                    duration_minutes=240,
+                ),
+                TransportLeg(
+                    mode="bus",
+                    name="Airport Express Bus",
+                    origin_coords=Coordinate(lat=38.77, lng=-9.13),
+                    destination_coords=Coordinate(lat=38.72, lng=-9.14),
+                    price=5,
+                    duration_minutes=35,
+                ),
+            ],
+            map_center=Coordinate(lat=38.72, lng=-9.14),
+        )
+    }
+
+    result = agent_logistics._fallback_logistics(user_input(), transit_options)
+
+    assert result.confidence == "route-informed"
+    assert result.transit_options == transit_options
+    assert result.budget_breakdown.airport_transfer_per_person_usd == 5
+    assert result.total_estimated_budget_usd == result.budget_breakdown.subtotal_per_person_usd

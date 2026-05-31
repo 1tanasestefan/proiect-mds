@@ -4,6 +4,7 @@ import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { Toaster } from '@/components/figma/ui/sonner';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair', weight: ['400', '500', '600', '700'] });
@@ -35,6 +36,7 @@ export default function RootLayout({
               <main className="flex-1">
                 {children}
               </main>
+              <Toaster richColors position="bottom-right" />
             </div>
           </AuthProvider>
         </ThemeProvider>

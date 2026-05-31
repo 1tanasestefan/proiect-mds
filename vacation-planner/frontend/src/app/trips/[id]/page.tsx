@@ -9,7 +9,8 @@ import type { ConsolidatedLogistics } from "@/components/TransportDashboard";
 import {
   ArrowLeft, MapPin, Calendar, Loader2,
   Plane, Hotel, Clock, DollarSign,
-  Edit2, Save, RefreshCcw, Globe, Lock
+  Edit2, Save, RefreshCcw, Globe, Lock,
+  Heart, Flame, Smile, ThumbsDown
 } from "lucide-react";
 import { toast } from "sonner";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
@@ -67,7 +68,6 @@ interface TripLogistics {
 interface TripAiData {
   experience: ExperienceData;
   logistics?: TripLogistics;
-  votes?: Record<string, VoteUser[]>;
   regenerating_keys?: Record<string, boolean>;
 }
 
@@ -89,16 +89,47 @@ interface VoteUser {
   avatarId?: number;
 }
 
+type ReactionType = "heart" | "fire" | "wow" | "down";
+
+interface ActivityReactionSummary {
+  day_index: number;
+  activity_index: number;
+  reaction_type: ReactionType;
+  count: number;
+  reacted_by_me: boolean;
+}
+
+interface ActivityVoteRow {
+  day_index: number;
+  activity_index: number;
+  user_id: string;
+  voter_name: string;
+  voter_avatar_id?: number;
+}
+
+interface CollaborationState {
+  eligible_voters: number;
+  votes: ActivityVoteRow[];
+}
+
 // ── Activity Card ─────────────────────────────────────────────────
 function ActivityCard({ 
   act, i, isHighlighted, onClick, 
-  votes, isRegenerating, onVote, totalOnline 
+  votes, isRegenerating, onVote, totalOnline,
+  reactions, onReaction
 }: { 
   act: Activity; i: number; isHighlighted?: boolean; onClick?: () => void;
   votes: VoteUser[]; isRegenerating: boolean; onVote: () => void; totalOnline: number;
+  reactions: ActivityReactionSummary[]; onReaction: (reactionType: ReactionType) => void;
 }) {
   const threshold = Math.floor(totalOnline / 2);
   const isDraw = votes.length > 0 && votes.length <= threshold;
+  const reactionOptions: { type: ReactionType; label: string; icon: React.ReactNode }[] = [
+    { type: "heart", label: "Love this activity", icon: <Heart className="h-3.5 w-3.5" /> },
+    { type: "fire", label: "Looks exciting", icon: <Flame className="h-3.5 w-3.5" /> },
+    { type: "wow", label: "Surprising pick", icon: <Smile className="h-3.5 w-3.5" /> },
+    { type: "down", label: "Not interested", icon: <ThumbsDown className="h-3.5 w-3.5" /> },
+  ];
 
   return (
     <motion.div
@@ -179,6 +210,32 @@ function ActivityCard({
         </div>
         
         {/* Voting UI */}
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          {reactionOptions.map((option) => {
+            const current = reactions.find((reaction) => reaction.reaction_type === option.type);
+            const active = Boolean(current?.reacted_by_me);
+
+            return (
+              <button
+                key={option.type}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReaction(option.type);
+                }}
+                title={option.label}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] transition-colors ${
+                  active
+                    ? "bg-[#FF6B5A]/10 border-[#FF6B5A]/40 text-[#FF6B5A]"
+                    : "bg-white/50 border-[rgba(255,107,90,0.12)] text-[#64748B]/50 hover:text-[#FF6B5A] hover:border-[#FF6B5A]/30"
+                }`}
+              >
+                {option.icon}
+                <span>{current?.count ?? 0}</span>
+              </button>
+            );
+          })}
+        </div>
+
         {votes.length > 0 && !isRegenerating && (
            <div className="flex items-center gap-3 mt-2 pt-2 border-t border-[rgba(255,107,90,0.10)]">
               <div className="flex -space-x-1">
@@ -211,6 +268,9 @@ export default function TripDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userIsConfirmedHost, setUserIsConfirmedHost] = useState(false);
+  const [votesByActivity, setVotesByActivity] = useState<Record<string, VoteUser[]>>({});
+  const [eligibleVoters, setEligibleVoters] = useState(1);
+  const [activityReactions, setActivityReactions] = useState<ActivityReactionSummary[]>([]);
 
   // Edit Mode States
   const [isEditing, setIsEditing] = useState(false);
@@ -218,6 +278,43 @@ export default function TripDetailPage() {
   const [editDestination, setEditDestination] = useState("");
   const [editVibe, setEditVibe] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const loadSocialState = useCallback(async () => {
+    if (!session || !id) return;
+
+    try {
+      const [collaborationResult, reactionsResult] = await Promise.allSettled([
+        fetch(`${API_BASE}/api/itineraries/${id}/collaboration`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+        fetch(`${API_BASE}/api/itineraries/${id}/reactions`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+      ]);
+
+      if (collaborationResult.status === "fulfilled" && collaborationResult.value.ok) {
+        const collaboration = await collaborationResult.value.json() as CollaborationState;
+        const nextVotes: Record<string, VoteUser[]> = {};
+        collaboration.votes.forEach((vote) => {
+          const voteKey = `day_${vote.day_index}_act_${vote.activity_index}`;
+          nextVotes[voteKey] ||= [];
+          nextVotes[voteKey].push({
+            id: vote.user_id,
+            name: vote.voter_name,
+            avatarId: vote.voter_avatar_id,
+          });
+        });
+        setVotesByActivity(nextVotes);
+        setEligibleVoters(Math.max(1, collaboration.eligible_voters || 1));
+      }
+
+      if (reactionsResult.status === "fulfilled" && reactionsResult.value.ok) {
+        setActivityReactions(await reactionsResult.value.json() as ActivityReactionSummary[]);
+      }
+    } catch (err) {
+      console.warn("Social state unavailable", err);
+    }
+  }, [id, session]);
 
   const loadItinerary = useCallback(async () => {
     if (!session || !id) return;
@@ -233,16 +330,18 @@ export default function TripDetailPage() {
       if (data.user_id && data.user_id === session.user.id) {
         setUserIsConfirmedHost(true);
       }
+      void loadSocialState();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load trip.");
     } finally {
       setLoading(false);
     }
-  }, [id, session]);
+  }, [id, loadSocialState, session]);
 
   const handleDatabaseUpdate = useCallback((newData: Record<string, unknown> & { _SIGNAL_REFETCH?: boolean }) => {
     if (newData._SIGNAL_REFETCH) {
       loadItinerary();
+      void loadSocialState();
       return;
     }
     // Postgres sync: gracefully merge incoming AI updates
@@ -250,7 +349,7 @@ export default function TripDetailPage() {
       if (!prev) return prev;
       return { ...prev, ...newData } as SavedTrip;
     });
-  }, [loadItinerary]);
+  }, [loadItinerary, loadSocialState]);
 
   const multiplayerUser = useMemo(
     () => session?.user ? { id: session.user.id, email: session.user.email || "user" } : null,
@@ -360,27 +459,31 @@ export default function TripDetailPage() {
 
     // 1. OPTIMISTIC UI: Immediately lock in the vote visually!
     let thresholdExceeded = false;
-    setTrip((prev) => {
-      if (!prev) return prev;
-      const newTrip = JSON.parse(JSON.stringify(prev)); // Deep clone to break reference safely
-      if (!newTrip.ai_data.votes) newTrip.ai_data.votes = {};
-      
-      const actVotes = newTrip.ai_data.votes[voteKey] || [];
+    setVotesByActivity((prev) => {
+      const nextVotes = { ...prev };
+      const actVotes = [...(nextVotes[voteKey] || [])];
       if (!actVotes.some((v: VoteUser) => v.id === voter.id)) {
           actVotes.push(voter);
       }
-      newTrip.ai_data.votes[voteKey] = actVotes;
+      nextVotes[voteKey] = actVotes;
       
       // Calculate theoretically if this click triggers threshold
-      const totalOnline = Math.max(1, onlineUsers.length);
-      const threshold = Math.floor(totalOnline / 2);
+      const threshold = Math.floor(eligibleVoters / 2);
       if (actVotes.length > threshold) {
           thresholdExceeded = true;
-          if (!newTrip.ai_data.regenerating_keys) newTrip.ai_data.regenerating_keys = {};
-          newTrip.ai_data.regenerating_keys[voteKey] = true;
       }
-      return newTrip;
+      return nextVotes;
     });
+
+    if (thresholdExceeded) {
+      setTrip((prev) => {
+        if (!prev) return prev;
+        const newTrip = JSON.parse(JSON.stringify(prev));
+        if (!newTrip.ai_data.regenerating_keys) newTrip.ai_data.regenerating_keys = {};
+        newTrip.ai_data.regenerating_keys[voteKey] = true;
+        return newTrip;
+      });
+    }
 
     try {
       // 2. Transmit gracefully in the background
@@ -393,7 +496,7 @@ export default function TripDetailPage() {
         body: JSON.stringify({
           day_index: dayIndex,
           activity_index: actIndex,
-          total_online: Math.max(1, onlineUsers.length),
+          total_online: eligibleVoters,
           voter
         })
       });
@@ -417,6 +520,35 @@ export default function TripDetailPage() {
       }
     } catch(e) {
       console.error("Voting failed", e);
+    }
+  };
+
+  const handleToggleReaction = async (dayIndex: number, actIndex: number, reactionType: ReactionType) => {
+    if (!session?.user) return;
+
+    try {
+      const resp = await fetch(`${API_BASE}/api/itineraries/${id}/reactions/toggle`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          day_index: dayIndex,
+          activity_index: actIndex,
+          reaction_type: reactionType,
+        })
+      });
+
+      if (!resp.ok) {
+        const errorBody = await resp.json().catch(() => null);
+        throw new Error(errorBody?.detail || "Reaction update failed.");
+      }
+      const data = await resp.json();
+      setActivityReactions(data.reactions || []);
+      broadcastRefreshSignal();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update reaction.");
     }
   };
 
@@ -610,8 +742,11 @@ export default function TripDetailPage() {
                 const globalActivityId = `${day.day_number}-${ai}`;
                 const voteKey = `day_${di}_act_${ai}`; // Use di, since it matches the zero-based array index backend needs, not day.day_number!
                 
-                const votes = trip.ai_data?.votes?.[voteKey] || [];
+                const votes = votesByActivity[voteKey] || [];
                 const isRegenerating = trip.ai_data?.regenerating_keys?.[voteKey] === true;
+                const reactions = activityReactions.filter(
+                  (reaction) => reaction.day_index === di && reaction.activity_index === ai
+                );
 
                 return (
                   <ActivityCard 
@@ -621,7 +756,9 @@ export default function TripDetailPage() {
                     votes={votes}
                     isRegenerating={isRegenerating}
                     onVote={() => handleVoteRegenerate(di, ai)}
-                    totalOnline={Math.max(1, onlineUsers.length)}
+                    totalOnline={eligibleVoters}
+                    reactions={reactions}
+                    onReaction={(reactionType) => handleToggleReaction(di, ai, reactionType)}
                     isHighlighted={highlightedActivityId === globalActivityId}
                     onClick={() => broadcastActivityHighlight(globalActivityId)}
                   />

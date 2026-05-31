@@ -133,6 +133,24 @@ CREATE INDEX IF NOT EXISTS idx_activity_votes_itinerary_id ON public.activity_vo
 
 
 -- ┌─────────────────────────────────────────────────────────────┐
+-- │  6b. ACTIVITY REACTIONS                                    │
+-- │  Emoji-style per-user reactions on individual activities    │
+-- └─────────────────────────────────────────────────────────────┘
+
+CREATE TABLE IF NOT EXISTS public.activity_reactions (
+    itinerary_id    UUID NOT NULL REFERENCES public.itineraries(id) ON DELETE CASCADE,
+    day_index       INT NOT NULL,
+    activity_index  INT NOT NULL,
+    user_id         UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    reaction_type   TEXT NOT NULL CHECK (reaction_type IN ('heart', 'fire', 'wow', 'down')),
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (itinerary_id, day_index, activity_index, user_id, reaction_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_reactions_itinerary_id ON public.activity_reactions(itinerary_id);
+
+
+-- ┌─────────────────────────────────────────────────────────────┐
 -- │  7. COLLECTIONS (folders / wishlists)                      │
 -- └─────────────────────────────────────────────────────────────┘
 
@@ -253,6 +271,7 @@ CREATE POLICY "Anyone can see likes"
 -- Trip Collaborators
 ALTER TABLE public.trip_collaborators ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Owners can manage collaborators" ON public.trip_collaborators;
 CREATE POLICY "Owners can manage collaborators"
     ON public.trip_collaborators FOR ALL
     USING (
@@ -268,6 +287,7 @@ CREATE POLICY "Owners can manage collaborators"
         )
     );
 
+DROP POLICY IF EXISTS "Collaborators can view trip collaborators" ON public.trip_collaborators;
 CREATE POLICY "Collaborators can view trip collaborators"
     ON public.trip_collaborators FOR SELECT
     USING (
@@ -286,6 +306,7 @@ CREATE POLICY "Collaborators can view trip collaborators"
 -- Trip Invites
 ALTER TABLE public.trip_invites ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Owners can create and view invites" ON public.trip_invites;
 CREATE POLICY "Owners can create and view invites"
     ON public.trip_invites FOR ALL
     USING (
@@ -304,12 +325,13 @@ CREATE POLICY "Owners can create and view invites"
 -- Activity Votes
 ALTER TABLE public.activity_votes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Trip members can view votes" ON public.activity_votes;
 CREATE POLICY "Trip members can view votes"
     ON public.activity_votes FOR SELECT
     USING (
         EXISTS (
             SELECT 1 FROM public.itineraries
-            WHERE id = itinerary_id AND (user_id = auth.uid() OR is_public = true)
+            WHERE id = activity_votes.itinerary_id AND (user_id = auth.uid() OR is_public = true)
         )
         OR EXISTS (
             SELECT 1 FROM public.trip_collaborators
@@ -317,6 +339,7 @@ CREATE POLICY "Trip members can view votes"
         )
     );
 
+DROP POLICY IF EXISTS "Trip members can vote" ON public.activity_votes;
 CREATE POLICY "Trip members can vote"
     ON public.activity_votes FOR INSERT
     WITH CHECK (
@@ -324,7 +347,7 @@ CREATE POLICY "Trip members can vote"
         AND (
             EXISTS (
                 SELECT 1 FROM public.itineraries
-                WHERE id = itinerary_id AND user_id = auth.uid()
+                WHERE id = activity_votes.itinerary_id AND user_id = auth.uid()
             )
             OR EXISTS (
                 SELECT 1 FROM public.trip_collaborators
@@ -333,6 +356,46 @@ CREATE POLICY "Trip members can vote"
         )
     );
 
+DROP POLICY IF EXISTS "Users can remove own votes" ON public.activity_votes;
 CREATE POLICY "Users can remove own votes"
     ON public.activity_votes FOR DELETE
+    USING (user_id = auth.uid());
+
+-- Activity Reactions
+ALTER TABLE public.activity_reactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Trip members can view reactions" ON public.activity_reactions;
+CREATE POLICY "Trip members can view reactions"
+    ON public.activity_reactions FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.itineraries
+            WHERE id = itinerary_id AND (user_id = auth.uid() OR is_public = true)
+        )
+        OR EXISTS (
+            SELECT 1 FROM public.trip_collaborators
+            WHERE itinerary_id = activity_reactions.itinerary_id AND user_id = auth.uid()
+        )
+    );
+
+DROP POLICY IF EXISTS "Trip members can react" ON public.activity_reactions;
+CREATE POLICY "Trip members can react"
+    ON public.activity_reactions FOR INSERT
+    WITH CHECK (
+        user_id = auth.uid()
+        AND (
+            EXISTS (
+                SELECT 1 FROM public.itineraries
+                WHERE id = activity_reactions.itinerary_id AND (user_id = auth.uid() OR is_public = true)
+            )
+            OR EXISTS (
+                SELECT 1 FROM public.trip_collaborators
+                WHERE itinerary_id = activity_reactions.itinerary_id AND user_id = auth.uid()
+            )
+        )
+    );
+
+DROP POLICY IF EXISTS "Users can remove own reactions" ON public.activity_reactions;
+CREATE POLICY "Users can remove own reactions"
+    ON public.activity_reactions FOR DELETE
     USING (user_id = auth.uid());

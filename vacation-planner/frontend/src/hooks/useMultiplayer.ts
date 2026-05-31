@@ -109,6 +109,19 @@ export function useMultiplayer(
       }
     );
 
+    room.on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "activity_reactions",
+        filter: `itinerary_id=eq.${itineraryId}`,
+      },
+      () => {
+        if (onDatabaseUpdate) onDatabaseUpdate({ _SIGNAL_REFETCH: true });
+      }
+    );
+
     // Subscribe to channel and track self
     room.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {

@@ -86,6 +86,7 @@ class FakeSupabase:
             "trip_collaborators": [],
             "trip_invites": [],
             "activity_votes": [],
+            "activity_reactions": [],
         }
         self._ids = itertools.count(100)
 
@@ -414,6 +415,79 @@ def test_collaboration_state_lists_members_and_votes(client, fake_supabase):
     assert body["eligible_voters"] == 2
     assert body["collaborators"][0]["user_id"] == OTHER_USER_ID
     assert body["votes"][0]["voter_name"] == "Alex"
+
+
+def test_toggle_activity_reaction_adds_and_removes_reaction(client, fake_supabase):
+    fake_supabase.tables["itineraries"].append(sample_itinerary())
+
+    add_response = client.post(
+        "/api/itineraries/trip-1/reactions/toggle",
+        json={"day_index": 0, "activity_index": 0, "reaction_type": "heart"},
+    )
+    remove_response = client.post(
+        "/api/itineraries/trip-1/reactions/toggle",
+        json={"day_index": 0, "activity_index": 0, "reaction_type": "heart"},
+    )
+
+    assert add_response.status_code == 200
+    assert add_response.json()["status"] == "added"
+    assert add_response.json()["reactions"][0] == {
+        "day_index": 0,
+        "activity_index": 0,
+        "reaction_type": "heart",
+        "count": 1,
+        "reacted_by_me": True,
+    }
+    assert remove_response.status_code == 200
+    assert remove_response.json() == {"status": "removed", "reactions": []}
+    assert fake_supabase.tables["activity_reactions"] == []
+
+
+def test_get_activity_reactions_summarizes_counts(client, fake_supabase):
+    fake_supabase.tables["itineraries"].append(sample_itinerary())
+    fake_supabase.tables["activity_reactions"].extend(
+        [
+            {
+                "itinerary_id": "trip-1",
+                "day_index": 0,
+                "activity_index": 0,
+                "user_id": TEST_USER_ID,
+                "reaction_type": "fire",
+            },
+            {
+                "itinerary_id": "trip-1",
+                "day_index": 0,
+                "activity_index": 0,
+                "user_id": OTHER_USER_ID,
+                "reaction_type": "fire",
+            },
+        ]
+    )
+
+    response = client.get("/api/itineraries/trip-1/reactions")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "day_index": 0,
+            "activity_index": 0,
+            "reaction_type": "fire",
+            "count": 2,
+            "reacted_by_me": True,
+        }
+    ]
+
+
+def test_private_trip_blocks_reaction_from_non_collaborator(client, fake_supabase):
+    fake_supabase.tables["itineraries"].append(sample_itinerary())
+    main.app.dependency_overrides[get_current_user] = lambda: OTHER_USER_ID
+
+    response = client.post(
+        "/api/itineraries/trip-1/reactions/toggle",
+        json={"day_index": 0, "activity_index": 0, "reaction_type": "wow"},
+    )
+
+    assert response.status_code == 403
 
 
 def test_owner_can_create_and_user_can_accept_invite(client, fake_supabase):

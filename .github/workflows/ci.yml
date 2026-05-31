@@ -75,3 +75,28 @@ jobs:
 
       - name: Run backend tests
         run: pytest -q
+
+      - name: Run offline agent evaluation
+        run: python agent_eval.py --mode offline --threshold 0.75 --json
+
+  java-backend:
+    name: Java backend build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: vacation-planner/backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build Java backend
+        run: mvn test

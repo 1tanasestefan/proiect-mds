@@ -50,3 +50,21 @@ The server runs at `http://localhost:8000`.
 - No Groq, Gemini, or Pexels key is required for agent generation or image enrichment.
 - If Ollama is not running, the backend uses deterministic fallback planners so the frontend still receives valid JSON.
 - Supabase credentials are still needed for authenticated persistence and community features.
+
+## Agent Evaluation
+
+Run the offline evaluator before demos or pull requests:
+
+```powershell
+python agent_eval.py --mode offline --threshold 0.75
+```
+
+The offline mode scores the deterministic experience and logistics paths used when the local LLM is unavailable. It checks itinerary shape, activity quality, destination relevance, logistics options, concrete booking links, budget consistency, assumptions, and route signal.
+
+To evaluate the full orchestrator with live local generation and network enrichment:
+
+```powershell
+python agent_eval.py --mode live --threshold 0.75 --output eval-results/latest.md
+```
+
+CI runs the offline evaluator so regressions in the critical agent contracts fail automatically.

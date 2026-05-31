@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Heart, Bookmark, MapPin, Clock, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -43,6 +44,7 @@ interface CommunityTripCardProps {
 }
 
 export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
+  const router = useRouter();
   const { session, isAuthenticated } = useAuth();
   const [isLiked, setIsLiked] = useState(itinerary.is_liked_by_me);
   const [likesCount, setLikesCount] = useState(itinerary.likes_count);
@@ -123,7 +125,16 @@ export function CommunityTripCard({ itinerary }: CommunityTripCardProps) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="group relative backdrop-blur-xl bg-[#FFFBF3] border border-[rgba(255,107,90,0.14)] rounded-[32px] overflow-hidden shadow-[0_8px_32px_rgba(255,107,90,0.10)] transition-all duration-500 hover:border-[#FF6B5A]/40"
+      onClick={() => router.push(`/trips/${itinerary.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(`/trips/${itinerary.id}`);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      className="group relative backdrop-blur-xl bg-[#FFFBF3] border border-[rgba(255,107,90,0.14)] rounded-[32px] overflow-hidden shadow-[0_8px_32px_rgba(255,107,90,0.10)] transition-all duration-500 hover:border-[#FF6B5A]/40 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#FF6B5A]/40"
     >
       {/* Cover Image Section */}
       <div className="relative h-56 w-full overflow-hidden">

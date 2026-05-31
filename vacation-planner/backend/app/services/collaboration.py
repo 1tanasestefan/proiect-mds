@@ -20,6 +20,11 @@ from models import (
 )
 
 
+def _is_missing_table_error(exc: Exception, table_name: str) -> bool:
+    text = str(exc)
+    return "PGRST205" in text and table_name in text
+
+
 def _now() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -45,23 +50,35 @@ def _select_trip(db, itinerary_id: str) -> dict:
 
 
 def _collaborator_rows(db, itinerary_id: str) -> list[dict]:
-    result = (
-        db.table("trip_collaborators")
-        .select("user_id, role, joined_at, profiles(display_name, avatar_url)")
-        .eq("itinerary_id", itinerary_id)
-        .execute()
-    )
-    return result.data or []
+    try:
+        result = (
+            db.table("trip_collaborators")
+            .select("user_id, role, joined_at, profiles!trip_collaborators_user_id_fkey(display_name, avatar_url)")
+            .eq("itinerary_id", itinerary_id)
+            .execute()
+        )
+        return result.data or []
+    except Exception as exc:
+        if _is_missing_table_error(exc, "trip_collaborators"):
+            logger.warning("[DB] trip_collaborators table is missing; collaboration features are disabled.")
+            return []
+        raise
 
 
 def _collaborator_role(db, itinerary_id: str, user_id: str) -> str | None:
-    result = (
-        db.table("trip_collaborators")
-        .select("role")
-        .eq("itinerary_id", itinerary_id)
-        .eq("user_id", user_id)
-        .execute()
-    )
+    try:
+        result = (
+            db.table("trip_collaborators")
+            .select("role")
+            .eq("itinerary_id", itinerary_id)
+            .eq("user_id", user_id)
+            .execute()
+        )
+    except Exception as exc:
+        if _is_missing_table_error(exc, "trip_collaborators"):
+            logger.warning("[DB] trip_collaborators table is missing; treating user as non-collaborator.")
+            return None
+        raise
     if not result.data:
         return None
     return result.data[0].get("role") or "viewer"
@@ -112,13 +129,19 @@ def _format_collaborator(row: dict) -> Collaborator:
 
 
 def _vote_rows(db, itinerary_id: str) -> list[dict]:
-    result = (
-        db.table("activity_votes")
-        .select("day_index, activity_index, user_id, voter_name, voter_avatar_id, created_at")
-        .eq("itinerary_id", itinerary_id)
-        .execute()
-    )
-    return result.data or []
+    try:
+        result = (
+            db.table("activity_votes")
+            .select("day_index, activity_index, user_id, voter_name, voter_avatar_id, created_at")
+            .eq("itinerary_id", itinerary_id)
+            .execute()
+        )
+        return result.data or []
+    except Exception as exc:
+        if _is_missing_table_error(exc, "activity_votes"):
+            logger.warning("[DB] activity_votes table is missing; regenerate votes are disabled.")
+            return []
+        raise
 
 
 def _eligible_voter_count(db, trip: dict) -> int:
