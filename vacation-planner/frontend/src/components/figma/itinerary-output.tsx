@@ -17,6 +17,7 @@ import { ImageWithFallback } from "@/components/figma/ImageWithFallback";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { apiUrl } from "@/lib/backend";
+import { TransportDashboard } from "@/components/TransportDashboard";
 
 export interface Activity {
   type: 'experience' | 'dining' | 'tour' | 'cruise' | 'cookingclass' | 'festival' | 'adventure' | 'culture' | 'relaxation' | 'shopping' | 'nightlife' | 'transport' | 'arrival' | 'departure' | 'flight' | 'hotel' | 'sightseeing' | 'museum' | 'landmark' | 'park' | 'beach';
@@ -46,16 +47,56 @@ export interface FlightOption {
 }
 
 export interface AccommodationOption {
+  name?: string;
   type: string;
   neighborhood: string;
   estimated_price_per_night_usd: number;
   booking_link: string;
+  reason?: string;
+}
+
+interface Coordinate {
+  lat: number;
+  lng: number;
+}
+
+interface TransportLeg {
+  mode: string;
+  name: string;
+  origin_coords: Coordinate;
+  destination_coords: Coordinate;
+  price: number;
+  duration_minutes: number;
+  polyline: string | null;
+}
+
+interface ConsolidatedLogistics {
+  total_price: number;
+  currency: string;
+  legs: TransportLeg[];
+  map_center: Coordinate;
+}
+
+interface BudgetBreakdown {
+  flight_per_person_usd: number;
+  accommodation_per_person_usd: number;
+  food_per_person_usd: number;
+  activities_per_person_usd: number;
+  local_transport_per_person_usd: number;
+  airport_transfer_per_person_usd: number;
+  subtotal_per_person_usd: number;
+  total_group_usd: number;
+  currency: string;
 }
 
 export interface TripLogistics {
   flights: FlightOption[];
   accommodations: AccommodationOption[];
   total_estimated_budget_usd: number;
+  transit_options?: Record<string, ConsolidatedLogistics>;
+  budget_breakdown?: BudgetBreakdown;
+  assumptions?: string[];
+  confidence?: "estimated" | "route-informed" | "ai-estimated";
 }
 
 export interface ItineraryData {
@@ -70,6 +111,15 @@ export interface ItineraryData {
 export interface FinalTripPlan {
   experience: ItineraryData;
   logistics: TripLogistics;
+  origin?: string;
+  destination?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  travelers?: number;
+  budget?: string;
+  price_range_per_person?: string | null;
+  flexible_dates?: boolean;
+  flexible_destination?: boolean;
 }
 
 type TripFormData = {
@@ -91,7 +141,11 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
   const experience = data.experience;
   const logistics = data.logistics;
   const itineraryItems = experience.itinerary || [];
-  const destination = experience.destination || formData?.destination || "";
+  const destination = data.destination || experience.destination || formData?.destination || "";
+  const startDate = data.start_date || formData?.startDate || null;
+  const endDate = data.end_date || formData?.endDate || null;
+  const travelers = data.travelers || experience.travelers || formData?.travelers;
+  const hasTransitOptions = Boolean(logistics.transit_options && Object.keys(logistics.transit_options).length > 0);
 
   const handleSaveToMyTrips = async () => {
     if (!isAuthenticated) return;
@@ -112,8 +166,8 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
         body: JSON.stringify({
           title: experience.trip_title || `Trip to ${destination}`,
           destination: destination,
-          start_date: formData?.startDate || null,
-          end_date: formData?.endDate || null,
+          start_date: startDate,
+          end_date: endDate,
           is_public: false,
           ai_data: data
         })
@@ -211,7 +265,7 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                   </div>
                   <div>
                     <p className="text-[#64748B] text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Destination</p>
-                    <p className="text-[#10223A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{experience.destination || formData?.destination}</p>
+                    <p className="text-[#10223A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{destination || "TBD"}</p>
                   </div>
                 </div>
 
@@ -231,7 +285,7 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                   </div>
                   <div>
                     <p className="text-[#64748B] text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>Travelers</p>
-                    <p className="text-[#10223A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{experience.travelers || formData?.travelers} People</p>
+                    <p className="text-[#10223A] font-semibold" style={{ fontFamily: "'Inter', sans-serif" }}>{travelers} People</p>
                   </div>
                 </div>
               </div>
@@ -246,6 +300,19 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                 <p className="text-[10px] text-[#64748B]/60 italic text-center uppercase tracking-widest mb-6 border-b border-[rgba(255,107,90,0.10)] pb-6">
                   Per person · calculated by Logistics Agent
                 </p>
+
+                {logistics.budget_breakdown && (
+                  <div className="grid grid-cols-2 gap-2 mb-6 text-xs text-[#64748B]">
+                    <span>Flight</span>
+                    <span className="text-right font-semibold text-[#10223A]">${logistics.budget_breakdown.flight_per_person_usd}</span>
+                    <span>Stay</span>
+                    <span className="text-right font-semibold text-[#10223A]">${logistics.budget_breakdown.accommodation_per_person_usd}</span>
+                    <span>Food</span>
+                    <span className="text-right font-semibold text-[#10223A]">${logistics.budget_breakdown.food_per_person_usd}</span>
+                    <span>Activities</span>
+                    <span className="text-right font-semibold text-[#10223A]">${logistics.budget_breakdown.activities_per_person_usd}</span>
+                  </div>
+                )}
 
                 {/* Save to My Trips Action */}
                 {isAuthenticated ? (
@@ -451,8 +518,8 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                         {logistics.accommodations.map((accom, ai) => (
                           <div key={ai} className="flex items-center justify-between p-3 rounded-xl bg-[#FFF6E8]">
                             <div>
-                              <p className="text-sm font-semibold text-[#10223A]" style={{ fontFamily: "'Inter', sans-serif" }}>{accom.type}</p>
-                              <p className="text-xs text-[#64748B]">{accom.neighborhood}</p>
+                              <p className="text-sm font-semibold text-[#10223A]" style={{ fontFamily: "'Inter', sans-serif" }}>{accom.name || accom.type}</p>
+                              <p className="text-xs text-[#64748B]">{accom.reason || accom.neighborhood}</p>
                             </div>
                             <div className="text-right flex items-center gap-3">
                               <div>
@@ -467,6 +534,12 @@ export function ItineraryOutput({ data, formData, onReset }: { data: FinalTripPl
                         ))}
                       </div>
                     </motion.div>
+                  )}
+
+                  {dayIndex === 0 && hasTransitOptions && logistics.transit_options && (
+                    <div className="md:col-span-2">
+                      <TransportDashboard options={logistics.transit_options} />
+                    </div>
                   )}
                 </div>
               </motion.div>

@@ -1,5 +1,4 @@
 from __future__ import annotations
-import asyncio
 from typing import Optional
 
 import httpx
@@ -67,6 +66,25 @@ async def search_locations(term: str) -> list[dict]:
     return results
 
 
+def _experience_logistics_context(experience_result) -> str:
+    activities = []
+    for day in experience_result.itinerary:
+        for activity in day.activities:
+            activities.append(
+                f"Day {day.day_number}: {activity.title} | {activity.location} | "
+                f"{activity.time} | {activity.type} | cost: {activity.cost}"
+            )
+
+    if not activities:
+        return "No activity locations available yet."
+
+    return (
+        "Generated activity anchors for logistics planning:\n"
+        + "\n".join(activities[:18])
+        + "\nUse these anchors to recommend stay areas, local transport, and budget assumptions."
+    )
+
+
 async def generate_trip_plan(user_input: UserInput, user_id: Optional[str]) -> FinalTripPlan:
     try:
         if user_input.flexible_destination and not (user_input.destination or "").strip():
@@ -81,21 +99,35 @@ async def generate_trip_plan(user_input: UserInput, user_id: Optional[str]) -> F
                 }
             )
 
-        logger.info(f"[Orchestrator] Running experience and logistics in parallel for {user_input.destination}")
+        logger.info(f"[Orchestrator] Step 1: Experience Agent for {user_input.destination}")
+        experience_result = await generate_experience_itinerary(user_input)
+
+        logger.info(f"[Orchestrator] Step 2: Logistics Agent for {user_input.destination}")
         logistics_context = (
             f"Origin: {user_input.origin}, Destination: {user_input.destination}, "
             f"Check-in: {user_input.start_date}, Check-out: {user_input.end_date}, "
             f"Price range per person: {user_input.price_range_per_person or user_input.budget}. "
-            "Provide flight and hotel estimates."
+            "Provide flight, stay, local transport, and itemized budget estimates.\n\n"
+            f"{_experience_logistics_context(experience_result)}"
         )
-        experience_result, logistics_result = await asyncio.gather(
-            generate_experience_itinerary(user_input),
-            generate_logistics(user_input, logistics_context),
+        logistics_result = await generate_logistics(
+            user_input,
+            logistics_context,
+            experience_result,
         )
 
         final_plan = FinalTripPlan(
             experience=experience_result,
             logistics=logistics_result,
+            origin=user_input.origin,
+            destination=user_input.destination,
+            start_date=user_input.start_date,
+            end_date=user_input.end_date,
+            travelers=user_input.travelers,
+            budget=user_input.budget,
+            price_range_per_person=user_input.price_range_per_person,
+            flexible_dates=user_input.flexible_dates,
+            flexible_destination=user_input.flexible_destination,
         )
 
         logger.info(f"[Orchestrator] Complete plan generated for {user_input.destination}")

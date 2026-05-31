@@ -49,10 +49,12 @@ interface FlightOption {
 }
 
 interface AccommodationOption {
+  name?: string;
   type: string;
   neighborhood: string;
   estimated_price_per_night_usd: number;
   booking_link: string;
+  reason?: string;
 }
 
 interface TripLogistics {
@@ -680,8 +682,8 @@ export default function TripDetailPage() {
                   {logistics.accommodations.map((a, i) => (
                     <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-[#FFFBF3] border border-[rgba(255,107,90,0.12)]">
                       <div>
-                        <p className="text-[#10223A] text-sm font-medium">{a.type}</p>
-                        <p className="text-[#64748B] text-xs mt-0.5">{a.neighborhood}</p>
+                        <p className="text-[#10223A] text-sm font-medium">{a.name || a.type}</p>
+                        <p className="text-[#64748B] text-xs mt-0.5">{a.reason || a.neighborhood}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-[#FF6B5A] font-bold text-sm">${a.estimated_price_per_night_usd}/night</p>

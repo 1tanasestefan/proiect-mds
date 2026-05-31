@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pydantic import BaseModel, Field, AliasChoices, ConfigDict, model_validator
-from typing import List, Optional, Literal, Any
+from typing import List, Optional, Literal, Any, Dict
 from datetime import date, datetime
 
 
@@ -101,7 +101,6 @@ class AgentOneOutput(BaseModel):
 
 
 # ── Agent 2 (Logistics & Booking) Contracts ──────────────────────
-from typing import Dict, Any
 
 class Coordinate(BaseModel):
     lat: float = Field(..., description="Latitude")
@@ -135,16 +134,41 @@ class AccommodationOption(BaseModel):
     neighborhood: str = Field(..., description="Recommended neighborhood derived from the itinerary")
     estimated_price_per_night_usd: float = Field(..., description="Estimated price per night in USD")
     booking_link: str = Field(..., description="Deep-link URL to Booking.com or Airbnb search")
+    reason: Optional[str] = Field(default=None, description="Why this stay area fits the generated itinerary")
+
+
+class BudgetBreakdown(BaseModel):
+    flight_per_person_usd: float = Field(..., description="Estimated round-trip flight cost per person")
+    accommodation_per_person_usd: float = Field(..., description="Estimated accommodation cost per person")
+    food_per_person_usd: float = Field(..., description="Estimated food and drinks cost per person")
+    activities_per_person_usd: float = Field(..., description="Estimated activity cost per person")
+    local_transport_per_person_usd: float = Field(..., description="Estimated local transport cost per person")
+    airport_transfer_per_person_usd: float = Field(default=0, description="Estimated airport transfer cost per person")
+    subtotal_per_person_usd: float = Field(..., description="Estimated total trip cost per person")
+    total_group_usd: float = Field(..., description="Estimated total cost for the whole travel group")
+    currency: str = Field(default="USD", description="Currency used for all budget values")
 
 class TripLogistics(BaseModel):
     flights: List[FlightOption] = Field(..., description="2-3 flight options at different price tiers")
     accommodations: List[AccommodationOption] = Field(..., description="2-3 accommodation options")
     total_estimated_budget_usd: float = Field(..., description="Total estimated trip budget per person in USD")
     transit_options: Optional[Dict[str, ConsolidatedLogistics]] = Field(default=None, description="Multimodal transit choices (budget, premium, etc)")
+    budget_breakdown: Optional[BudgetBreakdown] = Field(default=None, description="Itemized estimated trip budget")
+    assumptions: List[str] = Field(default_factory=list, description="Human-readable assumptions used for the estimates")
+    confidence: Literal["estimated", "route-informed", "ai-estimated"] = Field(default="estimated", description="How strong the logistics estimate is")
 
 class FinalTripPlan(BaseModel):
     experience: AgentOneOutput = Field(..., description="The curated itinerary from Agent 1")
     logistics: TripLogistics = Field(..., description="Logistics & booking data from Agent 2")
+    origin: Optional[str] = Field(default=None, description="Resolved departure city")
+    destination: Optional[str] = Field(default=None, description="Resolved destination")
+    start_date: Optional[str] = Field(default=None, description="Resolved trip start date")
+    end_date: Optional[str] = Field(default=None, description="Resolved trip end date")
+    travelers: Optional[int] = Field(default=None, description="Resolved number of travelers")
+    budget: Optional[str] = Field(default=None, description="Selected budget tier")
+    price_range_per_person: Optional[str] = Field(default=None, description="Desired total price range per person")
+    flexible_dates: bool = Field(default=False, description="Whether the dates were resolved by the backend")
+    flexible_destination: bool = Field(default=False, description="Whether the destination was resolved by the backend")
 
 class ItineraryUpdate(BaseModel):
     title: Optional[str] = None
@@ -224,4 +248,3 @@ class CommunityItinerary(BaseModel):
     author_name: str
     author_avatar: Optional[str] = None
     is_liked_by_me: Optional[bool] = False
-
