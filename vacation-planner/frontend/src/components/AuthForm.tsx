@@ -119,7 +119,17 @@ export default function AuthForm({ mode }: AuthFormProps) {
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-[#10223A]/70">Password</label>
+          <div className="flex items-center justify-between gap-3">
+            <label className="block text-sm font-medium text-[#10223A]/70">Password</label>
+            {mode === 'login' && (
+              <Link
+                href="/forgot-password"
+                className="text-xs font-medium text-[#FF6B5A] hover:text-[#FF6B5A]/80 transition-colors"
+              >
+                Forgot password?
+              </Link>
+            )}
+          </div>
           <div className="relative">
             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
