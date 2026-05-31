@@ -51,9 +51,10 @@ def test_generate_trip_plan_resolves_flexible_destination_and_dates(monkeypatch)
             ],
         )
 
-    async def fake_logistics(user_input, context):
+    async def fake_logistics(user_input, context, experience_result=None):
         captured["logistics_input"] = user_input
         captured["logistics_context"] = context
+        captured["logistics_experience"] = experience_result
         return TripLogistics(
             flights=[
                 FlightOption(
@@ -97,5 +98,9 @@ def test_generate_trip_plan_resolves_flexible_destination_and_dates(monkeypatch)
     assert captured["experience_input"].destination == "Paris, France"
     assert captured["logistics_input"].start_date == "2026-06-09"
     assert "Destination: Paris, France" in captured["logistics_context"]
+    assert "Marché Bastille" in captured["logistics_context"]
+    assert captured["logistics_experience"].trip_title == "Paris Food Weekend"
     assert result.experience.trip_title == "Paris Food Weekend"
+    assert result.destination == "Paris, France"
+    assert result.start_date == "2026-06-09"
     assert result.logistics.total_estimated_budget_usd == 750
