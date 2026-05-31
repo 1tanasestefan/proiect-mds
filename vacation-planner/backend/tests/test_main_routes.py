@@ -259,7 +259,7 @@ def test_generate_itinerary_uses_mocked_agents(client, monkeypatch):
             ],
         )
 
-    async def fake_logistics(_user_input, _context):
+    async def fake_logistics(_user_input, _context, _experience_result=None):
         return TripLogistics(
             flights=[
                 FlightOption(
