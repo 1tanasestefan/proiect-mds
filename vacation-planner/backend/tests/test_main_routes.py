@@ -376,7 +376,7 @@ def test_vote_regenerate_records_vote_without_majority(client, fake_supabase):
 
     assert response.status_code == 200
     assert response.json()["status"] == "vote_recorded"
-    assert response.json()["eligible_voters"] == 2
+    assert response.json()["eligible_voters"] == 3
     votes = fake_supabase.tables["activity_votes"]
     assert votes[0]["user_id"] == TEST_USER_ID
     assert votes[0]["day_index"] == 0
@@ -478,7 +478,7 @@ def test_get_activity_reactions_summarizes_counts(client, fake_supabase):
     ]
 
 
-def test_private_trip_blocks_reaction_from_non_collaborator(client, fake_supabase):
+def test_private_trip_direct_link_viewer_can_react(client, fake_supabase):
     fake_supabase.tables["itineraries"].append(sample_itinerary())
     main.app.dependency_overrides[get_current_user] = lambda: OTHER_USER_ID
 
@@ -487,7 +487,8 @@ def test_private_trip_blocks_reaction_from_non_collaborator(client, fake_supabas
         json={"day_index": 0, "activity_index": 0, "reaction_type": "wow"},
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 200
+    assert response.json()["status"] == "added"
 
 
 def test_owner_can_create_and_user_can_accept_invite(client, fake_supabase):
@@ -510,13 +511,58 @@ def test_owner_can_create_and_user_can_accept_invite(client, fake_supabase):
     assert collaborator["role"] == "editor"
 
 
-def test_private_trip_blocks_non_collaborator(client, fake_supabase):
+def test_private_trip_direct_link_allows_read_only_viewer(client, fake_supabase):
     fake_supabase.tables["itineraries"].append(sample_itinerary())
     main.app.dependency_overrides[get_current_user] = lambda: OTHER_USER_ID
 
-    response = client.get("/api/itineraries/trip-1")
+    get_response = client.get("/api/itineraries/trip-1")
+    collaboration_response = client.get("/api/itineraries/trip-1/collaboration")
+    update_response = client.patch("/api/itineraries/trip-1", json={"title": "Not allowed"})
 
-    assert response.status_code == 403
+    assert get_response.status_code == 200
+    assert get_response.json()["id"] == "trip-1"
+    assert collaboration_response.status_code == 200
+    assert collaboration_response.json()["role"] == "link_viewer"
+    assert collaboration_response.json()["can_edit"] is False
+    assert update_response.status_code == 403
+
+
+def test_private_trip_direct_link_viewer_can_trigger_live_regeneration_at_half_vote(
+    client,
+    fake_supabase,
+    monkeypatch,
+):
+    async def fake_regenerate_single_activity(*_args):
+        return Activity(
+            title="Fresh live activity",
+            description="Generated during the live vote",
+            time="11:00",
+            cost="$10",
+            location="Lisbon",
+            type="sightseeing",
+        )
+
+    monkeypatch.setattr(
+        "app.services.collaboration.regenerate_single_activity",
+        fake_regenerate_single_activity,
+    )
+    fake_supabase.tables["itineraries"].append(sample_itinerary())
+    main.app.dependency_overrides[get_current_user] = lambda: OTHER_USER_ID
+
+    response = client.post(
+        "/api/itineraries/trip-1/vote-regenerate",
+        json={
+            "day_index": 0,
+            "activity_index": 0,
+            "total_online": 2,
+            "voter": {"id": OTHER_USER_ID, "name": "Other User", "avatarId": 2},
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "regeneration_started"
+    assert response.json()["eligible_voters"] == 2
+    assert response.json()["threshold"] == 1
 
 
 def test_community_feed_marks_liked_items(client, fake_supabase):

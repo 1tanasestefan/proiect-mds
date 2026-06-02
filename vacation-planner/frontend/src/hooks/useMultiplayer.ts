@@ -14,6 +14,15 @@ interface PresenceUser extends OnlineUser {
 
 type DatabaseUpdatePayload = Record<string, unknown> & {
   _SIGNAL_REFETCH?: boolean;
+  _LIVE_VOTE?: {
+    voteKey: string;
+    voter: OnlineUser;
+    totalOnline?: number;
+    shouldRegenerate?: boolean;
+  };
+  _LIVE_REGENERATION?: {
+    voteKey: string;
+  };
 };
 
 export function useMultiplayer(
@@ -79,6 +88,27 @@ export function useMultiplayer(
     // Custom polling trigger for LIVE updates when Replication is off
     room.on("broadcast", { event: "trigger_refresh" }, () => {
        if (onDatabaseUpdate) onDatabaseUpdate({ _SIGNAL_REFETCH: true });
+    });
+
+    room.on("broadcast", { event: "activity_vote" }, (payload) => {
+      const { userId, voteKey, voter, totalOnline, shouldRegenerate } = payload.payload || {};
+      if (userId !== currentUser.id && voteKey && voter && onDatabaseUpdate) {
+        onDatabaseUpdate({
+          _LIVE_VOTE: {
+            voteKey,
+            voter,
+            totalOnline,
+            shouldRegenerate,
+          },
+        });
+      }
+    });
+
+    room.on("broadcast", { event: "regeneration_started" }, (payload) => {
+      const { userId, voteKey } = payload.payload || {};
+      if (userId !== currentUser.id && voteKey && onDatabaseUpdate) {
+        onDatabaseUpdate({ _LIVE_REGENERATION: { voteKey } });
+      }
     });
 
     // Set up Postgres Database Sync
@@ -170,10 +200,43 @@ export function useMultiplayer(
     }
   };
 
+  const broadcastActivityVote = (
+    voteKey: string,
+    voter: OnlineUser,
+    totalOnline: number,
+    shouldRegenerate: boolean,
+  ) => {
+    if (channel && currentUser) {
+      channel.send({
+        type: "broadcast",
+        event: "activity_vote",
+        payload: {
+          userId: currentUser.id,
+          voteKey,
+          voter,
+          totalOnline,
+          shouldRegenerate,
+        },
+      });
+    }
+  };
+
+  const broadcastRegenerationStarted = (voteKey: string) => {
+    if (channel && currentUser) {
+      channel.send({
+        type: "broadcast",
+        event: "regeneration_started",
+        payload: { userId: currentUser.id, voteKey },
+      });
+    }
+  };
+
   return {
     onlineUsers,
     highlightedActivityId,
     broadcastActivityHighlight,
     broadcastRefreshSignal,
+    broadcastActivityVote,
+    broadcastRegenerationStarted,
   };
 }

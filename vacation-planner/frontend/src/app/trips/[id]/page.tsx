@@ -112,6 +112,19 @@ interface CollaborationState {
   votes: ActivityVoteRow[];
 }
 
+type TripRealtimePayload = Record<string, unknown> & {
+  _SIGNAL_REFETCH?: boolean;
+  _LIVE_VOTE?: {
+    voteKey: string;
+    voter: VoteUser;
+    totalOnline?: number;
+    shouldRegenerate?: boolean;
+  };
+  _LIVE_REGENERATION?: {
+    voteKey: string;
+  };
+};
+
 // ── Activity Card ─────────────────────────────────────────────────
 function ActivityCard({ 
   act, i, isHighlighted, onClick, 
@@ -122,8 +135,8 @@ function ActivityCard({
   votes: VoteUser[]; isRegenerating: boolean; onVote: () => void; totalOnline: number;
   reactions: ActivityReactionSummary[]; onReaction: (reactionType: ReactionType) => void;
 }) {
-  const threshold = Math.floor(totalOnline / 2);
-  const isDraw = votes.length > 0 && votes.length <= threshold;
+  const threshold = Math.max(1, Math.ceil(totalOnline / 2));
+  const reachedThreshold = votes.length >= threshold;
   const reactionOptions: { type: ReactionType; label: string; icon: React.ReactNode }[] = [
     { type: "heart", label: "Love this activity", icon: <Heart className="h-3.5 w-3.5" /> },
     { type: "fire", label: "Looks exciting", icon: <Flame className="h-3.5 w-3.5" /> },
@@ -247,9 +260,9 @@ function ActivityCard({
                  ))}
               </div>
               <span className="text-[10px] text-[#64748B]/60">
-                 {isDraw 
-                    ? <span className="text-orange-400/80">Activity will not be changed ({votes.length}/{totalOnline} votes)</span> 
-                    : <span className="text-yellow-400/80">{votes.length}/{totalOnline} want to change</span>}
+                 {reachedThreshold 
+                    ? <span className="text-yellow-400/80">Regeneration starting ({votes.length}/{totalOnline} votes)</span> 
+                    : <span className="text-orange-400/80">{votes.length}/{totalOnline} want to change</span>}
               </span>
            </div>
         )}
@@ -338,7 +351,47 @@ export default function TripDetailPage() {
     }
   }, [id, loadSocialState, session]);
 
-  const handleDatabaseUpdate = useCallback((newData: Record<string, unknown> & { _SIGNAL_REFETCH?: boolean }) => {
+  const addVoteToActivity = useCallback((voteKey: string, voter: VoteUser) => {
+    setVotesByActivity((prev) => {
+      const actVotes = prev[voteKey] || [];
+      if (actVotes.some((vote) => vote.id === voter.id)) return prev;
+      return { ...prev, [voteKey]: [...actVotes, voter] };
+    });
+  }, []);
+
+  const markActivityRegenerating = useCallback((voteKey: string) => {
+    setTrip((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        ai_data: {
+          ...prev.ai_data,
+          regenerating_keys: {
+            ...(prev.ai_data.regenerating_keys || {}),
+            [voteKey]: true,
+          },
+        },
+      };
+    });
+  }, []);
+
+  const handleDatabaseUpdate = useCallback((newData: TripRealtimePayload) => {
+    if (newData._LIVE_VOTE) {
+      addVoteToActivity(newData._LIVE_VOTE.voteKey, newData._LIVE_VOTE.voter);
+      if (newData._LIVE_VOTE.totalOnline) {
+        setEligibleVoters((prev) => Math.max(prev, newData._LIVE_VOTE?.totalOnline || 1));
+      }
+      if (newData._LIVE_VOTE.shouldRegenerate) {
+        markActivityRegenerating(newData._LIVE_VOTE.voteKey);
+      }
+      return;
+    }
+
+    if (newData._LIVE_REGENERATION) {
+      markActivityRegenerating(newData._LIVE_REGENERATION.voteKey);
+      return;
+    }
+
     if (newData._SIGNAL_REFETCH) {
       loadItinerary();
       void loadSocialState();
@@ -349,19 +402,29 @@ export default function TripDetailPage() {
       if (!prev) return prev;
       return { ...prev, ...newData } as SavedTrip;
     });
-  }, [loadItinerary, loadSocialState]);
+  }, [addVoteToActivity, loadItinerary, loadSocialState, markActivityRegenerating]);
 
+  const sessionUserId = session?.user?.id;
+  const sessionUserEmail = session?.user?.email || "user";
   const multiplayerUser = useMemo(
-    () => session?.user ? { id: session.user.id, email: session.user.email || "user" } : null,
-    [session?.user],
+    () => sessionUserId ? { id: sessionUserId, email: sessionUserEmail } : null,
+    [sessionUserId, sessionUserEmail],
   );
 
   // Multiplayer Hook
-  const { onlineUsers, highlightedActivityId, broadcastActivityHighlight, broadcastRefreshSignal } = useMultiplayer(
+  const {
+    onlineUsers,
+    highlightedActivityId,
+    broadcastActivityHighlight,
+    broadcastRefreshSignal,
+    broadcastActivityVote,
+    broadcastRegenerationStarted,
+  } = useMultiplayer(
     id,
     multiplayerUser,
     handleDatabaseUpdate
   );
+  const liveVoterCount = Math.max(eligibleVoters, onlineUsers.length || 1);
 
   useEffect(() => {
     loadItinerary();
@@ -458,31 +521,19 @@ export default function TripDetailPage() {
     const voteKey = `day_${dayIndex}_act_${actIndex}`;
 
     // 1. OPTIMISTIC UI: Immediately lock in the vote visually!
-    let thresholdExceeded = false;
-    setVotesByActivity((prev) => {
-      const nextVotes = { ...prev };
-      const actVotes = [...(nextVotes[voteKey] || [])];
-      if (!actVotes.some((v: VoteUser) => v.id === voter.id)) {
-          actVotes.push(voter);
-      }
-      nextVotes[voteKey] = actVotes;
-      
-      // Calculate theoretically if this click triggers threshold
-      const threshold = Math.floor(eligibleVoters / 2);
-      if (actVotes.length > threshold) {
-          thresholdExceeded = true;
-      }
-      return nextVotes;
-    });
+    const currentVotes = votesByActivity[voteKey] || [];
+    const alreadyVoted = currentVotes.some((vote) => vote.id === voter.id);
+    const nextVotes = alreadyVoted ? currentVotes : [...currentVotes, voter];
+    const threshold = Math.max(1, Math.ceil(liveVoterCount / 2));
+    const shouldRegenerate = nextVotes.length >= threshold;
 
-    if (thresholdExceeded) {
-      setTrip((prev) => {
-        if (!prev) return prev;
-        const newTrip = JSON.parse(JSON.stringify(prev));
-        if (!newTrip.ai_data.regenerating_keys) newTrip.ai_data.regenerating_keys = {};
-        newTrip.ai_data.regenerating_keys[voteKey] = true;
-        return newTrip;
-      });
+    addVoteToActivity(voteKey, voter);
+    if (!alreadyVoted) {
+      broadcastActivityVote(voteKey, voter, liveVoterCount, shouldRegenerate);
+    }
+    if (shouldRegenerate) {
+      markActivityRegenerating(voteKey);
+      broadcastRegenerationStarted(voteKey);
     }
 
     try {
@@ -496,7 +547,7 @@ export default function TripDetailPage() {
         body: JSON.stringify({
           day_index: dayIndex,
           activity_index: actIndex,
-          total_online: eligibleVoters,
+          total_online: liveVoterCount,
           voter
         })
       });
@@ -508,15 +559,8 @@ export default function TripDetailPage() {
       
       // 3. Fallback Optimistic UI (if threshold was hit via network desync but not locally)
       if (data.status === "regeneration_started" || data.status === "already_regenerating") {
-         if (!thresholdExceeded) {
-             setTrip((prev) => {
-                 if (!prev) return prev;
-                 const newTrip = JSON.parse(JSON.stringify(prev));
-                 if (!newTrip.ai_data.regenerating_keys) newTrip.ai_data.regenerating_keys = {};
-                 newTrip.ai_data.regenerating_keys[voteKey] = true;
-                 return newTrip;
-             });
-         }
+         markActivityRegenerating(voteKey);
+         broadcastRegenerationStarted(voteKey);
       }
     } catch(e) {
       console.error("Voting failed", e);
@@ -756,7 +800,7 @@ export default function TripDetailPage() {
                     votes={votes}
                     isRegenerating={isRegenerating}
                     onVote={() => handleVoteRegenerate(di, ai)}
-                    totalOnline={eligibleVoters}
+                    totalOnline={liveVoterCount}
                     reactions={reactions}
                     onReaction={(reactionType) => handleToggleReaction(di, ai, reactionType)}
                     isHighlighted={highlightedActivityId === globalActivityId}

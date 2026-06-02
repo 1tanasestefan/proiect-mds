@@ -226,7 +226,7 @@ class ActivityVote(BaseModel):
 
 class CollaborationState(BaseModel):
     itinerary_id: str
-    role: Literal["owner", "editor", "viewer", "public"]
+    role: Literal["owner", "editor", "viewer", "public", "link_viewer"]
     can_edit: bool
     can_invite: bool
     eligible_voters: int

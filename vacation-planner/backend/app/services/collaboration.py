@@ -92,7 +92,7 @@ def get_user_role(db, trip: dict, user_id: str) -> str | None:
         return collaborator_role
     if trip.get("is_public"):
         return "public"
-    return None
+    return "link_viewer"
 
 
 def require_trip_access(db, itinerary_id: str, user_id: str) -> tuple[dict, str]:
@@ -155,7 +155,7 @@ def _eligible_voter_count(db, trip: dict) -> int:
 
 
 def _majority_threshold(eligible_voters: int) -> int:
-    return math.floor(eligible_voters / 2) + 1
+    return max(1, math.ceil(eligible_voters / 2))
 
 
 async def get_collaboration_state(itinerary_id: str, user_id: str) -> CollaborationState:
@@ -315,7 +315,7 @@ async def vote_regenerate(
         .execute()
     )
     vote_count = len({vote["user_id"] for vote in votes_for_activity.data or []})
-    eligible_voters = _eligible_voter_count(db, trip)
+    eligible_voters = max(_eligible_voter_count(db, trip), vote_req.total_online or 1)
     threshold = _majority_threshold(eligible_voters)
 
     if vote_count >= threshold:
